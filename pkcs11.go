@@ -135,5 +135,3 @@ func (p *Pkcs11) Slots() (s []*Slot, e error) {
 	}
 	return
 }
-
-func (t *Token) Generate(
