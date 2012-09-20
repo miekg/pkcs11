@@ -56,6 +56,8 @@ import (
 
 type Pkcs11 struct {
 	ctx *C.struct_ctx
+// moet ** zijn?	funcs C.CK_FUNCTION_LIST_PTR
+	session C.CK_SESSION_HANDLE
 }
 
 // New returns a new instance of...
@@ -65,6 +67,7 @@ func New(module string) *Pkcs11 {
         mod := C.CString(module)
 	defer C.free(unsafe.Pointer(mod))
 	p.ctx = C.new(mod)
+	// Call initialize
 	return p
 }
 
