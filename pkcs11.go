@@ -11,6 +11,8 @@ package pkcs11
 #define NULL_PTR 0
 #endif
 #include "pkcs11.h"
+
+
 */
 import "C"
 
