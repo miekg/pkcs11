@@ -95,7 +95,7 @@ func (p *Pkcs11) Unload() {
 }
 
 // Slots enumerates all slots.
-func (p *Pkcs11) Slots() (s []Slot, e error) {
+func (p *Pkcs11) Slots() (s []*Slot, e error) {
 	slot := C.slotNew()
 	nslot := C.uintNew()
 	rc := C.PKCS11_enumerate_slots(p.ctx, &slot, &nslot)
@@ -104,7 +104,7 @@ func (p *Pkcs11) Slots() (s []Slot, e error) {
 	}
 	// Loop through the slots and copy them into Go Slots
 	for i := 0; i < int(nslot); i++ {
-		s1 := Slot{}
+		s1 := new(Slot)
 		s1.Manufacturer = C.GoString(C.slotIndex(&slot, C.int(i)).manufacturer)
 		s1.Description = C.GoString(C.slotIndex(&slot, C.int(i)).description)
 		s1.Removable = int(C.slotIndex(&slot, C.int(i)).removable) == 1
@@ -135,3 +135,5 @@ func (p *Pkcs11) Slots() (s []Slot, e error) {
 	}
 	return
 }
+
+func (t *Token) Generate(
