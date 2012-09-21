@@ -16,7 +16,7 @@ struct ctx {
 	CK_FUNCTION_LIST_PTR sym;
 };
 
-struct ctx * CNew(const char *module) {
+struct ctx * New(const char *module) {
 	if (lt_dlinit() != 0) {
 		return NULL;
 	}
@@ -46,7 +46,9 @@ struct ctx * CNew(const char *module) {
 	return c;
 }
 
-void CDestroy(struct ctx *c) {
+// 
+void Destroy(struct ctx *c) {
+        ((CK_FUNCTION_LIST_PTR)c->sym)->C_Finalize(NULL_PTR);
 	if (c->handle == NULL) {
 		return;
 	}
@@ -55,4 +57,39 @@ void CDestroy(struct ctx *c) {
 	}
 	lt_dlexit();
 	free(c);
+}
+
+// Return an error code and in the param list: array of slots and the length of
+// the array
+CK_RV Slots(struct ctx *c, CK_SLOT_INFO_PTR *slots, CK_TOKEN_INFO_PTR *tokens, CK_ULONG_PTR nslots) {
+        CK_RV rv;                                                                                     
+        CK_SLOT_ID i, *ids;
+        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(CK_FALSE, NULL_PTR, nslots);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        ids = malloc(sizeof(CK_SLOT_ID) * *nslots);
+        if (!ids) {
+                return CKR_GENERAL_ERROR; 
+        }
+        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(CK_FALSE, ids, nslots);
+        if (rv != CKR_OK) {
+                free(ids);
+                return rv;
+        }
+
+        *slots = calloc(1, sizeof(CK_SLOT_INFO) * *nslots);
+        *tokens = calloc(1, sizeof(CK_TOKEN_INFO) * *nslots);
+        if (!*slots || !*tokens) {
+                return CKR_GENERAL_ERROR;
+        }
+        for (i = 0; i < *nslots; i++) {
+                rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotInfo(ids[i], slots[i]);
+                // TODO: return code
+                if ( (slots[i]->flags & CKF_TOKEN_PRESENT) == CKF_TOKEN_PRESENT) {
+                        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetTokenInfo(ids[i], tokens[i]);
+                        // TODO(mg): rv return code
+                }
+        }
+        return CKR_OK;
 }
