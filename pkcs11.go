@@ -30,6 +30,7 @@ type Slot struct {
 	Manufacturer string
 	Description  string
 	Removable    bool
+	// Hardwareversion ??
 	*Token
 }
 
@@ -90,7 +91,12 @@ func (p *Pkcs11) Slots() (s []*Slot, e error) {
 		o.Manufacturer = string(C.GoBytes(unsafe.Pointer(&C.SlotIndex(&slots, C.int(i)).manufacturerID), 32))
 		o.Removable = int(C.SlotIndex(&slots, C.int(i)).flags)&C.CKF_REMOVABLE_DEVICE == C.CKF_REMOVABLE_DEVICE
 		if C.TokenIndex(&tokens, C.int(i)) != nil {
-			println("Token present")
+			t := new(Token)
+			t.Label = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).label), 32))
+			t.Manufacturer = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).manufacturerID), 32))
+			t.Model = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).manufacturerID), 16))
+			t.Serial = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).serialNumber), 16))
+			o.Token = t
 		}
 		s = append(s, o)
 	}
