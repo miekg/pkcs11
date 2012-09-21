@@ -1,8 +1,4 @@
 # PKCS#11
 
-This is a Go implementation of the PKCS#11 API.
-
-# Installation
-
-To play with an HSM (Hardware security module) you can buy one, or
-you can install softhsm.
+This is a Go implementation of the PKCS#11 API. It has a small C implementation
+that wraps a few things, but it tries to do as much in Go as possible.
