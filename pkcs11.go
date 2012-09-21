@@ -27,6 +27,7 @@ type Pkcs11 struct {
 
 // Slot is ...
 type Slot struct {
+	slotId       int
 	Manufacturer string
 	Description  string
 	Removable    bool
@@ -36,6 +37,8 @@ type Slot struct {
 
 // Token is ..
 type Token struct {
+	parent             *Pkcs11 // parent ctx
+	slotId             int     // parent Slot id
 	Label              string
 	Manufacturer       string
 	Model              string
@@ -87,18 +90,47 @@ func (p *Pkcs11) Slots() (s []*Slot, e error) {
 	}
 	for i := 0; i < int(nslots); i++ {
 		o := new(Slot)
+		o.slotId = i
 		o.Description = string(C.GoBytes(unsafe.Pointer(&C.SlotIndex(&slots, C.int(i)).slotDescription), 64))
 		o.Manufacturer = string(C.GoBytes(unsafe.Pointer(&C.SlotIndex(&slots, C.int(i)).manufacturerID), 32))
 		o.Removable = int(C.SlotIndex(&slots, C.int(i)).flags)&C.CKF_REMOVABLE_DEVICE == C.CKF_REMOVABLE_DEVICE
 		if C.TokenIndex(&tokens, C.int(i)) != nil {
 			t := new(Token)
+			t.parent = p
+			t.slotId = o.slotId
 			t.Label = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).label), 32))
 			t.Manufacturer = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).manufacturerID), 32))
 			t.Model = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).manufacturerID), 16))
 			t.Serial = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).serialNumber), 16))
+
+			t.HasRandGenerator = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_RNG == C.CKF_RNG
+			t.ReadOnly = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_WRITE_PROTECTED == C.CKF_WRITE_PROTECTED
+			t.LoginRequired = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_LOGIN_REQUIRED == C.CKF_LOGIN_REQUIRED
+			t.UserPinSet = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_USER_PIN_INITIALIZED == C.CKF_USER_PIN_INITIALIZED
+			t.Initialized = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_TOKEN_INITIALIZED == C.CKF_TOKEN_INITIALIZED
+
 			o.Token = t
 		}
 		s = append(s, o)
 	}
 	return
+}
+
+// Init initializes a token.
+func (t *Token) Init(sopin, label string) error {
+	cpin := C.CString(sopin)
+	clab := C.CString(label) // 32 bytes, padded with spaces
+	t1 := C.TokenNew()
+	defer C.free(unsafe.Pointer(cpin))
+	defer C.free(unsafe.Pointer(clab))
+	defer C.free(unsafe.Pointer(t1))
+
+	rv := C.InitToken(t.parent.ctx, &t1, C.uint(t.slotId), cpin, C.uint(len(sopin)), clab)
+	if rv != 0 {
+		return nil // TODO(mg): error
+	}
+	// TODO: more
+	t.Label = string(C.GoBytes(unsafe.Pointer(&t1.label), 32))
+	t.Initialized = int(t1.flags)&C.CKF_TOKEN_INITIALIZED == C.CKF_TOKEN_INITIALIZED
+	return nil
 }
