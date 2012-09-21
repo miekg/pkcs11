@@ -17,7 +17,7 @@ package pkcs11
 
 struct ctx {
 	lt_dlhandle handle;
-	CK_FUNCTION_LIST_PTR_PTR funcs;
+	CK_FUNCTION_LIST_PTR sym;
 };
 
 struct ctx * new(const char *module) {
@@ -25,13 +25,26 @@ struct ctx * new(const char *module) {
 		return NULL;
 	}
 	struct ctx *c;
+	CK_C_GetFunctionList list;
+	CK_RV rv;
+
 	c = calloc(1, sizeof(struct ctx));
 	c->handle = lt_dlopen(module);
 	if (c->handle == NULL) {
+		free(c);
 		return NULL;
 	}
-	c->funcs = lt_dlsym(c->handle, "C_GetFunctionList");
-	if (c->funcs == NULL) {
+	list = (CK_C_GetFunctionList) lt_dlsym(c->handle, "C_GetFunctionList");
+	if (list == NULL) {
+		free(c);
+		return NULL;
+	}
+	list(&c->sym);
+	// Initialize
+	CK_C_INITIALIZE_ARGS InitArgs = {NULL, NULL, NULL, NULL, CKF_OS_LOCKING_OK, NULL};
+	rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_Initialize( (CK_VOID_PTR) &InitArgs);
+	if (rv != CKR_OK) {
+		free(c);
 		return NULL;
 	}
 	return c;
