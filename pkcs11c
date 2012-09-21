@@ -1,0 +1,58 @@
+/* Filename is not ending in .c because it will then be picked up by cgo twice */
+#define CK_PTR *
+#define CK_DEFINE_FUNCTION(returnType, name) returnType name
+#define CK_DECLARE_FUNCTION(returnType, name) returnType name
+#define CK_DECLARE_FUNCTION_POINTER(returnType, name) returnType (* name)
+#define CK_CALLBACK_FUNCTION(returnType, name) returnType (* name)
+#ifndef NULL_PTR
+#define NULL_PTR 0
+#endif
+#include "pkcs11.h"
+#include <stdlib.h>
+#include <ltdl.h>
+
+struct ctx {
+	lt_dlhandle handle;
+	CK_FUNCTION_LIST_PTR sym;
+};
+
+struct ctx * CNew(const char *module) {
+	if (lt_dlinit() != 0) {
+		return NULL;
+	}
+	struct ctx *c;
+	CK_C_GetFunctionList list;
+	CK_RV rv;
+
+	c = calloc(1, sizeof(struct ctx));
+	c->handle = lt_dlopen(module);
+	if (c->handle == NULL) {
+		free(c);
+		return NULL;
+	}
+	list = (CK_C_GetFunctionList) lt_dlsym(c->handle, "C_GetFunctionList");
+	if (list == NULL) {
+		free(c);
+		return NULL;
+	}
+	list(&c->sym);
+	// Initialize
+	CK_C_INITIALIZE_ARGS InitArgs = {NULL, NULL, NULL, NULL, CKF_OS_LOCKING_OK, NULL};
+	rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_Initialize( (CK_VOID_PTR) &InitArgs);
+	if (rv != CKR_OK) {
+		free(c);
+		return NULL;
+	}
+	return c;
+}
+
+void CDestroy(struct ctx *c) {
+	if (c->handle == NULL) {
+		return;
+	}
+	if (lt_dlclose(c->handle) < 0) {
+		return;
+	}
+	lt_dlexit();
+	free(c);
+}
