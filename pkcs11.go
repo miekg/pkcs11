@@ -10,12 +10,7 @@ package pkcs11
 
 CK_SLOT_ID_PTR SlotIDIndex(CK_SLOT_ID_PTR *p, int i) { return p[i]; } 
 
-
-
 CK_TOKEN_INFO_PTR TokenIndex(CK_TOKEN_INFO_PTR *l, int i) { return l[i]; } 
-CK_SLOT_INFO_PTR SlotNew() { CK_SLOT_INFO_PTR s = NULL; return s; }
-CK_TOKEN_INFO_PTR TokenNew() { CK_TOKEN_INFO_PTR t = NULL; return t; }
-CK_ULONG UlongNew() { CK_ULONG u = 0; return u; }
 */
 import "C"
 
@@ -180,36 +175,37 @@ func (p *Pkcs11) C_GetSlotInfo(SlotID uint) (*SlotInfo, error) {
 	return slotInfoFromC(slot), nil
 }
 
-func (p *Pkcs11) C_GetTokenInfo(SlotID uint) (*TokenInfo, error) {
+func (p *Pkcs11) C_GetTokenInfo(slotID uint) (*TokenInfo, error) {
 	var (
 		token C.CK_TOKEN_INFO_PTR
 	)
 	defer C.free(unsafe.Pointer(token))
-	e := C.Go_C_GetTokenInfo(p.ctx, C.CK_SLOT_ID(SlotID), &token)
+	e := C.Go_C_GetTokenInfo(p.ctx, C.CK_SLOT_ID(slotID), &token)
 	if e != C.CKR_OK {
 		return nil, newPkcs11Error("", e)
 	}
 	return tokenInfoFromC(token), nil
 }
 
+func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {
+	if len(label) > 32 {
+		return newPkcs11Error("label must be 32 bytes or less", 1)
+	}
+	for len(label) < 32 {	// stupid loop to make it 32 bytes
+		label += " "
+	}
+	csoPin := C.CString(soPin)
+	clabel := C.CString(label)
+	defer C.free(unsafe.Pointer(csoPin))
+	defer C.free(unsafe.Pointer(clabel))
+	e := C.Go_C_InitToken(p.ctx, C.CK_SLOT_ID(slotID), csoPin, C.CK_ULONG(len(soPin)), clabel)
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
+}
+
 /*
-		if C.TokenIndex(&tokens, C.int(i)) != nil {
-			t := new(Token)
-			t.parent = p
-			t.slotId = o.slotId
-			t.Label = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).label), 32))
-			t.Manufacturer = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).manufacturerID), 32))
-			t.Model = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).manufacturerID), 16))
-			t.Serial = string(C.GoBytes(unsafe.Pointer(&C.TokenIndex(&tokens, C.int(i)).serialNumber), 16))
-
-			t.HasRandGenerator = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_RNG == C.CKF_RNG
-			t.ReadOnly = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_WRITE_PROTECTED == C.CKF_WRITE_PROTECTED
-			t.LoginRequired = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_LOGIN_REQUIRED == C.CKF_LOGIN_REQUIRED
-			t.UserPinSet = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_USER_PIN_INITIALIZED == C.CKF_USER_PIN_INITIALIZED
-			t.Initialized = int(C.TokenIndex(&tokens, C.int(i)).flags)&C.CKF_TOKEN_INITIALIZED == C.CKF_TOKEN_INITIALIZED
-
-			o.Token = t
-		}
 // Init initializes a token.
 func (t *Token) Init(sopin, label string) error {
 	cpin := C.CString(sopin)
