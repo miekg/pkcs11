@@ -85,6 +85,10 @@ func mechanismInfoFromC(pMechanismInfo C.CK_MECHANISM_INFO_PTR) *MechanismInfo {
 
 func sessionInfoFromC(pSessionInfo C.CK_SESSION_INFO_PTR) *SessionInfo {
 	s := new(SessionInfo)
+	s.SlotID = uint(pSessionInfo.slotID)
+	s.State =  uint(pSessionInfo.state)
+	s.Flags = uint(pSessionInfo.flags)
+	s.DeviceError = uint(pSessionInfo.ulDeviceError)
 	return s
 }
 
