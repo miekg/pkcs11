@@ -143,3 +143,14 @@ CK_RV Go_C_SetPIN(struct ctx *c, CK_SESSION_HANDLE phSession, char * oldPin, CK_
 }
 
 // Object management
+
+CK_RV Go_C_CreateObject(struct ctx *c, CK_SESSION_HANDLE phSession, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount, CK_OBJECT_HANDLE_PTR *phObject) {
+        
+        *phObject = calloc(1, sizeof(CK_OBJECT_HANDLE));
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_CreateObject(phSession, pTemplate, ulCount, *phObject);
+
+}
+
+CK_RV Go_C_DestroyObject(struct ctx *c, CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject) {
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_DestroyObject(hSession, hObject);
+}

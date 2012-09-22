@@ -253,6 +253,8 @@ func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {
 	return nil
 }
 
+// Session handling
+
 // Callback function not supported...?
 // pApplication/Notify
 func (p *Pkcs11) C_OpenSession(slotID uint, flags uint) (SessionHandle, error) {
@@ -312,4 +314,10 @@ func (p *Pkcs11) C_GetSessionInfo(sh SessionHandle) (*SessionInfo, error) {
 		return nil, newPkcs11Error("", e)
 	}
 	return sessionInfoFromC(session), nil
+}
+
+// Object handling
+
+func (p *Pkcs11) C_CreateObject() (ObjectHandle, error) {
+	return 0, nil
 }

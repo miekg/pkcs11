@@ -269,6 +269,7 @@ CK_PKCS11_FUNCTION_INFO(C_CreateObject)
 );
 #endif
 
+/* TODO(mg): Still do to */
 
 /* C_CopyObject copies an object, creating a new object for the
  * copy. */
