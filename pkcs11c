@@ -115,6 +115,8 @@ CK_RV Go_C_InitToken(struct ctx *c, CK_SLOT_ID slotID, char * pPin, CK_ULONG pin
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_InitToken(slotID, (CK_UTF8CHAR_PTR)pPin, pinLen, (CK_UTF8CHAR_PTR)label);
 }
 
+// Session management
+
 CK_RV Go_C_OpenSession(struct ctx *c, CK_SLOT_ID slotID, CK_FLAGS flags, CK_SESSION_HANDLE_PTR phSession) {
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_OpenSession(slotID, flags, NULL, NULL, phSession);
 }
@@ -139,3 +141,5 @@ CK_RV Go_C_InitPIN(struct ctx *c, CK_SESSION_HANDLE phSession, char * pin, CK_UL
 CK_RV Go_C_SetPIN(struct ctx *c, CK_SESSION_HANDLE phSession, char * oldPin, CK_ULONG oldPinLen, char * newPin, CK_ULONG newPinLen) {
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_SetPIN(phSession,(CK_UTF8CHAR_PTR)oldPin, oldPinLen, (CK_UTF8CHAR_PTR)newPin, newPinLen);
 }
+
+// Object management
