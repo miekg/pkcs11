@@ -83,6 +83,11 @@ func mechanismInfoFromC(pMechanismInfo C.CK_MECHANISM_INFO_PTR) *MechanismInfo {
 	return m
 }
 
+func sessionInfoFromC(pSessionInfo C.CK_SESSION_INFO_PTR) *SessionInfo {
+	s := new(SessionInfo)
+	return s
+}
+
 // Pkcs11Error represents an error from the PKCS#11 library.
 type Pkcs11Error struct {
 	err string // error text
@@ -291,4 +296,16 @@ func (p *Pkcs11) C_CloseAllSessions(slotID uint) error {
 		return newPkcs11Error("", e)
 	}
 	return nil
+}
+
+func (p *Pkcs11) C_GetSessionInfo(sh SessionHandle) (*SessionInfo, error) {
+	var (
+		session C.CK_SESSION_INFO_PTR
+	)
+	defer C.free(unsafe.Pointer(session))
+	e := C.Go_C_GetSessionInfo(p.ctx, C.CK_SESSION_HANDLE(sh), &session)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	return sessionInfoFromC(session), nil
 }

@@ -127,6 +127,11 @@ CK_RV Go_C_CloseAllSessions(struct ctx *c, CK_SLOT_ID slotID) {
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_CloseAllSessions(slotID);
 }
 
+CK_RV Go_C_GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE phSession, CK_SESSION_INFO_PTR *pInfo) {
+        *pInfo = calloc(1, sizeof(CK_SESSION_INFO));
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSessionInfo(phSession, *pInfo);
+}
+
 CK_RV Go_C_InitPIN(struct ctx *c, CK_SESSION_HANDLE phSession, char * pin, CK_ULONG pinLen) {
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_InitPIN(phSession,(CK_UTF8CHAR_PTR)pin, pinLen);
 }
