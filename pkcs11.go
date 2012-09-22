@@ -205,8 +205,7 @@ func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {
 	return nil
 }
 
-// Callback function now supported...?
-
+// Callback function not supported...?
 // pApplication/Notify
 func (p *Pkcs11) C_OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 	var sh SessionHandle
@@ -215,4 +214,24 @@ func (p *Pkcs11) C_OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 		return 0, newPkcs11Error("", e)
 	}
 	return sh, nil
+}
+
+func (p *Pkcs11) C_CloseSession(sh SessionHandle) error {
+	e := C.Go_C_CloseSession(p.ctx, C.CK_SESSION_HANDLE(sh))
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
+}
+
+func (p *Pkcs11) C_SetPIN(sh SessionHandle, oldPin, newPin string) error {
+	coldPin := C.CString(oldPin)
+	cnewPin := C.CString(newPin)
+	defer C.free(unsafe.Pointer(coldPin))
+	defer C.free(unsafe.Pointer(cnewPin))
+	e := C.Go_C_SetPIN(p.ctx, C.CK_SESSION_HANDLE(sh), coldPin, C.CK_ULONG(len(oldPin)), cnewPin, C.CK_ULONG(len(newPin)))
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
 }
