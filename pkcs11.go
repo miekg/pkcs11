@@ -36,7 +36,6 @@ func (e *Pkcs11Error) Error() string {
 	return s
 }
 
-// Pkcs11 ...
 type Pkcs11 struct {
 	ctx *C.struct_ctx
 }
