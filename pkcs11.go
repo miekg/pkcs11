@@ -1,3 +1,6 @@
+// Package pkcs11 provides an interface to the PKCS#11 API.
+//
+//
 package pkcs11
 
 /*
@@ -14,16 +17,62 @@ CK_ULONG UlongNew() { CK_ULONG u = 0; return u; }
 import "C"
 
 import (
+	"strconv"
 	"unsafe"
 )
 
-// TODO: error type
-// TODO: documentation
+// Pkcs11Error represents an error from the PKCS#11 library.
+type Pkcs11Error struct {
+	err string	// error text
+	rv int		// return value from pkcs11 api
+}
 
-// Pkcs11 ....
+func newPkcs11Error(s string, rv C.CK_RV) *Pkcs11Error {
+	return &Pkcs11Error{err: s, rv: int(rv)}
+}
+
+func (e *Pkcs11Error) Error() string {
+	s := "pkcs11: " + e.err + "(rv: " + strconv.Itoa(e.rv) + ")"
+	return s
+}
+
+// Pkcs11 ...
 type Pkcs11 struct {
 	ctx *C.struct_ctx
 }
+
+// New returns a new instance of a pkcs11. The dynamic PKCS#11 library is
+// loaded. New returns nil on error.
+func New(module string) *Pkcs11 {
+	p := new(Pkcs11)
+	mod := C.CString(module)
+	defer C.free(unsafe.Pointer(mod))
+	p.ctx = C.New(mod)
+	if p.ctx == nil {
+		return nil
+	}
+	return p
+}
+
+// Wraps PKCS#11's C_Initialize.
+func (p *Pkcs11) C_Initialize() error {
+	e := C.Go_C_Initialize(p.ctx)
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
+}
+
+// Wraps PKCS#11's C_Finalize.
+func (p *Pkcs11) C_Finalize() error {
+	e := C.Go_C_Finalize(p.ctx)
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
+}
+
+// TODO: documentation
 
 // Slot is ...
 type Slot struct {
@@ -59,18 +108,6 @@ type Token struct {
 	SoPinToBeChanged   bool
 }
 
-// New returns a new instance of an pkcs11 struct. The dynamic Pkcs11 library is
-// loaded and initialized. New returns nil on error.
-func New(module string) *Pkcs11 {
-	p := new(Pkcs11)
-	mod := C.CString(module)
-	defer C.free(unsafe.Pointer(mod))
-	p.ctx = C.New(mod)
-	if p.ctx == nil {
-		return nil
-	}
-	return p
-}
 
 // Destroy unload the module and frees any remaining memory.
 func (p *Pkcs11) Destroy() {

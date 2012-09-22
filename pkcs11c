@@ -17,15 +17,16 @@ struct ctx {
 	CK_FUNCTION_LIST_PTR sym;
 };
 
+// New initializes a ctx and fills the symbol table.
 struct ctx * New(const char *module) {
 	if (lt_dlinit() != 0) {
 		return NULL;
 	}
-	struct ctx *c;
 	CK_C_GetFunctionList list;
-	CK_RV rv;
-
-	c = calloc(1, sizeof(struct ctx));
+	struct ctx *c=  calloc(1, sizeof(struct ctx));
+        if (!c) {
+                return NULL;
+        }
 	c->handle = lt_dlopen(module);
 	if (c->handle == NULL) {
 		free(c);
@@ -37,19 +38,14 @@ struct ctx * New(const char *module) {
 		return NULL;
 	}
 	list(&c->sym);
-	// Initialize
-	CK_C_INITIALIZE_ARGS InitArgs = {NULL, NULL, NULL, NULL, CKF_OS_LOCKING_OK, NULL};
-	rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_Initialize( (CK_VOID_PTR) &InitArgs);
-	if (rv != CKR_OK) {
-		free(c);
-		return NULL;
-	}
 	return c;
 }
 
-// 
+// Destroy cleans up a ctx
 void Destroy(struct ctx *c) {
-        ((CK_FUNCTION_LIST_PTR)c->sym)->C_Finalize(NULL_PTR);
+        if (!c) {
+                return;
+        }
 	if (c->handle == NULL) {
 		return;
 	}
@@ -58,6 +54,15 @@ void Destroy(struct ctx *c) {
 	}
 	lt_dlexit();
 	free(c);
+}
+
+CK_RV Go_C_Initialize(struct ctx *c) {
+	CK_C_INITIALIZE_ARGS InitArgs = {NULL, NULL, NULL, NULL, CKF_OS_LOCKING_OK, NULL};
+	return ((CK_FUNCTION_LIST_PTR)c->sym)->C_Initialize( (CK_VOID_PTR) &InitArgs);
+}
+
+CK_RV Go_C_Finalize(struct ctx *c) {
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_Finalize(NULL_PTR);
 }
 
 // Return an error code and in the param list: array of slots and the length of
