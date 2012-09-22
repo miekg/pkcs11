@@ -6,6 +6,7 @@ import (
 
 type SessionHandle uint
 type ObjectHandle uint
+type Mechanism uint
 
 // Wraps CK_VERSION
 type Version struct {
