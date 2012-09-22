@@ -65,6 +65,10 @@ CK_RV Go_C_Finalize(struct ctx *c) {
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_Finalize(NULL_PTR);
 }
 
+CK_RV Go_C_GetInfo(struct ctx *c, CK_INFO_PTR pInfo) {
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetInfo(pInfo);
+}
+
 // Return an error code and in the param list: array of slots and the length of
 // the array
 // Use more normal types here too? See InitToken

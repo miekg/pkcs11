@@ -71,6 +71,10 @@ func (p *Pkcs11) C_Finalize() error {
 	return nil
 }
 
+func (p *Pkcs11) C_GetInfo() (*Info, error) {
+
+}
+
 // TODO: documentation
 
 // Slot is ...

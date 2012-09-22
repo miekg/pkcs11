@@ -1,5 +1,10 @@
 package pkcs11
 
+/*
+#include "pkcs11/pkcs11.h"
+*/
+import "C"
+
 import (
 	"unsafe"
 )
@@ -68,3 +73,14 @@ type Attribute struct {
 // type Mechanism struct {} ??
 // type MechanismInfo struct {} ??
 // callback functions
+
+
+/*
+func StringFromC(p C.CK_VOID_PTR, i C.int) string {
+	return string(C.GoBytes(unsafe.Pointer(p), int(i)))
+}
+
+func InfoFromC(pInfo C.CK_INFO_PTR) *Info {
+	return nil
+}
+*/
