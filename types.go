@@ -4,9 +4,7 @@ import (
 	"unsafe"
 )
 
-// Translation table
-//CK_UTF8CHAR -> string
-//U_LONG	-> uint
+type SessionHandle uint
 
 // Wraps CK_VERSION
 type Version struct {

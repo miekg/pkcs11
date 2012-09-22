@@ -97,20 +97,6 @@ CK_RV Go_C_InitToken(struct ctx *c, CK_SLOT_ID slotID, char * pPin, CK_ULONG pin
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_InitToken(slotID, (CK_UTF8CHAR_PTR)pPin, pinLen, (CK_UTF8CHAR_PTR)label);
 }
 
-/*
-CK_RV InitToken(struct ctx *c, CK_TOKEN_INFO_PTR *t, uint id, char * pin, uint pinlen, char * label) {
-        CK_RV rv;
-        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_InitToken((CK_SLOT_ID)id, (CK_UTF8CHAR_PTR)pin, (CK_ULONG)pinlen, (CK_UTF8CHAR_PTR)label);
-        if (rv != CKR_OK) {
-                return rv;
-        }
-        *t = calloc(1, sizeof(CK_TOKEN_INFO));
-        // re-Read token
-        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetTokenInfo((CK_SLOT_ID)id, *t);
-        if (rv != 0) {
-                // ...
-        }
-        // And some more
-        return CKR_OK;
+CK_RV Go_C_OpenSession(struct ctx *c, CK_SLOT_ID slotID, CK_FLAGS flags, CK_SESSION_HANDLE_PTR phSession) {
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_OpenSession(slotID, flags, NULL, NULL, phSession);
 }
-*/

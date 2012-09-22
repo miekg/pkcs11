@@ -191,7 +191,7 @@ func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {
 	if len(label) > 32 {
 		return newPkcs11Error("label must be 32 bytes or less", 1)
 	}
-	for len(label) < 32 {	// stupid loop to make it 32 bytes
+	for len(label) < 32 { // stupid loop to make it 32 bytes
 		label += " "
 	}
 	csoPin := C.CString(soPin)
@@ -205,23 +205,14 @@ func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {
 	return nil
 }
 
-/*
-// Init initializes a token.
-func (t *Token) Init(sopin, label string) error {
-	cpin := C.CString(sopin)
-	clab := C.CString(label) // 32 bytes, padded with spaces
-	t1 := C.TokenNew()
-	defer C.free(unsafe.Pointer(cpin))
-	defer C.free(unsafe.Pointer(clab))
-	defer C.free(unsafe.Pointer(t1))
+// Callback function now supported...?
 
-	rv := C.InitToken(t.parent.ctx, &t1, C.uint(t.slotId), cpin, C.uint(len(sopin)), clab)
-	if rv != 0 {
-		return nil // TODO(mg): error
+// pApplication/Notify
+func (p *Pkcs11) C_OpenSession(slotID uint, flags uint) (SessionHandle, error) {
+	var sh SessionHandle
+	e := C.Go_C_OpenSession(p.ctx, C.CK_SLOT_ID(slotID), C.CK_FLAGS(flags), C.CK_SESSION_HANDLE_PTR(unsafe.Pointer(&sh)))
+	if e != C.CKR_OK {
+		return 0, newPkcs11Error("", e)
 	}
-	// TODO: more
-	t.Label = string(C.GoBytes(unsafe.Pointer(&t1.label), 32))
-	t.Initialized = int(t1.flags)&C.CKF_TOKEN_INITIALIZED == C.CKF_TOKEN_INITIALIZED
-	return nil
+	return sh, nil
 }
-*/
