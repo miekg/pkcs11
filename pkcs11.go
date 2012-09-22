@@ -23,8 +23,8 @@ import (
 
 // Pkcs11Error represents an error from the PKCS#11 library.
 type Pkcs11Error struct {
-	err string	// error text
-	rv int		// return value from pkcs11 api
+	err string // error text
+	rv  int    // return value from pkcs11 api
 }
 
 func newPkcs11Error(s string, rv C.CK_RV) *Pkcs11Error {
@@ -71,47 +71,6 @@ func (p *Pkcs11) C_Finalize() error {
 	return nil
 }
 
-func (p *Pkcs11) C_GetInfo() (*Info, error) {
-
-}
-
-// TODO: documentation
-
-// Slot is ...
-type Slot struct {
-	slotId       int
-	Manufacturer string
-	Description  string
-	Removable    bool
-	// Hardwareversion ??
-	*Token
-}
-
-// Token is ..
-type Token struct {
-	parent             *Pkcs11 // parent ctx
-	slotId             int     // parent Slot id
-	Label              string
-	Manufacturer       string
-	Model              string
-	Serial             string
-	Initialized        bool
-	LoginRequired      bool
-	SecureLogin        bool
-	UserPinSet         bool
-	ReadOnly           bool
-	HasRandGenerator   bool
-	UserPinCountLow    bool
-	UserPinFinalTry    bool
-	UserPinLocked      bool
-	UserPinToBeChanged bool
-	SoPinCountLow      bool
-	SoPinFinalTry      bool
-	SoPinLocked        bool
-	SoPinToBeChanged   bool
-}
-
-
 // Destroy unload the module and frees any remaining memory.
 func (p *Pkcs11) Destroy() {
 	if p == nil {
@@ -120,6 +79,38 @@ func (p *Pkcs11) Destroy() {
 	C.Destroy(p.ctx)
 }
 
+func (p *Pkcs11) C_GetInfo() (*Info, error) {
+	var pInfo C.CK_INFO_PTR
+	defer C.free(unsafe.Pointer(pInfo))
+	e := C.Go_C_GetInfo(p.ctx, &pInfo)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	return infoFromC(pInfo), nil
+}
+
+func versionFromC(v C.CK_VERSION) *Version {
+	v1 := new(Version)
+	v1.Major = byte(v.major)
+	v1.Minor = byte(v.minor)
+	return v1
+}
+
+func stringFromC(p unsafe.Pointer, i int) string {
+	return string(C.GoBytes(p, C.int(i)))
+}
+
+func infoFromC(pInfo C.CK_INFO_PTR) *Info {
+	i := new(Info)
+	i.ManufacturerID = stringFromC(unsafe.Pointer(&(pInfo.manufacturerID)), 32)
+	i.CryptokiVersion = versionFromC((*pInfo).cryptokiVersion)
+	i.Flags = uint(pInfo.flags)
+	i.LibraryDescription = stringFromC(unsafe.Pointer(&(pInfo.libraryDescription)), 32)
+	i.LibraryVersion = versionFromC(pInfo.libraryVersion)
+	return i
+}
+
+/*
 // Slots returns all available slots in the system.
 func (p *Pkcs11) Slots() (s []*Slot, e error) {
 	slots := C.SlotNew()
@@ -174,3 +165,4 @@ func (t *Token) Init(sopin, label string) error {
 	t.Initialized = int(t1.flags)&C.CKF_TOKEN_INITIALIZED == C.CKF_TOKEN_INITIALIZED
 	return nil
 }
+*/

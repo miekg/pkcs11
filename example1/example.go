@@ -15,19 +15,16 @@ func main() {
 	if p == nil {
 		return
 	}
+	if e := p.C_Initialize(); e != nil {
+		fmt.Printf("init error %s\n", e.Error())
+		return
+	}
+
 	defer p.Destroy()
-	slots, _ := p.Slots()
-	for i, s := range slots {
-		fmt.Printf("Slot %d\n", i)
-		if s.Token == nil {
-			fmt.Printf("\tToken present: no")
-			continue
-		}
-		fmt.Printf("\tToken present: yes\n")
-		fmt.Printf("\tToken initialized: %s\n", yesno(s.Token.Initialized))
-		fmt.Printf("\tUser PIN initialized: %s\n", yesno(s.Token.UserPinSet))
-		// Initializing
-		s.Token.Init("1234", "miekstuff")
-		fmt.Printf("Token label: %s\n", s.Token.Label)
+	defer p.C_Finalize()
+	if info, err := p.C_GetInfo(); err == nil {
+		fmt.Printf("%s\n", info.ManufacturerID)
+	} else {
+		fmt.Printf("error %s\n", err.Error())
 	}
 }
