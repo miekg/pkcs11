@@ -6,9 +6,7 @@ import (
 
 type SessionHandle uint
 type ObjectHandle uint
-type Mechanism uint
 
-// Wraps CK_VERSION
 type Version struct {
 	Major byte
 	Minor byte
@@ -52,19 +50,28 @@ type TokenInfo struct {
 }
 
 type SessionInfo struct {
-	SlotID		uint
-	State		uint
-	Flags		uint
-	DeviceError	uint
+	SlotID      uint
+	State       uint
+	Flags       uint
+	DeviceError uint
+}
+
+type MechanismInfo struct {
+	MinKeySize uint
+	MaxKeySize uint
+	Flags      uint
 }
 
 type Attribute struct {
-	AttributeType	uint
-	Value		unsafe.Pointer
-	ValueLen	uint
+	AttributeType uint
+	Value         unsafe.Pointer
+	ValueLen      uint
+}
+
+type Mechanism struct {
+	Mechanism    uint
+	Parameter    unsafe.Pointer
+	ParameterLen uint
 }
 
 // type Date struct {} ??
-// type Mechanism struct {} ??
-// type MechanismInfo struct {} ??
-// callback functions

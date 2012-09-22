@@ -9,6 +9,7 @@ package pkcs11
 #include "pkcs11c"
 
 CK_SLOT_ID_PTR SlotIDIndex(CK_SLOT_ID_PTR *p, int i) { return p[i]; } 
+CK_MECHANISM_TYPE_PTR MechTypeIndex(CK_MECHANISM_TYPE_PTR *p, int i) { return p[i]; } 
 
 CK_TOKEN_INFO_PTR TokenIndex(CK_TOKEN_INFO_PTR *l, int i) { return l[i]; } 
 */
@@ -163,12 +164,12 @@ func (p *Pkcs11) C_GetSlotList(tokenPresent bool) ([]uint, error) {
 	return u, nil
 }
 
-func (p *Pkcs11) C_GetSlotInfo(SlotID uint) (*SlotInfo, error) {
+func (p *Pkcs11) C_GetSlotInfo(slotID uint) (*SlotInfo, error) {
 	var (
 		slot C.CK_SLOT_INFO_PTR
 	)
 	defer C.free(unsafe.Pointer(slot))
-	e := C.Go_C_GetSlotInfo(p.ctx, C.CK_SLOT_ID(SlotID), &slot)
+	e := C.Go_C_GetSlotInfo(p.ctx, C.CK_SLOT_ID(slotID), &slot)
 	if e != C.CKR_OK {
 		return nil, newPkcs11Error("", e)
 	}
@@ -185,6 +186,27 @@ func (p *Pkcs11) C_GetTokenInfo(slotID uint) (*TokenInfo, error) {
 		return nil, newPkcs11Error("", e)
 	}
 	return tokenInfoFromC(token), nil
+}
+
+func (p *Pkcs11) C_GetMechanismList(slotID uint) ([]uint, error) {
+	var (
+		mechlist C.CK_MECHANISM_TYPE_PTR
+		pcount   C.CK_ULONG
+	)
+	defer C.free(unsafe.Pointer(mechlist))
+	e := C.Go_C_GetMechanismList(p.ctx, C.CK_SLOT_ID(slotID), &mechlist, &pcount)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	u := make([]uint, 0)
+	for i := uint(0); i < uint(pcount); i++ {
+		u = append(u, uint(*(C.MechTypeIndex(&mechlist, C.int(i)))))
+	}
+	return u, nil
+}
+
+func (p *Pkcs11) C_GetMechanismInfo() {
+	// TODO
 }
 
 func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {

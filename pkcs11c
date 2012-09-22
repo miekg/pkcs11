@@ -41,7 +41,7 @@ struct ctx * New(const char *module) {
 	return c;
 }
 
-// Destroy cleans up a ctx
+// Destroy cleans up a ctx.
 void Destroy(struct ctx *c) {
         if (!c) {
                 return;
@@ -91,6 +91,19 @@ CK_RV Go_C_GetSlotInfo(struct ctx *c, CK_SLOT_ID slotID, CK_SLOT_INFO_PTR *pInfo
 CK_RV Go_C_GetTokenInfo(struct ctx *c, CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR *pInfo) {
         *pInfo = calloc(1, sizeof(CK_TOKEN_INFO));
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetTokenInfo(slotID, *pInfo);
+}
+
+CK_RV Go_C_GetMechanismList(struct ctx *c, CK_SLOT_ID slotID, CK_MECHANISM_TYPE_PTR *pMechList, CK_ULONG_PTR pCount) {
+        CK_RV rv;
+        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetMechanismList(slotID, NULL_PTR, pCount);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        *pMechList = calloc(1, sizeof(CK_MECHANISM_TYPE) * *pCount);
+        if (!*pMechList) {
+                return CKR_GENERAL_ERROR; 
+        }
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetMechanismList(slotID, *pMechList, pCount);
 }
 
 CK_RV Go_C_InitToken(struct ctx *c, CK_SLOT_ID slotID, char * pPin, CK_ULONG pinLen, char * label) {
