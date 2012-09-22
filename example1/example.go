@@ -27,4 +27,9 @@ func main() {
 	} else {
 		fmt.Printf("error %s\n", err.Error())
 	}
+	slots, e := p.C_GetSlotList(true)
+	fmt.Printf("slots %v\n", slots)
+	if e != nil {
+		fmt.Printf("%s\n", e.Error())
+	}
 }

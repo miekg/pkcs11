@@ -8,7 +8,10 @@ package pkcs11
 #include <string.h>
 #include "pkcs11c"
 
-CK_SLOT_INFO_PTR SlotIndex(CK_SLOT_INFO_PTR *l, int i) { return l[i]; } 
+CK_SLOT_ID_PTR SlotIDIndex(CK_SLOT_ID_PTR *p, int i) { return p[i]; } 
+
+
+
 CK_TOKEN_INFO_PTR TokenIndex(CK_TOKEN_INFO_PTR *l, int i) { return l[i]; } 
 CK_SLOT_INFO_PTR SlotNew() { CK_SLOT_INFO_PTR s = NULL; return s; }
 CK_TOKEN_INFO_PTR TokenNew() { CK_TOKEN_INFO_PTR t = NULL; return t; }
@@ -39,6 +42,16 @@ func infoFromC(pInfo C.CK_INFO_PTR) *Info {
 	i.Flags = uint(pInfo.flags)
 	i.LibraryDescription = stringFromC(unsafe.Pointer(&(pInfo.libraryDescription)), 32)
 	i.LibraryVersion = versionFromC(pInfo.libraryVersion)
+	return i
+}
+
+func slotInfoFromC(pSlotInfo C.CK_SLOT_INFO_PTR) *SlotInfo {
+	i := new(SlotInfo)
+	i.SlotDescription = stringFromC(unsafe.Pointer(&(pSlotInfo.slotDescription)), 64)
+	i.ManufacturerID = stringFromC(unsafe.Pointer(&(pSlotInfo.manufacturerID)), 32)
+	i.Flags = uint(pSlotInfo.flags)
+	i.HardwareVersion = versionFromC(pSlotInfo.hardwareVersion)
+	i.FirmwareVersion = versionFromC(pSlotInfo.firmwareVersion)
 	return i
 }
 
@@ -125,24 +138,26 @@ func (p *Pkcs11) C_GetSlotList(tokenPresent bool) ([]uint, error) {
 	if e != C.CKR_OK {
 		return nil, newPkcs11Error("", e)
 	}
-	return nil, nil
+	u := make([]uint, 0)
+	for i:=uint(0); i < uint(pcount); i++ {
+		u = append(u, uint( *(C.SlotIDIndex(&slotlist, C.int(i)))) )
+	}
+	return u, nil
+}
+
+func (p *Pkcs11) C_GetSlotInfo(SlotID uint) (*SlotInfo, error) {
+	var (
+		slot C.CK_SLOT_INFO_PTR
+	)
+	defer C.free(unsafe.Pointer(slot))
+	e := C.Go_C_GetSlotInfo(p.ctx, C.CK_SLOT_ID(SlotID), &slot)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	return slotInfoFromC(slot), nil
 }
 
 /*
-// Slots returns all available slots in the system.
-func (p *Pkcs11) Slots() (s []*Slot, e error) {
-	slots := C.SlotNew()
-	tokens := C.TokenNew()
-	nslots := C.UlongNew()
-	if rv := C.Slots(p.ctx, &slots, &tokens, &nslots); rv != 0 {
-		return nil, nil // TODO(mg): error
-	}
-	for i := 0; i < int(nslots); i++ {
-		o := new(Slot)
-		o.slotId = i
-		o.Description = string(C.GoBytes(unsafe.Pointer(&C.SlotIndex(&slots, C.int(i)).slotDescription), 64))
-		o.Manufacturer = string(C.GoBytes(unsafe.Pointer(&C.SlotIndex(&slots, C.int(i)).manufacturerID), 32))
-		o.Removable = int(C.SlotIndex(&slots, C.int(i)).flags)&C.CKF_REMOVABLE_DEVICE == C.CKF_REMOVABLE_DEVICE
 		if C.TokenIndex(&tokens, C.int(i)) != nil {
 			t := new(Token)
 			t.parent = p
@@ -160,11 +175,6 @@ func (p *Pkcs11) Slots() (s []*Slot, e error) {
 
 			o.Token = t
 		}
-		s = append(s, o)
-	}
-	return
-}
-
 // Init initializes a token.
 func (t *Token) Init(sopin, label string) error {
 	cpin := C.CString(sopin)

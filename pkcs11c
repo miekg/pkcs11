@@ -80,7 +80,12 @@ CK_RV Go_C_GetSlotList(struct ctx *c, CK_BBOOL tokenPresent, CK_SLOT_ID_PTR *pSl
         if (!*pSlotList) {
                 return CKR_GENERAL_ERROR; 
         }
-        return rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(tokenPresent, *pSlotList, pCount);
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(tokenPresent, *pSlotList, pCount);
+}
+
+CK_RV Go_C_GetSlotInfo(struct ctx *c, CK_SLOT_ID slotID, CK_SLOT_INFO_PTR *pInfo) {
+        *pInfo = calloc(1, sizeof(CK_SLOT_INFO));
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotInfo(slotID, *pInfo);
 }
 
 /*
