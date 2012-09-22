@@ -224,6 +224,16 @@ func (p *Pkcs11) C_CloseSession(sh SessionHandle) error {
 	return nil
 }
 
+func (p *Pkcs11) C_InitPIN(sh SessionHandle, pin string) error {
+	cPin := C.CString(pin)
+	defer C.free(unsafe.Pointer(cPin))
+	e := C.Go_C_InitPIN(p.ctx, C.CK_SESSION_HANDLE(sh), cPin, C.CK_ULONG(len(pin)))
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
+}
+
 func (p *Pkcs11) C_SetPIN(sh SessionHandle, oldPin, newPin string) error {
 	coldPin := C.CString(oldPin)
 	cnewPin := C.CString(newPin)
