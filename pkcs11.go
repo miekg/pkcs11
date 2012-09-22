@@ -21,6 +21,27 @@ import (
 	"unsafe"
 )
 
+func versionFromC(v C.CK_VERSION) *Version {
+	v1 := new(Version)
+	v1.Major = byte(v.major)
+	v1.Minor = byte(v.minor)
+	return v1
+}
+
+func stringFromC(p unsafe.Pointer, i int) string {
+	return string(C.GoBytes(p, C.int(i)))
+}
+
+func infoFromC(pInfo C.CK_INFO_PTR) *Info {
+	i := new(Info)
+	i.ManufacturerID = stringFromC(unsafe.Pointer(&(pInfo.manufacturerID)), 32)
+	i.CryptokiVersion = versionFromC((*pInfo).cryptokiVersion)
+	i.Flags = uint(pInfo.flags)
+	i.LibraryDescription = stringFromC(unsafe.Pointer(&(pInfo.libraryDescription)), 32)
+	i.LibraryVersion = versionFromC(pInfo.libraryVersion)
+	return i
+}
+
 // Pkcs11Error represents an error from the PKCS#11 library.
 type Pkcs11Error struct {
 	err string // error text
@@ -89,25 +110,22 @@ func (p *Pkcs11) C_GetInfo() (*Info, error) {
 	return infoFromC(pInfo), nil
 }
 
-func versionFromC(v C.CK_VERSION) *Version {
-	v1 := new(Version)
-	v1.Major = byte(v.major)
-	v1.Minor = byte(v.minor)
-	return v1
-}
-
-func stringFromC(p unsafe.Pointer, i int) string {
-	return string(C.GoBytes(p, C.int(i)))
-}
-
-func infoFromC(pInfo C.CK_INFO_PTR) *Info {
-	i := new(Info)
-	i.ManufacturerID = stringFromC(unsafe.Pointer(&(pInfo.manufacturerID)), 32)
-	i.CryptokiVersion = versionFromC((*pInfo).cryptokiVersion)
-	i.Flags = uint(pInfo.flags)
-	i.LibraryDescription = stringFromC(unsafe.Pointer(&(pInfo.libraryDescription)), 32)
-	i.LibraryVersion = versionFromC(pInfo.libraryVersion)
-	return i
+func (p *Pkcs11) C_GetSlotList(tokenPresent bool) ([]uint, error) {
+	var (
+		slotlist C.CK_SLOT_ID_PTR
+		pcount C.CK_ULONG
+		e C.CK_RV
+	)
+	defer C.free(unsafe.Pointer(slotlist))
+	if tokenPresent {
+		e = C.Go_C_GetSlotList(p.ctx, C.CK_TRUE, &slotlist, &pcount)
+	} else {
+		e = C.Go_C_GetSlotList(p.ctx, C.CK_FALSE, &slotlist, &pcount)
+	}
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	return nil, nil
 }
 
 /*

@@ -66,31 +66,24 @@ CK_RV Go_C_Finalize(struct ctx *c) {
 }
 
 CK_RV Go_C_GetInfo(struct ctx *c, CK_INFO_PTR *pInfo) {
-        // who allocates the memory? TODO(mg)
         *pInfo = calloc(1, sizeof(CK_INFO));
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetInfo(*pInfo);
 }
 
-// Return an error code and in the param list: array of slots and the length of
-// the array
-// Use more normal types here too? See InitToken
-CK_RV Slots(struct ctx *c, CK_SLOT_INFO_PTR *slots, CK_TOKEN_INFO_PTR *tokens, CK_ULONG_PTR nslots) {
-        CK_RV rv;                                                                                     
-        CK_SLOT_ID i, *ids;
-        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(CK_FALSE, NULL_PTR, nslots);
+CK_RV Go_C_GetSlotList(struct ctx *c, CK_BBOOL tokenPresent, CK_SLOT_ID_PTR *pSlotList, CK_ULONG_PTR pCount) {
+        CK_RV rv;
+        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(tokenPresent, NULL_PTR, pCount);
         if (rv != CKR_OK) {
                 return rv;
         }
-        ids = malloc(sizeof(CK_SLOT_ID) * *nslots);
-        if (!ids) {
+        *pSlotList = calloc(1, sizeof(CK_SLOT_ID) * *pCount);
+        if (!*pSlotList) {
                 return CKR_GENERAL_ERROR; 
         }
-        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(CK_FALSE, ids, nslots);
-        if (rv != CKR_OK) {
-                free(ids);
-                return rv;
-        }
+        return rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotList(tokenPresent, *pSlotList, pCount);
+}
 
+/*
         *slots = calloc(1, sizeof(CK_SLOT_INFO) * *nslots);
         *tokens = calloc(1, sizeof(CK_TOKEN_INFO) * *nslots);
         if (!*slots || !*tokens) {
@@ -122,3 +115,4 @@ CK_RV InitToken(struct ctx *c, CK_TOKEN_INFO_PTR *t, uint id, char * pin, uint p
         // And some more
         return CKR_OK;
 }
+*/
