@@ -205,7 +205,7 @@ func (p *Pkcs11) C_GetMechanismList(slotID uint) ([]uint, error) {
 	return u, nil
 }
 
-func (p *Pkcs11) C_GetMechanismInfo() {
+func (p *Pkcs11) C_GetMechanismInfo(slotID uint) {
 	// TODO
 }
 
