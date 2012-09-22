@@ -11,6 +11,7 @@ package pkcs11
 CK_SLOT_ID_PTR SlotIDIndex(CK_SLOT_ID_PTR *p, int i) { return p[i]; } 
 CK_MECHANISM_TYPE_PTR MechTypeIndex(CK_MECHANISM_TYPE_PTR *p, int i) { return p[i]; } 
 
+// old
 CK_TOKEN_INFO_PTR TokenIndex(CK_TOKEN_INFO_PTR *l, int i) { return l[i]; } 
 */
 import "C"
@@ -72,6 +73,14 @@ func tokenInfoFromC(pTokenInfo C.CK_TOKEN_INFO_PTR) *TokenInfo {
 	t.FirmwareVersion = versionFromC(pTokenInfo.firmwareVersion)
 	t.UTCTime = stringFromC(unsafe.Pointer(&(pTokenInfo.utcTime)), 16)
 	return t
+}
+
+func mechanismInfoFromC(pMechanismInfo C.CK_MECHANISM_INFO_PTR) *MechanismInfo {
+	m := new(MechanismInfo)
+	m.MinKeySize = uint(pMechanismInfo.ulMinKeySize)
+	m.MaxKeySize =uint(pMechanismInfo.ulMaxKeySize)
+	m.Flags = uint(pMechanismInfo.flags)
+	return m
 }
 
 // Pkcs11Error represents an error from the PKCS#11 library.
@@ -205,8 +214,16 @@ func (p *Pkcs11) C_GetMechanismList(slotID uint) ([]uint, error) {
 	return u, nil
 }
 
-func (p *Pkcs11) C_GetMechanismInfo(slotID uint) {
-	// TODO
+func (p *Pkcs11) C_GetMechanismInfo(slotID, mechanismType uint) (*MechanismInfo, error) {
+	var (
+		mech C.CK_MECHANISM_INFO_PTR
+	)
+	defer C.free(unsafe.Pointer(mech))
+	e := C.Go_C_GetMechanismInfo(p.ctx, C.CK_SLOT_ID(slotID), C.CK_MECHANISM_TYPE(mechanismType), &mech)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	return mechanismInfoFromC(mech), nil
 }
 
 func (p *Pkcs11) C_InitToken(slotID uint, soPin, label string) error {
@@ -262,6 +279,14 @@ func (p *Pkcs11) C_SetPIN(sh SessionHandle, oldPin, newPin string) error {
 	defer C.free(unsafe.Pointer(coldPin))
 	defer C.free(unsafe.Pointer(cnewPin))
 	e := C.Go_C_SetPIN(p.ctx, C.CK_SESSION_HANDLE(sh), coldPin, C.CK_ULONG(len(oldPin)), cnewPin, C.CK_ULONG(len(newPin)))
+	if e != C.CKR_OK {
+		return newPkcs11Error("", e)
+	}
+	return nil
+}
+
+func (p *Pkcs11) C_CloseAllSessions(slotID uint) error {
+	e := C.Go_C_CloseAllSessions(p.ctx, C.CK_SLOT_ID(slotID))
 	if e != C.CKR_OK {
 		return newPkcs11Error("", e)
 	}
