@@ -38,7 +38,7 @@ func stringFromC(p unsafe.Pointer, i int) string {
 func infoFromC(pInfo C.CK_INFO_PTR) *Info {
 	i := new(Info)
 	i.ManufacturerID = stringFromC(unsafe.Pointer(&(pInfo.manufacturerID)), 32)
-	i.CryptokiVersion = versionFromC((*pInfo).cryptokiVersion)
+	i.CryptokiVersion = versionFromC(pInfo.cryptokiVersion)
 	i.Flags = uint(pInfo.flags)
 	i.LibraryDescription = stringFromC(unsafe.Pointer(&(pInfo.libraryDescription)), 32)
 	i.LibraryVersion = versionFromC(pInfo.libraryVersion)
@@ -53,6 +53,29 @@ func slotInfoFromC(pSlotInfo C.CK_SLOT_INFO_PTR) *SlotInfo {
 	i.HardwareVersion = versionFromC(pSlotInfo.hardwareVersion)
 	i.FirmwareVersion = versionFromC(pSlotInfo.firmwareVersion)
 	return i
+}
+
+func tokenInfoFromC(pTokenInfo C.CK_TOKEN_INFO_PTR) *TokenInfo {
+	t := new(TokenInfo)
+	t.Label = stringFromC(unsafe.Pointer(&(pTokenInfo.label)), 32)
+	t.ManufacturerID = stringFromC(unsafe.Pointer(&(pTokenInfo.manufacturerID)), 32)
+	t.Model = stringFromC(unsafe.Pointer(&(pTokenInfo.model)), 16)
+	t.SerialNumber = stringFromC(unsafe.Pointer(&(pTokenInfo.serialNumber)), 16)
+	t.Flags = uint(pTokenInfo.flags)
+	t.MaxSessionCount = uint(pTokenInfo.ulMaxSessionCount)
+	t.SessionCount = uint(pTokenInfo.ulSessionCount)
+	t.MaxRwSessionCount = uint(pTokenInfo.ulMaxRwSessionCount)
+	t.RwSessionCount = uint(pTokenInfo.ulRwSessionCount)
+	t.MaxPinLen = uint(pTokenInfo.ulMaxPinLen)
+	t.MinPinLen = uint(pTokenInfo.ulMinPinLen)
+	t.TotalPublicMemory = uint(pTokenInfo.ulTotalPublicMemory)
+	t.FreePublicMemory = uint(pTokenInfo.ulFreePublicMemory)
+	t.TotalPrivateMemory = uint(pTokenInfo.ulTotalPrivateMemory)
+	t.FreePrivateMemory = uint(pTokenInfo.ulFreePrivateMemory)
+	t.HardwareVersion = versionFromC(pTokenInfo.hardwareVersion)
+	t.FirmwareVersion = versionFromC(pTokenInfo.firmwareVersion)
+	t.UTCTime = stringFromC(unsafe.Pointer(&(pTokenInfo.utcTime)), 16)
+	return t
 }
 
 // Pkcs11Error represents an error from the PKCS#11 library.
@@ -126,8 +149,8 @@ func (p *Pkcs11) C_GetInfo() (*Info, error) {
 func (p *Pkcs11) C_GetSlotList(tokenPresent bool) ([]uint, error) {
 	var (
 		slotlist C.CK_SLOT_ID_PTR
-		pcount C.CK_ULONG
-		e C.CK_RV
+		pcount   C.CK_ULONG
+		e        C.CK_RV
 	)
 	defer C.free(unsafe.Pointer(slotlist))
 	if tokenPresent {
@@ -139,8 +162,8 @@ func (p *Pkcs11) C_GetSlotList(tokenPresent bool) ([]uint, error) {
 		return nil, newPkcs11Error("", e)
 	}
 	u := make([]uint, 0)
-	for i:=uint(0); i < uint(pcount); i++ {
-		u = append(u, uint( *(C.SlotIDIndex(&slotlist, C.int(i)))) )
+	for i := uint(0); i < uint(pcount); i++ {
+		u = append(u, uint(*(C.SlotIDIndex(&slotlist, C.int(i)))))
 	}
 	return u, nil
 }
@@ -155,6 +178,18 @@ func (p *Pkcs11) C_GetSlotInfo(SlotID uint) (*SlotInfo, error) {
 		return nil, newPkcs11Error("", e)
 	}
 	return slotInfoFromC(slot), nil
+}
+
+func (p *Pkcs11) C_GetTokenInfo(SlotID uint) (*TokenInfo, error) {
+	var (
+		token C.CK_TOKEN_INFO_PTR
+	)
+	defer C.free(unsafe.Pointer(token))
+	e := C.Go_C_GetTokenInfo(p.ctx, C.CK_SLOT_ID(SlotID), &token)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	return tokenInfoFromC(token), nil
 }
 
 /*

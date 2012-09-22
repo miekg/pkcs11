@@ -88,6 +88,11 @@ CK_RV Go_C_GetSlotInfo(struct ctx *c, CK_SLOT_ID slotID, CK_SLOT_INFO_PTR *pInfo
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSlotInfo(slotID, *pInfo);
 }
 
+CK_RV Go_C_GetTokenInfo(struct ctx *c, CK_SLOT_ID slotID, CK_TOKEN_INFO_PTR *pInfo) {
+        *pInfo = calloc(1, sizeof(CK_TOKEN_INFO));
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetTokenInfo(slotID, *pInfo);
+}
+
 /*
         *slots = calloc(1, sizeof(CK_SLOT_INFO) * *nslots);
         *tokens = calloc(1, sizeof(CK_TOKEN_INFO) * *nslots);
