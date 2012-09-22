@@ -318,6 +318,12 @@ func (p *Pkcs11) C_GetSessionInfo(sh SessionHandle) (*SessionInfo, error) {
 
 // Object handling
 
-func (p *Pkcs11) C_CreateObject() (ObjectHandle, error) {
+func (p *Pkcs11) C_CreateObject(sh SessionHandle) (ObjectHandle, error) {
 	return 0, nil
 }
+
+func (p *Pkcs11) C_DestroyObject() error {
+	return nil
+}
+
+
