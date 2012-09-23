@@ -1,7 +1,17 @@
 package pkcs11
 
+import (
+	"unsafe"
+)
+
 // Generated with:
 // grep CKA *t.h|grep '#define' | sed 's/^#define //' | awk ' { print $1 "=" $2 } '
+
+type CKA_MODULUS_BITS struct{ value uint32 }
+
+func (c *CKA_MODULUS_BITS) Type() uint            { return cKA_MODULUS_BITS }
+func (c *CKA_MODULUS_BITS) Value() unsafe.Pointer { return unsafe.Pointer(&c.value) }
+func (c *CKA_MODULUS_BITS) Len() uint             { return 4 }
 
 const (
 	CKA_CLASS                      = 0x00000000
@@ -40,7 +50,7 @@ const (
 	CKA_START_DATE                 = 0x00000110
 	CKA_END_DATE                   = 0x00000111
 	CKA_MODULUS                    = 0x00000120
-	CKA_MODULUS_BITS               = 0x00000121
+	cKA_MODULUS_BITS               = 0x00000121
 	CKA_PUBLIC_EXPONENT            = 0x00000122
 	CKA_PRIVATE_EXPONENT           = 0x00000123
 	CKA_PRIME_1                    = 0x00000124
