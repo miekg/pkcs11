@@ -65,7 +65,7 @@ type MechanismInfo struct {
 type Attribute interface {
 	Type() uint
 	Value() unsafe.Pointer
-	Len()   uint
+	Len() uint
 }
 
 type Mechanism interface {

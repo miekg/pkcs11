@@ -7,13 +7,9 @@ package pkcs11
 #cgo LDFLAGS: -lltdl
 #include <string.h>
 #include "pkcs11c"
-
 CK_SLOT_ID_PTR SlotIDIndex(CK_SLOT_ID_PTR *p, int i) { return p[i]; } 
 CK_ATTRIBUTE_PTR AttrIndex(CK_ATTRIBUTE_PTR *p, int i) { return p[i]; }
 CK_MECHANISM_TYPE_PTR MechTypeIndex(CK_MECHANISM_TYPE_PTR *p, int i) { return p[i]; } 
-
-// old
-CK_TOKEN_INFO_PTR TokenIndex(CK_TOKEN_INFO_PTR *l, int i) { return l[i]; } 
 */
 import "C"
 
@@ -91,6 +87,35 @@ func sessionInfoFromC(pSessionInfo C.CK_SESSION_INFO_PTR) *SessionInfo {
 	s.Flags = uint(pSessionInfo.flags)
 	s.DeviceError = uint(pSessionInfo.ulDeviceError)
 	return s
+}
+
+func mechanismToC(m Mechanism) C.CK_MECHANISM_PTR {
+	k := new(C.CK_MECHANISM)
+	k.mechanism = C.CK_MECHANISM_TYPE(m.Type())
+	k.pParameter = C.CK_VOID_PTR(m.Parameter())
+	k.ulParameterLen = C.CK_ULONG(m.Len())
+	return k
+}
+
+func attributeToC(a Attribute) C.CK_ATTRIBUTE_PTR {
+	l := new(C.CK_ATTRIBUTE)
+	l._type = C.CK_ATTRIBUTE_TYPE(a.Type())
+	l.pValue = C.CK_VOID_PTR(a.Value())
+	println("a.Value", a.Value())
+	println("a.Len", a.Len())
+	l.ulValueLen = C.CK_ULONG(a.Len())
+	return l
+}
+
+func attributeListToC(a []Attribute) C.CK_ATTRIBUTE_PTR {
+	if len(a) == 0 {
+		return nil
+	}
+	cattr := make([]C.CK_ATTRIBUTE, 0)
+	for i := 0; i < len(a); i++ {
+		cattr = append(cattr, *attributeToC(a[i]))
+	}
+	return C.CK_ATTRIBUTE_PTR(&cattr[0])
 }
 
 // Pkcs11Error represents an error from the PKCS#11 library.
@@ -352,23 +377,21 @@ func (p *Pkcs11) C_DestroyObject() error {
 
 // Key management
 
-func (p *Pkcs11) C_GenerateKey(sh SessionHandle, m *Mechanism, a []*Attribute) (ObjectHandle, error) {
+func (p *Pkcs11) C_GenerateKey(sh SessionHandle, m Mechanism, a []Attribute) (ObjectHandle, error) {
 	var key C.CK_OBJECT_HANDLE_PTR
-	rv := C.Go_C_GenerateKey(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(unsafe.Pointer(m)), C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&a[0])) , C.CK_ULONG(len(a)), &key)
+	rv := C.Go_C_GenerateKey(p.ctx, C.CK_SESSION_HANDLE(sh), mechanismToC(m), attributeListToC(a) , C.CK_ULONG(len(a)), &key)
 	if rv != C.CKR_OK {
 		return 0, newPkcs11Error("", rv)
 	}
 	return ObjectHandle(*key), nil
 }
 
-func (p *Pkcs11) C_GenerateKeyPair(sh SessionHandle, m *Mechanism, public []*Attribute, private []*Attribute) (ObjectHandle, ObjectHandle, error) {
+func (p *Pkcs11) C_GenerateKeyPair(sh SessionHandle, m Mechanism, public []Attribute, private []Attribute) (ObjectHandle, ObjectHandle, error) {
 	var (
 		pubkey C.CK_OBJECT_HANDLE_PTR
 		privkey C.CK_OBJECT_HANDLE_PTR
 	)
-	println(len(public))
-	rv := C.Go_C_GenerateKeyPair(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(unsafe.Pointer(m)), C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&public[0])) , C.CK_ULONG(len(public)),  C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&private[0])) , C.CK_ULONG(len(private)),  &pubkey, &privkey)
-	println("ERROR")
+	rv := C.Go_C_GenerateKeyPair(p.ctx, C.CK_SESSION_HANDLE(sh), mechanismToC(m), attributeListToC(public) , C.CK_ULONG(len(public)),  attributeListToC(private) , C.CK_ULONG(len(private)),  &pubkey, &privkey)
 	if rv != C.CKR_OK {
 		return 0, 0, newPkcs11Error("", rv)
 	}
