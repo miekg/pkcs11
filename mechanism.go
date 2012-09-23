@@ -1,8 +1,9 @@
 package pkcs11
 
+// Generated with:
+// grep CKM *t.h|grep '#define' | sed 's/^#define //' | awk ' { print $1 "=" $2 } '
+
 const (
-	// Generated with:
-	// grep CKM *t.h|grep '#define' | sed 's/^#define //' | awk ' { print $1 "=" $2 }
 	CKM_RSA_PKCS_KEY_PAIR_GEN          = 0x00000000
 	CKM_RSA_PKCS                       = 0x00000001
 	CKM_RSA_9796                       = 0x00000002

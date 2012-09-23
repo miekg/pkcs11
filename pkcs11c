@@ -164,6 +164,7 @@ CK_RV Go_C_GenerateKey(struct ctx *c, CK_SESSION_HANDLE hSession, CK_MECHANISM_P
 }
 
 CK_RV Go_C_GenerateKeyPair(struct ctx *c, CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_ATTRIBUTE_PTR pPubTemplate, CK_ULONG ulPubCount, CK_ATTRIBUTE_PTR pPrivTemplate, CK_ULONG ulPrivCount, CK_OBJECT_HANDLE_PTR *pubkey, CK_OBJECT_HANDLE_PTR *privkey) {
+        fprintf(stderr, "Getting here\n");
         *pubkey = calloc(1, sizeof(CK_OBJECT_HANDLE));
         *privkey = calloc(1, sizeof(CK_OBJECT_HANDLE));
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GenerateKeyPair(hSession, pMechanism, pPubTemplate, ulPubCount, pPrivTemplate, ulPrivCount, *pubkey, *privkey);

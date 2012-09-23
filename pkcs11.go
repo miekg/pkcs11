@@ -366,7 +366,9 @@ func (p *Pkcs11) C_GenerateKeyPair(sh SessionHandle, m *Mechanism, public []*Att
 		pubkey C.CK_OBJECT_HANDLE_PTR
 		privkey C.CK_OBJECT_HANDLE_PTR
 	)
+	println(len(public))
 	rv := C.Go_C_GenerateKeyPair(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(unsafe.Pointer(m)), C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&public[0])) , C.CK_ULONG(len(public)),  C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&private[0])) , C.CK_ULONG(len(private)),  &pubkey, &privkey)
+	println("ERROR")
 	if rv != C.CKR_OK {
 		return 0, 0, newPkcs11Error("", rv)
 	}

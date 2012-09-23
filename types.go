@@ -62,6 +62,7 @@ type MechanismInfo struct {
 	Flags      uint
 }
 
+// unsafe.Pointer .. .interface{} would be better
 type Attribute struct {
 	AttributeType uint
 	Value         unsafe.Pointer
@@ -69,9 +70,9 @@ type Attribute struct {
 }
 
 type Mechanism struct {
-	MechanismType         uint
-	Parameter    unsafe.Pointer
-	ParameterLen uint
+	MechanismType uint
+	Parameter     unsafe.Pointer
+	ParameterLen  uint
 }
 
 // type Date struct {} ??
