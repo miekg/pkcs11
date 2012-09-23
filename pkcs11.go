@@ -349,3 +349,27 @@ func (p *Pkcs11) C_CreateObject(sh SessionHandle) (ObjectHandle, error) {
 func (p *Pkcs11) C_DestroyObject() error {
 	return nil
 }
+
+// Key management
+
+func (p *Pkcs11) C_GenerateKey(sh SessionHandle, m *Mechanism, a []*Attribute) (ObjectHandle, error) {
+	var key C.CK_OBJECT_HANDLE_PTR
+	rv := C.Go_C_GenerateKey(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(unsafe.Pointer(m)), C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&a[0])) , C.CK_ULONG(len(a)), &key)
+	if rv != C.CKR_OK {
+		return 0, newPkcs11Error("", rv)
+	}
+	return ObjectHandle(*key), nil
+}
+
+func (p *Pkcs11) C_GenerateKeyPair(sh SessionHandle, m *Mechanism, public []*Attribute, private []*Attribute) (ObjectHandle, ObjectHandle, error) {
+	var (
+		pubkey C.CK_OBJECT_HANDLE_PTR
+		privkey C.CK_OBJECT_HANDLE_PTR
+	)
+	rv := C.Go_C_GenerateKeyPair(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(unsafe.Pointer(m)), C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&public[0])) , C.CK_ULONG(len(public)),  C.CK_ATTRIBUTE_PTR(unsafe.Pointer(&private[0])) , C.CK_ULONG(len(private)),  &pubkey, &privkey)
+	if rv != C.CKR_OK {
+		return 0, 0, newPkcs11Error("", rv)
+	}
+	return ObjectHandle(*pubkey), ObjectHandle(*privkey), nil
+}
+

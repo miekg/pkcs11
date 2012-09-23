@@ -69,7 +69,7 @@ type Attribute struct {
 }
 
 type Mechanism struct {
-	Mechanism    uint
+	MechanismType         uint
 	Parameter    unsafe.Pointer
 	ParameterLen uint
 }
