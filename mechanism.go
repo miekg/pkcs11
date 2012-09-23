@@ -7,11 +7,11 @@ import (
 // Generated with:
 // grep CKM *t.h|grep '#define' | sed 's/^#define //' | awk ' { print $1 "=" $2 } '
 
-// mech
-type CKM_RSA_PKCS_KEY_PAIR_GEN struct{ }
-func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Type() uint { return cKM_RSA_X9_31_KEY_PAIR_GEN }
+type CKM_RSA_PKCS_KEY_PAIR_GEN struct{}
+
+func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Type() uint                { return cKM_RSA_PKCS_KEY_PAIR_GEN }
 func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Parameter() unsafe.Pointer { return nil }
-func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Len() uint { return 0 }
+func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Len() uint                 { return 0 }
 
 const (
 	cKM_RSA_PKCS_KEY_PAIR_GEN          = 0x00000000

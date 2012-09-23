@@ -11,13 +11,19 @@ type CKA_MODULUS_BITS struct{ Val uint }
 
 func (a *CKA_MODULUS_BITS) Type() uint            { return cKA_MODULUS_BITS }
 func (a *CKA_MODULUS_BITS) Value() unsafe.Pointer { return unsafe.Pointer(&a.Val) }
-func (a *CKA_MODULUS_BITS) Len() uint             { return 8 }
+func (a *CKA_MODULUS_BITS) Len() uint             { return 8 } // 8?
 
-type CKA_TOKEN struct{ Val uint }
+type CKA_TOKEN struct{ Val bool }
 
 func (a *CKA_TOKEN) Type() uint            { return cKA_TOKEN }
 func (a *CKA_TOKEN) Value() unsafe.Pointer { return unsafe.Pointer(&a.Val) }
-func (a *CKA_TOKEN) Len() uint             { return 8 }
+func (a *CKA_TOKEN) Len() uint             { return 1 }
+
+type CKA_PRIVATE struct{ Val bool }
+
+func (a *CKA_PRIVATE) Type() uint            { return cKA_PRIVATE }
+func (a *CKA_PRIVATE) Value() unsafe.Pointer { return unsafe.Pointer(&a.Val) }
+func (a *CKA_PRIVATE) Len() uint             { return 1 }
 
 const (
 	cKA_CLASS                      = 0x00000000

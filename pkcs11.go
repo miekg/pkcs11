@@ -101,8 +101,6 @@ func attributeToC(a Attribute) C.CK_ATTRIBUTE_PTR {
 	l := new(C.CK_ATTRIBUTE)
 	l._type = C.CK_ATTRIBUTE_TYPE(a.Type())
 	l.pValue = C.CK_VOID_PTR(a.Value())
-	println("a.Value", a.Value())
-	println("a.Len", a.Len())
 	l.ulValueLen = C.CK_ULONG(a.Len())
 	return l
 }
