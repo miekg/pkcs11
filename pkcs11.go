@@ -9,6 +9,7 @@ package pkcs11
 #include "pkcs11c"
 
 CK_SLOT_ID_PTR SlotIDIndex(CK_SLOT_ID_PTR *p, int i) { return p[i]; } 
+CK_ATTRIBUTE_PTR AttrIndex(CK_ATTRIBUTE_PTR *p, int i) { return p[i]; }
 CK_MECHANISM_TYPE_PTR MechTypeIndex(CK_MECHANISM_TYPE_PTR *p, int i) { return p[i]; } 
 
 // old
@@ -78,7 +79,7 @@ func tokenInfoFromC(pTokenInfo C.CK_TOKEN_INFO_PTR) *TokenInfo {
 func mechanismInfoFromC(pMechanismInfo C.CK_MECHANISM_INFO_PTR) *MechanismInfo {
 	m := new(MechanismInfo)
 	m.MinKeySize = uint(pMechanismInfo.ulMinKeySize)
-	m.MaxKeySize =uint(pMechanismInfo.ulMaxKeySize)
+	m.MaxKeySize = uint(pMechanismInfo.ulMaxKeySize)
 	m.Flags = uint(pMechanismInfo.flags)
 	return m
 }
@@ -86,7 +87,7 @@ func mechanismInfoFromC(pMechanismInfo C.CK_MECHANISM_INFO_PTR) *MechanismInfo {
 func sessionInfoFromC(pSessionInfo C.CK_SESSION_INFO_PTR) *SessionInfo {
 	s := new(SessionInfo)
 	s.SlotID = uint(pSessionInfo.slotID)
-	s.State =  uint(pSessionInfo.state)
+	s.State = uint(pSessionInfo.state)
 	s.Flags = uint(pSessionInfo.flags)
 	s.DeviceError = uint(pSessionInfo.ulDeviceError)
 	return s
@@ -316,8 +317,31 @@ func (p *Pkcs11) C_GetSessionInfo(sh SessionHandle) (*SessionInfo, error) {
 	return sessionInfoFromC(session), nil
 }
 
+/*
+func (p *Pkcs11) C_GetAttributeValue(sh SessionHandle, oh ObjectHandle) ([]uint, error) {
+	var (
+		attr   C.CK_ATTRIBUTE_PTR
+		pcount C.CK_ULONG
+	)
+	defer C.free(unsafe.Pointer(attr))
+	e := C.Go_C_GetAttributeValue(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(oh), &attr, &pcount)
+	if e != C.CKR_OK {
+		return nil, newPkcs11Error("", e)
+	}
+	a := make([]uint, 0)
+	for i := uint(0); i < uint(pcount); i++ {
+		a = append(u, uint(*(C.AttrIndex(&attr, C.int(i)))))
+	}
+	return a, nil
+}
+
+func (p *Pkcs11) C_SetAttributeValue(sh SessionHandle, oh ObjectHandle, attr []uint) error {
+	return C.Go_C_SetAttributeValue(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(oh), &attr[0], len(attr))
+}
+*/
 // Object handling
 
+// array of attributes
 func (p *Pkcs11) C_CreateObject(sh SessionHandle) (ObjectHandle, error) {
 	return 0, nil
 }
@@ -325,5 +349,3 @@ func (p *Pkcs11) C_CreateObject(sh SessionHandle) (ObjectHandle, error) {
 func (p *Pkcs11) C_DestroyObject() error {
 	return nil
 }
-
-

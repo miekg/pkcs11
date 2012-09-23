@@ -129,17 +129,27 @@ CK_RV Go_C_CloseAllSessions(struct ctx *c, CK_SLOT_ID slotID) {
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_CloseAllSessions(slotID);
 }
 
-CK_RV Go_C_GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE phSession, CK_SESSION_INFO_PTR *pInfo) {
+CK_RV Go_C_GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE hSession, CK_SESSION_INFO_PTR *pInfo) {
         *pInfo = calloc(1, sizeof(CK_SESSION_INFO));
-        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSessionInfo(phSession, *pInfo);
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetSessionInfo(hSession, *pInfo);
 }
 
-CK_RV Go_C_InitPIN(struct ctx *c, CK_SESSION_HANDLE phSession, char * pin, CK_ULONG pinLen) {
-        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_InitPIN(phSession,(CK_UTF8CHAR_PTR)pin, pinLen);
+CK_RV Go_C_InitPIN(struct ctx *c, CK_SESSION_HANDLE hSession, char * pin, CK_ULONG pinLen) {
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_InitPIN(hSession,(CK_UTF8CHAR_PTR)pin, pinLen);
 }
 
-CK_RV Go_C_SetPIN(struct ctx *c, CK_SESSION_HANDLE phSession, char * oldPin, CK_ULONG oldPinLen, char * newPin, CK_ULONG newPinLen) {
-        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_SetPIN(phSession,(CK_UTF8CHAR_PTR)oldPin, oldPinLen, (CK_UTF8CHAR_PTR)newPin, newPinLen);
+CK_RV Go_C_SetPIN(struct ctx *c, CK_SESSION_HANDLE hSession, char * oldPin, CK_ULONG oldPinLen, char * newPin, CK_ULONG newPinLen) {
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_SetPIN(hSession,(CK_UTF8CHAR_PTR)oldPin, oldPinLen, (CK_UTF8CHAR_PTR)newPin, newPinLen);
+}
+
+CK_RV Go_C_GetAttributeValue(struct ctx *c, CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG *ulCount) {
+        // TODO(mg): check ulcount and ptemplate
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GetAttributeValue(hSession, hObject, pTemplate, *ulCount);
+}
+
+CK_RV Go_C_SetAttributeValue(struct ctx *c, CK_SESSION_HANDLE hSession, CK_OBJECT_HANDLE hObject, CK_ATTRIBUTE_PTR pTemplate, CK_ULONG ulCount) {
+        // TODO(mg)
+        return 0;
 }
 
 // Object management
