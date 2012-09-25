@@ -13,7 +13,7 @@ func yesno(b bool) string {
 }
 
 func main() {
-	p := pkcs11.New("/home/miekg/libsofthsm.so")
+	p := pkcs11.New("/usr/lib/libsofthsm.so")
 	if p == nil {
 		return
 	}
@@ -28,17 +28,20 @@ func main() {
 		fmt.Printf("%s\n", info.ManufacturerID)
 	} else {
 		fmt.Printf("error %s\n", err.Error())
+		return
 	}
 	slots, e := p.C_GetSlotList(true)
 	fmt.Printf("slots %v\n", slots)
 	if e != nil {
-		fmt.Printf("%s\n", e.Error())
+		fmt.Printf("slots %s\n", e.Error())
+		return
 	}
 	// Only works on initialized tokens
 
 	session, e := p.C_OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
 	if e != nil {
-		fmt.Printf("%s\n", e.Error())
+		fmt.Printf("session %s\n", e.Error())
+		return
 	}
 
 	pub, priv, e := p.C_GenerateKeyPair(session, &pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN{},

@@ -7,7 +7,7 @@ import (
 // Generated with:
 // grep CKA *t.h|grep '#define' | sed 's/^#define //' | awk ' { print $1 "=" $2 } '
 
-type CKA_MODULUS_BITS struct{ Val uint }
+type CKA_MODULUS_BITS struct{ Val uint64 }
 
 func (a *CKA_MODULUS_BITS) Type() uint            { return cKA_MODULUS_BITS }
 func (a *CKA_MODULUS_BITS) Value() unsafe.Pointer { return unsafe.Pointer(&a.Val) }
