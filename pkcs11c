@@ -12,6 +12,10 @@
 #include <stdio.h>
 #include <ltdl.h>
 
+// TODO:
+// * allocations are not checked
+// * using calloc (why?) malloc may be faster
+
 struct ctx {
 	lt_dlhandle handle;
 	CK_FUNCTION_LIST_PTR sym;
@@ -168,3 +172,20 @@ CK_RV Go_C_GenerateKeyPair(struct ctx *c, CK_SESSION_HANDLE hSession, CK_MECHANI
         *privkey = calloc(1, sizeof(CK_OBJECT_HANDLE));
         return ((CK_FUNCTION_LIST_PTR)c->sym)->C_GenerateKeyPair(hSession, pMechanism, pPubTemplate, ulPubCount, pPrivTemplate, ulPrivCount, *pubkey, *privkey);
 }
+
+// Signing and MACing
+//
+CK_RV Go_C_SignInit(struct ctx *c, CK_SESSION_HANDLE hSession, CK_MECHANISM_PTR pMechanism, CK_OBJECT_HANDLE privkey) {
+    return ((CK_FUNCTION_LIST_PTR)c->sym)->C_SignInit(hSession, pMechanism, privkey);
+}
+
+CK_RV Go_C_Sign(struct ctx *c, CK_SESSION_HANDLE hSession, CK_BYTE_PTR pData, CK_ULONG ulDataLen, CK_BYTE_PTR pSignature, CK_ULONG_PTR pulSignatureLen) {
+        CK_RV rv;
+        rv = ((CK_FUNCTION_LIST_PTR)c->sym)->C_Sign(hSession, pData, ulDataLen, NULL, pulSignatureLen);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        pSignature = malloc(*pulSignatureLen * sizeof(CK_BYTE));
+        return ((CK_FUNCTION_LIST_PTR)c->sym)->C_Sign(hSession, pData, ulDataLen, pSignature, pulSignatureLen);
+}
+

@@ -18,6 +18,9 @@ import (
 	"unsafe"
 )
 
+//	s := make([]byte, 256)
+//	C.fooGetString((*C.char)(unsafe.Pointer(&s[0])), C.int(len(s)))
+
 func versionFromC(v C.CK_VERSION) *Version {
 	v1 := new(Version)
 	v1.Major = byte(v.major)
@@ -396,3 +399,25 @@ func (p *Pkcs11) C_GenerateKeyPair(sh SessionHandle, m Mechanism, public []Attri
 	return ObjectHandle(*pubkey), ObjectHandle(*privkey), nil
 }
 
+// Signing and MACing */
+
+func (p *Pkcs11) C_SignInit(sh SessionHandle, m Mechanism, privkey ObjectHandle) error {
+	rv := C.Go_C_SignInit(p.ctx, C.CK_SESSION_HANDLE(sh), mechanismToC(m), C.CK_OBJECT_HANDLE(privkey))
+	if rv != C.CKR_OK {
+		return newPkcs11Error("", rv)
+	}
+	return nil
+}
+
+func (p *Pkcs11) C_Sign(sh SessionHandle, data []byte) ([]byte, error) {
+	var (
+		siglen C.CK_ULONG
+		sig C.CK_BYTE
+	)
+	rv := C.Go_C_Sign(p.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&data[0])), C.CK_ULONG(C.int(len(data))), C.CK_BYTE_PTR(&sig), C.CK_ULONG_PTR(&siglen))
+	if rv != C.CKR_OK {
+		return nil, newPkcs11Error("", rv)
+	}
+	signature := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
+	return signature, nil
+}

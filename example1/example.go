@@ -13,7 +13,8 @@ func yesno(b bool) string {
 }
 
 func main() {
-	p := pkcs11.New("/usr/lib/libsofthsm.so")
+	//p := pkcs11.New("/usr/lib/libsofthsm.so")
+	p := pkcs11.New("/home/miekg/libsofthsm.so")
 	if p == nil {
 		return
 	}
@@ -51,4 +52,18 @@ func main() {
 	}
 	println(pub)
 	println(priv)
+
+	e = p.C_SignInit(session, &pkcs11.CKM_RSA_PKCS{} , priv)
+	if e != nil {
+		fmt.Printf("signinit: %s\n", e.Error())
+	}
+
+	// Sign something with priv
+	data := []byte{1, 2, 3, 4}
+
+	sig, err := p.C_Sign(session, data)
+	if err != nil {
+		fmt.Printf("sig: %s\n", err.Error())
+	}
+	fmt.Printf("%v\n", sig)
 }

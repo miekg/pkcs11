@@ -13,6 +13,38 @@ func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Type() uint                { return cKM_RSA_
 func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Parameter() unsafe.Pointer { return nil }
 func (m *CKM_RSA_PKCS_KEY_PAIR_GEN) Len() uint                 { return 0 }
 
+// Signing and MACing
+
+type CKM_RSA_PKCS struct{}
+
+func (m *CKM_RSA_PKCS) Type() uint                { return cKM_RSA_PKCS }
+func (m *CKM_RSA_PKCS) Parameter() unsafe.Pointer { return nil }
+func (m *CKM_RSA_PKCS) Len() uint                 { return 0 }
+
+type CKM_SHA1_RSA_PKCS struct{}
+
+func (m *CKM_SHA1_RSA_PKCS) Type() uint                { return cKM_SHA1_RSA_PKCS }
+func (m *CKM_SHA1_RSA_PKCS) Parameter() unsafe.Pointer { return nil }
+func (m *CKM_SHA1_RSA_PKCS) Len() uint                 { return 0 }
+
+type CKM_SHA256_RSA_PKCS struct{}
+
+func (m *CKM_SHA256_RSA_PKCS) Type() uint                { return cKM_SHA256_RSA_PKCS }
+func (m *CKM_SHA256_RSA_PKCS) Parameter() unsafe.Pointer { return nil }
+func (m *CKM_SHA256_RSA_PKCS) Len() uint                 { return 0 }
+
+type CKM_SHA384_RSA_PKCS struct{}
+
+func (m *CKM_SHA384_RSA_PKCS) Type() uint                { return cKM_SHA384_RSA_PKCS }
+func (m *CKM_SHA384_RSA_PKCS) Parameter() unsafe.Pointer { return nil }
+func (m *CKM_SHA384_RSA_PKCS) Len() uint                 { return 0 }
+
+type CKM_SHA512_RSA_PKCS struct{}
+
+func (m *CKM_SHA512_RSA_PKCS) Type() uint                { return cKM_SHA512_RSA_PKCS }
+func (m *CKM_SHA512_RSA_PKCS) Parameter() unsafe.Pointer { return nil }
+func (m *CKM_SHA512_RSA_PKCS) Len() uint                 { return 0 }
+
 const (
 	cKM_RSA_PKCS_KEY_PAIR_GEN          = 0x00000000
 	cKM_RSA_PKCS                       = 0x00000001
