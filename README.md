@@ -1,3 +1,8 @@
+# WORK-IN-PROGRESS!
+
+I can talk with a (soft)hsm, from their things break.
+
+
 # PKCS#11
 
 This is a Go implementation of the PKCS#11 API. It has a small C implementation
