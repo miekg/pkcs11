@@ -1,6 +1,6 @@
 # WORK-IN-PROGRESS!
 
-I can talk with a (soft)hsm, from their things break.
+I can talk with a (soft)hsm, from there things break.
 
 
 # PKCS#11
