@@ -15,6 +15,16 @@ package pkcs11
 #include <ltdl.h>
 #include "pkcs11.h"
 
+void* VoidPointer(CK_ULONG size) {
+	void *p = NULL;
+	p = calloc(1, sizeof(CK_ULONG) * size);
+	return p;
+}
+
+CK_ULONG Index(CK_ULONG* array, CK_ULONG i) {
+	return array[i];
+}
+
 struct ctx {
         lt_dlhandle handle;
         CK_FUNCTION_LIST_PTR sym;
@@ -55,6 +65,11 @@ void Destroy(struct ctx *c) {
         lt_dlexit();
         free(c);
 }
+
+CK_RV Initialize(struct ctx* c, CK_VOID_PTR pInitArgs) {
+	return c->sym->C_Initialize(pInitArgs);
+}
+
 */
 import "C"
 
@@ -83,4 +98,13 @@ func (c *Ctx) Destroy() {
               return
        }
        C.Destroy(c.ctx)
+}
+
+func (c *Ctx) Initialize() {
+	pInitArgs := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
+	C.Initialize(c.ctx, C.CK_VOID_PTR(pInitArgs))
+}
+
+func (c *Ctx) GetSlotList(tokenPresent bool) []SlotID {
+
 }
