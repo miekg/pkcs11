@@ -105,6 +105,13 @@ func (c *Ctx) Initialize() {
 	C.Initialize(c.ctx, C.CK_VOID_PTR(pInitArgs))
 }
 
-func (c *Ctx) GetSlotList(tokenPresent bool) []SlotID {
+func (c *Ctx) Finalize() {
 
 }
+
+func (c *Ctx) GetSlotList(tokenPresent bool) []SlotID {
+	return nil
+}
+
+// func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
+// }
