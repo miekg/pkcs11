@@ -28,6 +28,10 @@ type SlotID C.CK_ULONG
 
 type Error C.CK_RV
 
+type SessionHandle uint
+
+type ObjectHandle uint
+
 type Version struct {
 	Major byte
 	Minor byte
@@ -92,7 +96,5 @@ type MechanismInfo struct {
 	MaxKeySize C.CK_ULONG
 	Flags      C.CK_FLAGS
 }
-
-
 
 // stopped after this one
