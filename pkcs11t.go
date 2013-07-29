@@ -18,8 +18,8 @@ package pkcs11
 #include <stdlib.h>
 #include "pkcs11.h"
 
-*void VoidPointer() {
-	void *p;
+void* VoidPointer() {
+	void *p = NULL;
 	return p;
 }
 
