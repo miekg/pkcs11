@@ -17,6 +17,12 @@ package pkcs11
 
 #include <stdlib.h>
 #include "pkcs11.h"
+
+*void VoidPointer() {
+	void *p;
+	return p;
+}
+
 */
 import "C"
 
