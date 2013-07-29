@@ -70,6 +70,8 @@ CK_RV Initialize(struct ctx* c, CK_VOID_PTR pInitArgs) {
 	return c->sym->C_Initialize(pInitArgs);
 }
 
+CK_RV GenerateKeyPairt 
+
 */
 import "C"
 
@@ -113,5 +115,5 @@ func (c *Ctx) GetSlotList(tokenPresent bool) []SlotID {
 	return nil
 }
 
-// func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
-// }
+func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
+}
