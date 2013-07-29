@@ -17,12 +17,6 @@ package pkcs11
 
 #include <stdlib.h>
 #include "pkcs11.h"
-
-void* VoidPointer() {
-	void *p = NULL;
-	return p;
-}
-
 */
 import "C"
 
@@ -98,5 +92,7 @@ type MechanismInfo struct {
 	MaxKeySize C.CK_ULONG
 	Flags      C.CK_FLAGS
 }
+
+
 
 // stopped after this one
