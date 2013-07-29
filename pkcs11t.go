@@ -24,7 +24,7 @@ import "C"
 // We use []byte as a subsitite in Go.
 type Void []byte
 
-type SlotID C.CK_SLOT_ID
+type SlotID C.CK_ULONG
 
 type Error C.CK_RV
 
