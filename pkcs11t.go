@@ -26,6 +26,8 @@ type Void []byte
 
 type SlotID C.CK_SLOT_ID
 
+type Error C.CK_RV
+
 type Version struct {
 	Major byte
 	Minor byte
