@@ -24,6 +24,8 @@ import "C"
 // We use []byte as a subsitite in Go.
 type Void []byte
 
+type SlotID C.CK_SLOT_ID
+
 type Version struct {
 	Major byte
 	Minor byte
