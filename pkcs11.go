@@ -59,8 +59,12 @@ void Destroy(struct ctx *c) {
         free(c);
 }
 
-CK_RV Initialize(struct ctx* c, CK_VOID_PTR InitArgs) {
-	return c->sym->C_Initialize(InitArgs);
+CK_RV Initialize(struct ctx* c, CK_VOID_PTR initArgs) {
+	return c->sym->C_Initialize(initArgs);
+}
+
+CK_RV Finalize(struct ctx* c) {
+	return c->sym->C_Finalize(NULL_PTR);
 }
 
 CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, CK_ULONG_PTR ulCount) {
@@ -105,13 +109,15 @@ func (c *Ctx) Destroy() {
        C.Destroy(c.ctx)
 }
 
-func (c *Ctx) Initialize() {
-	pInitArgs := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
-	C.Initialize(c.ctx, C.CK_VOID_PTR(pInitArgs))
+func (c *Ctx) Initialize() error {
+	args := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
+	e := C.Initialize(c.ctx, C.CK_VOID_PTR(args))
+	return toError(e)
 }
 
-func (c *Ctx) Finalize() {
-
+func (c *Ctx) Finalize() error {
+	e := C.Finalize(c.ctx)
+	return toError(e)
 }
 
 func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
@@ -119,10 +125,12 @@ func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
 		slotList C.CK_ULONG_PTR
 		ulCount C.CK_ULONG
 	)
-	e := C.GetSlotList(c.ctx, CBBool(tokenPresent), &slotList, &ulCount)
-	l := ToList(slotList, ulCount)
-	e = e
-	return l, nil
+	e := C.GetSlotList(c.ctx, cBBool(tokenPresent), &slotList, &ulCount)
+	if toError(e) == nil {
+		l := toList(slotList, ulCount)
+		return l, nil
+	}
+	return nil, toError(e)
 }
 
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {

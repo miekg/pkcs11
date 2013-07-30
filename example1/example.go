@@ -5,26 +5,19 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
-func yesno(b bool) string {
-	if b {
-		return "yes"
-	}
-	return "no"
-}
-
 func main() {
-	//p := pkcs11.New("/usr/lib/libsofthsm.so")
-	p := pkcs11.New("/home/miekg/libsofthsm.so")
+	p := pkcs11.New("/usr/lib/libsofthsm.so")
 	if p == nil {
 		return
 	}
-	if e := p.C_Initialize(); e != nil {
+	if e := p.Initialize(); e != nil {
 		fmt.Printf("init error %s\n", e.Error())
 		return
 	}
 
 	defer p.Destroy()
-	defer p.C_Finalize()
+	defer p.Finalize()
+	/*
 	if info, err := p.C_GetInfo(); err == nil {
 		fmt.Printf("%s\n", info.ManufacturerID)
 	} else {
@@ -66,4 +59,5 @@ func main() {
 		fmt.Printf("sig: %s\n", err.Error())
 	}
 	fmt.Printf("%v\n", sig)
+	*/
 }

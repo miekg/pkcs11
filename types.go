@@ -25,7 +25,10 @@ CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) {
 */
 import "C"
 
-import "unsafe"
+import (
+	"strconv"
+	"unsafe"
+)
 
 // A Void is used a lot in the PKCS#11 library, it always consists of a *void and a length.
 // We use []byte as a subsitite in Go.
@@ -34,7 +37,7 @@ type Void []byte
 type List []uint
 
 // ToList converts from a C style array to a List.
-func ToList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
+func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
 	l := make(List, int(size))
 	for i := 0; i < len(l); i++ {
 		l[i] = uint(C.Index(clist, C.CK_ULONG(i)))
@@ -44,7 +47,7 @@ func ToList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
 }
 
 // CBBool converts a bool to a CK_BBOOL.
-func CBBool(x bool) C.CK_BBOOL {
+func cBBool(x bool) C.CK_BBOOL {
 	if x {
 		return C.CK_BBOOL(C.CK_TRUE)
 	}
@@ -52,6 +55,15 @@ func CBBool(x bool) C.CK_BBOOL {
 }
 
 type Error uint
+
+func (e Error) Error() string { return "pkcs11: " + strconv.Itoa(int(e)) }
+
+func toError(e C.CK_RV) error {
+	if e == C.CKR_OK {
+		return nil
+	}
+	return Error(e)
+}
 
 type SessionHandle uint
 
