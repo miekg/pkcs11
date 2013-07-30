@@ -30,10 +30,6 @@ import (
 	"unsafe"
 )
 
-// A Void is used a lot in the PKCS#11 library, it always consists of a *void and a length.
-// We use []byte as a subsitite in Go.
-type Void []byte
-
 // List is used as a "generic" list as all object from PKCS#11 hold a uint (CK_ULONG).
 type List []uint
 
@@ -116,8 +112,8 @@ type SessionInfo struct {
 }
 
 type Attribute struct {
-	Type  C.CK_ATTRIBUTE_TYPE
-	Value Void
+	Type  uint
+	Value []byte
 }
 
 type Date struct {
@@ -125,8 +121,8 @@ type Date struct {
 }
 
 type Mechanism struct {
-	Type      C.CK_MECHANISM_TYPE
-	Parameter Void
+	Type      uint
+	Parameter []byte
 }
 
 type MechanismInfo struct {
