@@ -33,7 +33,8 @@ func main() {
 	}
 	fmt.Printf("%v %v\n", slots, session)
 
-	&pkcs11.Attribute{pkcs11.CKA_MODULUS_BITS, []byte{1024}
+	a := pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024)
+	m := pkcs11.NewMechanism(pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN, nil)
 
 	/*
 	pub, priv, e := p.C_GenerateKeyPair(session, &pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN{},

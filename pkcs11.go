@@ -82,8 +82,6 @@ CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HAN
 	return e;
 }
 
-CK_RV GenerateKeyPairt 
-
 */
 import "C"
 

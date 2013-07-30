@@ -116,6 +116,40 @@ type Attribute struct {
 	Value []byte
 }
 
+func NewAttribute(typ uint, x interface{}) Attribute {
+	var a Attribute
+	a.Type = typ
+	if x == nil {
+		a.Value = nil
+		return a
+	}
+	switch x.(type) {
+	case bool: // create bbool
+		if x.(bool) {
+			a.Value = []byte{1}
+			break
+		}
+		a.Value = []byte{0}
+	case int:
+		if x.(int) < 1<<16 {
+			a.Value = make([]byte, 2)
+			a.Value[0] = byte(x.(int) >> 8)
+			a.Value[1] = byte(x.(int))
+			break
+		}
+		if x.(int) < 1<<32 {
+			a.Value = make([]byte, 4)
+			a.Value[0] = byte(x.(int) >> 24)
+			a.Value[1] = byte(x.(int) >> 16)
+			a.Value[2] = byte(x.(int) >> 8)
+			a.Value[3] = byte(x.(int))
+			break
+		}
+		// TODO(miek): 64 bit
+	}
+	return a
+}
+
 type Date struct {
 	// TODO
 }
@@ -123,6 +157,17 @@ type Date struct {
 type Mechanism struct {
 	Type      uint
 	Parameter []byte
+}
+
+func NewMechanism(typ uint, x interface{}) Mechanism {
+	var m Mechanism
+	m.Type = typ
+	if x == nil {
+		m.Parameter = nil
+		return m
+	}
+	// A specific types
+	return m
 }
 
 type MechanismInfo struct {
