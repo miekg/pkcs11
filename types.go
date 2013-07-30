@@ -34,6 +34,7 @@ import (
 // We use []byte as a subsitite in Go.
 type Void []byte
 
+// List is used as a "generic" list as all object from PKCS#11 hold a uint (CK_ULONG).
 type List []uint
 
 // ToList converts from a C style array to a List.
@@ -81,7 +82,7 @@ type Info struct {
 type SlotInfo struct {
 	SlotDescription [64]byte
 	ManufacturerID  [32]byte
-	Flags           C.CK_FLAGS
+	Flags           uint
 	HardwareVersion Version
 	FirmwareVersion Version
 }
@@ -91,27 +92,27 @@ type TokenInfo struct {
 	ManufacturerID     [32]byte
 	Model              [16]byte
 	SerialNumber       [16]byte
-	Flags              C.CK_FLAGS
-	MaxSessionCount    C.CK_ULONG
-	SessionCount       C.CK_ULONG
-	MaxRwSessionCount  C.CK_ULONG
-	RwSessionCount     C.CK_ULONG
-	MaxPinLen          C.CK_ULONG
-	MinPinLen          C.CK_ULONG
-	TotalPublicMemory  C.CK_ULONG
-	FreePublicMemory   C.CK_ULONG
-	TotalPrivateMemory C.CK_ULONG
-	FreePrivateMemory  C.CK_ULONG
+	Flags              uint
+	MaxSessionCount    uint
+	SessionCount       uint
+	MaxRwSessionCount  uint
+	RwSessionCount     uint
+	MaxPinLen          uint
+	MinPinLen          uint
+	TotalPublicMemory  uint
+	FreePublicMemory   uint
+	TotalPrivateMemory uint
+	FreePrivateMemory  uint
 	hardwareVersion    Version
 	firmwareVersion    Version
 	UTCTime            [16]byte
 }
 
 type SessionInfo struct {
-	SlotID      C.CK_SLOT_ID  // ULONG?
-	Sate        C.CK_STATE
-	Flags       C.CK_FLAGS
-	DeviceError C.CK_ULONG
+	SlotID      uint
+	Sate        uint
+	Flags       uint
+	DeviceError uint
 }
 
 type Attribute struct {
@@ -129,9 +130,9 @@ type Mechanism struct {
 }
 
 type MechanismInfo struct {
-	MinKeySize C.CK_ULONG
-	MaxKeySize C.CK_ULONG
-	Flags      C.CK_FLAGS
+	MinKeySize uint
+	MaxKeySize uint
+	Flags      uint
 }
 
 // stopped after this one
