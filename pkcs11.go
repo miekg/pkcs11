@@ -1,5 +1,7 @@
 package pkcs11
 
+// Assumption uint is 32 bits on 32 bits platforms and 64 bits on 64 bit platforms
+
 /*
 #cgo LDFLAGS: -lltdl
 #define CK_PTR *
@@ -12,18 +14,9 @@ package pkcs11
 #define CK_CALLBACK_FUNCTION(returnType, name) returnType (* name)
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <ltdl.h>
 #include "pkcs11.h"
-
-void* VoidPointer(CK_ULONG size) {
-	void *p = NULL;
-	p = calloc(1, sizeof(CK_ULONG) * size);
-	return p;
-}
-
-CK_ULONG Index(CK_ULONG* array, CK_ULONG i) {
-	return array[i];
-}
 
 struct ctx {
         lt_dlhandle handle;
@@ -66,8 +59,18 @@ void Destroy(struct ctx *c) {
         free(c);
 }
 
-CK_RV Initialize(struct ctx* c, CK_VOID_PTR pInitArgs) {
-	return c->sym->C_Initialize(pInitArgs);
+CK_RV Initialize(struct ctx* c, CK_VOID_PTR InitArgs) {
+	return c->sym->C_Initialize(InitArgs);
+}
+
+CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, CK_ULONG_PTR ulCount) {
+	CK_RV e = c->sym->C_GetSlotList(tokenPresent, NULL_PTR, ulCount);
+	if (e != CKR_OK) {
+		return e;
+	}
+	*slotList = calloc(1, sizeof(CK_SLOT_ID) * *ulCount);
+	e = c->sym->C_GetSlotList(tokenPresent, *slotList, ulCount);
+	return e;
 }
 
 */
@@ -78,6 +81,8 @@ import "unsafe"
 // Ctx contains the current pkcs11 context.
 type Ctx struct {
 	ctx *C.struct_ctx
+	initialized bool
+	// mutex?
 }
 
 // New creates a new context.
@@ -109,8 +114,15 @@ func (c *Ctx) Finalize() {
 
 }
 
-func (c *Ctx) GetSlotList(tokenPresent bool) []SlotID {
-	return nil
+func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
+	var (
+		slotList C.CK_ULONG_PTR
+		ulCount C.CK_ULONG
+	)
+	e := C.GetSlotList(c.ctx, CBBool(tokenPresent), &slotList, &ulCount)
+	l := ToList(slotList, ulCount)
+	e = e
+	return l, nil
 }
 
 // func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {

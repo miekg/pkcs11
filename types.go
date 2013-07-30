@@ -17,16 +17,43 @@ package pkcs11
 
 #include <stdlib.h>
 #include "pkcs11.h"
+
+CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) {
+	return array[i];
+}
+
 */
 import "C"
+
+import "unsafe"
 
 // A Void is used a lot in the PKCS#11 library, it always consists of a *void and a length.
 // We use []byte as a subsitite in Go.
 type Void []byte
 
-type SlotID C.CK_ULONG
+type List []uint
 
-type Error C.CK_RV
+// Convert from a C style array to a List
+func ToList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
+	l := make(List, int(size))
+	for i := 0; i < len(l); i++ {
+		l[i] = uint(C.Index(clist, C.CK_ULONG(i)))
+	}
+	defer C.free(unsafe.Pointer(clist))
+	return l
+}
+
+func CBBool(x bool) C.CK_BBOOL {
+	if x {
+		return C.CK_BBOOL(C.CK_TRUE)
+	}
+	return C.CK_BBOOL(C.CK_FALSE)
+}
+
+// SlotID is a identifier for a particular slot
+type SlotID uint
+
+type Error uint
 
 type SessionHandle uint
 
