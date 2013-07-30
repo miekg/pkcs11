@@ -77,7 +77,10 @@ CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, 
 	return e;
 }
 
-CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, 
+CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HANDLE_PTR session) {
+	CK_RV e = c->sym->C_OpenSession((CK_SLOT_ID)slotID, (CK_FLAGS)flags, NULL_PTR, NULL_PTR, session);
+	return e;
+}
 
 */
 import "C"
@@ -138,7 +141,11 @@ func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
 	return nil, toError(e)
 }
 
-func (c *Ctx) OpenSession
+func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
+	var s C.CK_SESSION_HANDLE
+	e := C.OpenSession(c.ctx, C.CK_ULONG(slotID), C.CK_ULONG(flags), C.CK_SESSION_HANDLE_PTR(&s))
+	return SessionHandle(s), toError(e)
+}
 
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
 	return 0, 0, nil

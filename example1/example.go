@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
-	p := pkcs11.New("/usr/lib/libsofthsm.so")
+	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
 	if p == nil {
+		fmt.Printf("new error\n")
 		return
 	}
 	if e := p.Initialize(); e != nil {
@@ -30,6 +31,7 @@ func main() {
 		fmt.Printf("session %s\n", e.Error())
 		return
 	}
+	fmt.Printf("%v %v\n", slots, session)
 
 	/*
 	pub, priv, e := p.C_GenerateKeyPair(session, &pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN{},
