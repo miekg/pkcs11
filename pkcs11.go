@@ -1,5 +1,7 @@
 package pkcs11
 
+// Assumption uint is 32 bits on 32 bits platforms and 64 bits on 64 bit platforms
+
 /*
 #cgo LDFLAGS: -lltdl
 #define CK_PTR *
@@ -12,18 +14,9 @@ package pkcs11
 #define CK_CALLBACK_FUNCTION(returnType, name) returnType (* name)
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <ltdl.h>
 #include "pkcs11.h"
-
-void* VoidPointer(CK_ULONG size) {
-	void *p = NULL;
-	p = calloc(1, sizeof(CK_ULONG) * size);
-	return p;
-}
-
-CK_ULONG Index(CK_ULONG* array, CK_ULONG i) {
-	return array[i];
-}
 
 struct ctx {
         lt_dlhandle handle;
@@ -66,8 +59,27 @@ void Destroy(struct ctx *c) {
         free(c);
 }
 
-CK_RV Initialize(struct ctx* c, CK_VOID_PTR pInitArgs) {
-	return c->sym->C_Initialize(pInitArgs);
+CK_RV Initialize(struct ctx* c, CK_VOID_PTR initArgs) {
+	return c->sym->C_Initialize(initArgs);
+}
+
+CK_RV Finalize(struct ctx* c) {
+	return c->sym->C_Finalize(NULL_PTR);
+}
+
+CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, CK_ULONG_PTR ulCount) {
+	CK_RV e = c->sym->C_GetSlotList(tokenPresent, NULL_PTR, ulCount);
+	if (e != CKR_OK) {
+		return e;
+	}
+	*slotList = calloc(1, sizeof(CK_SLOT_ID) * *ulCount);
+	e = c->sym->C_GetSlotList(tokenPresent, *slotList, ulCount);
+	return e;
+}
+
+CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HANDLE_PTR session) {
+	CK_RV e = c->sym->C_OpenSession((CK_SLOT_ID)slotID, (CK_FLAGS)flags, NULL_PTR, NULL_PTR, session);
+	return e;
 }
 
 CK_RV GenerateKeyPairt 
@@ -79,7 +91,9 @@ import "unsafe"
 
 // Ctx contains the current pkcs11 context.
 type Ctx struct {
-	ctx *C.struct_ctx
+	ctx         *C.struct_ctx
+	initialized bool
+	// mutex?
 }
 
 // New creates a new context.
@@ -96,24 +110,45 @@ func New(module string) *Ctx {
 
 // Destroy unload the module and frees any remaining memory.
 func (c *Ctx) Destroy() {
-       if c == nil {
-              return
-       }
-       C.Destroy(c.ctx)
+	if c == nil {
+		return
+	}
+	C.Destroy(c.ctx)
 }
 
-func (c *Ctx) Initialize() {
-	pInitArgs := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
-	C.Initialize(c.ctx, C.CK_VOID_PTR(pInitArgs))
+func (c *Ctx) Initialize() error {
+	args := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
+	e := C.Initialize(c.ctx, C.CK_VOID_PTR(args))
+	if e == C.CKR_OK {
+		c.initialized = true // TODO(miek): keep?
+	}
+	return toError(e)
 }
 
-func (c *Ctx) Finalize() {
-
+func (c *Ctx) Finalize() error {
+	e := C.Finalize(c.ctx)
+	return toError(e)
 }
 
-func (c *Ctx) GetSlotList(tokenPresent bool) []SlotID {
-	return nil
+func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
+	var (
+		slotList C.CK_ULONG_PTR
+		ulCount  C.CK_ULONG
+	)
+	e := C.GetSlotList(c.ctx, cBBool(tokenPresent), &slotList, &ulCount)
+	if toError(e) == nil {
+		l := toList(slotList, ulCount)
+		return l, nil
+	}
+	return nil, toError(e)
+}
+
+func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
+	var s C.CK_SESSION_HANDLE
+	e := C.OpenSession(c.ctx, C.CK_ULONG(slotID), C.CK_ULONG(flags), C.CK_SESSION_HANDLE_PTR(&s))
+	return SessionHandle(s), toError(e)
 }
 
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
+	return 0, 0, nil
 }

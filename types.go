@@ -17,16 +17,50 @@ package pkcs11
 
 #include <stdlib.h>
 #include "pkcs11.h"
+
+CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) {
+	return array[i];
+}
+
 */
 import "C"
 
-// A Void is used a lot in the PKCS#11 library, it always consists of a *void and a length.
-// We use []byte as a subsitite in Go.
-type Void []byte
+import (
+	"strconv"
+	"unsafe"
+)
 
-type SlotID C.CK_ULONG
+// List is used as a "generic" list as all object from PKCS#11 hold a uint (CK_ULONG).
+type List []uint
 
-type Error C.CK_RV
+// ToList converts from a C style array to a List.
+func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
+	l := make(List, int(size))
+	for i := 0; i < len(l); i++ {
+		l[i] = uint(C.Index(clist, C.CK_ULONG(i)))
+	}
+	defer C.free(unsafe.Pointer(clist))
+	return l
+}
+
+// CBBool converts a bool to a CK_BBOOL.
+func cBBool(x bool) C.CK_BBOOL {
+	if x {
+		return C.CK_BBOOL(C.CK_TRUE)
+	}
+	return C.CK_BBOOL(C.CK_FALSE)
+}
+
+type Error uint
+
+func (e Error) Error() string { return "pkcs11: " + strconv.Itoa(int(e)) }
+
+func toError(e C.CK_RV) error {
+	if e == C.CKR_OK {
+		return nil
+	}
+	return Error(e)
+}
 
 type SessionHandle uint
 
@@ -44,7 +78,7 @@ type Info struct {
 type SlotInfo struct {
 	SlotDescription [64]byte
 	ManufacturerID  [32]byte
-	Flags           C.CK_FLAGS
+	Flags           uint
 	HardwareVersion Version
 	FirmwareVersion Version
 }
@@ -54,32 +88,32 @@ type TokenInfo struct {
 	ManufacturerID     [32]byte
 	Model              [16]byte
 	SerialNumber       [16]byte
-	Flags              C.CK_FLAGS
-	MaxSessionCount    C.CK_ULONG
-	SessionCount       C.CK_ULONG
-	MaxRwSessionCount  C.CK_ULONG
-	RwSessionCount     C.CK_ULONG
-	MaxPinLen          C.CK_ULONG
-	MinPinLen          C.CK_ULONG
-	TotalPublicMemory  C.CK_ULONG
-	FreePublicMemory   C.CK_ULONG
-	TotalPrivateMemory C.CK_ULONG
-	FreePrivateMemory  C.CK_ULONG
+	Flags              uint
+	MaxSessionCount    uint
+	SessionCount       uint
+	MaxRwSessionCount  uint
+	RwSessionCount     uint
+	MaxPinLen          uint
+	MinPinLen          uint
+	TotalPublicMemory  uint
+	FreePublicMemory   uint
+	TotalPrivateMemory uint
+	FreePrivateMemory  uint
 	hardwareVersion    Version
 	firmwareVersion    Version
 	UTCTime            [16]byte
 }
 
 type SessionInfo struct {
-	SlotID      C.CK_SLOT_ID
-	Sate        C.CK_STATE
-	Flags       C.CK_FLAGS
-	DeviceError C.CK_ULONG
+	SlotID      uint
+	Sate        uint
+	Flags       uint
+	DeviceError uint
 }
 
 type Attribute struct {
-	Type  C.CK_ATTRIBUTE_TYPE
-	Value Void
+	Type  uint
+	Value []byte
 }
 
 type Date struct {
@@ -87,14 +121,14 @@ type Date struct {
 }
 
 type Mechanism struct {
-	Type      C.CK_MECHANISM_TYPE
-	Parameter Void
+	Type      uint
+	Parameter []byte
 }
 
 type MechanismInfo struct {
-	MinKeySize C.CK_ULONG
-	MaxKeySize C.CK_ULONG
-	Flags      C.CK_FLAGS
+	MinKeySize uint
+	MaxKeySize uint
+	Flags      uint
 }
 
 // stopped after this one

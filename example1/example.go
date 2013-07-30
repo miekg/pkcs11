@@ -5,33 +5,20 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
-func yesno(b bool) string {
-	if b {
-		return "yes"
-	}
-	return "no"
-}
-
 func main() {
-	//p := pkcs11.New("/usr/lib/libsofthsm.so")
-	p := pkcs11.New("/home/miekg/libsofthsm.so")
+	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
 	if p == nil {
+		fmt.Printf("new error\n")
 		return
 	}
-	if e := p.C_Initialize(); e != nil {
+	if e := p.Initialize(); e != nil {
 		fmt.Printf("init error %s\n", e.Error())
 		return
 	}
 
 	defer p.Destroy()
-	defer p.C_Finalize()
-	if info, err := p.C_GetInfo(); err == nil {
-		fmt.Printf("%s\n", info.ManufacturerID)
-	} else {
-		fmt.Printf("error %s\n", err.Error())
-		return
-	}
-	slots, e := p.C_GetSlotList(true)
+	defer p.Finalize()
+	slots, e := p.GetSlotList(true)
 	fmt.Printf("slots %v\n", slots)
 	if e != nil {
 		fmt.Printf("slots %s\n", e.Error())
@@ -39,12 +26,16 @@ func main() {
 	}
 	// Only works on initialized tokens
 
-	session, e := p.C_OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+	session, e := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
 	if e != nil {
 		fmt.Printf("session %s\n", e.Error())
 		return
 	}
+	fmt.Printf("%v %v\n", slots, session)
 
+	&pkcs11.Attribute{pkcs11.CKA_MODULUS_BITS, []byte{1024}
+
+	/*
 	pub, priv, e := p.C_GenerateKeyPair(session, &pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN{},
 		[]pkcs11.Attribute{&pkcs11.CKA_MODULUS_BITS{1024}}, []pkcs11.Attribute{&pkcs11.CKA_TOKEN{true}, &pkcs11.CKA_PRIVATE{false}})
 	if e != nil {
@@ -66,4 +57,5 @@ func main() {
 		fmt.Printf("sig: %s\n", err.Error())
 	}
 	fmt.Printf("%v\n", sig)
+	*/
 }
