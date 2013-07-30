@@ -108,7 +108,7 @@ type TokenInfo struct {
 }
 
 type SessionInfo struct {
-	SlotID      C.CK_SLOT_ID
+	SlotID      C.CK_SLOT_ID  // ULONG?
 	Sate        C.CK_STATE
 	Flags       C.CK_FLAGS
 	DeviceError C.CK_ULONG
