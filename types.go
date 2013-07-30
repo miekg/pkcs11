@@ -33,7 +33,7 @@ type Void []byte
 
 type List []uint
 
-// Convert from a C style array to a List
+// ToList converts from a C style array to a List.
 func ToList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
 	l := make(List, int(size))
 	for i := 0; i < len(l); i++ {
@@ -43,15 +43,13 @@ func ToList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
 	return l
 }
 
+// CBBool converts a bool to a CK_BBOOL.
 func CBBool(x bool) C.CK_BBOOL {
 	if x {
 		return C.CK_BBOOL(C.CK_TRUE)
 	}
 	return C.CK_BBOOL(C.CK_FALSE)
 }
-
-// SlotID is a identifier for a particular slot
-type SlotID uint
 
 type Error uint
 

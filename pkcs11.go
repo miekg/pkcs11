@@ -125,5 +125,6 @@ func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
 	return l, nil
 }
 
-// func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
-// }
+func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
+	return 0, 0, nil
+}
