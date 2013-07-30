@@ -84,7 +84,7 @@ import "unsafe"
 
 // Ctx contains the current pkcs11 context.
 type Ctx struct {
-	ctx *C.struct_ctx
+	ctx         *C.struct_ctx
 	initialized bool
 	// mutex?
 }
@@ -103,15 +103,18 @@ func New(module string) *Ctx {
 
 // Destroy unload the module and frees any remaining memory.
 func (c *Ctx) Destroy() {
-       if c == nil {
-              return
-       }
-       C.Destroy(c.ctx)
+	if c == nil {
+		return
+	}
+	C.Destroy(c.ctx)
 }
 
 func (c *Ctx) Initialize() error {
 	args := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
 	e := C.Initialize(c.ctx, C.CK_VOID_PTR(args))
+	if e == C.CKR_OK {
+		c.initialized = true // TODO(miek): keep?
+	}
 	return toError(e)
 }
 
@@ -123,7 +126,7 @@ func (c *Ctx) Finalize() error {
 func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
 	var (
 		slotList C.CK_ULONG_PTR
-		ulCount C.CK_ULONG
+		ulCount  C.CK_ULONG
 	)
 	e := C.GetSlotList(c.ctx, cBBool(tokenPresent), &slotList, &ulCount)
 	if toError(e) == nil {
