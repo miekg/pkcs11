@@ -51,6 +51,7 @@ func cBBool(x bool) C.CK_BBOOL {
 	return C.CK_BBOOL(C.CK_FALSE)
 }
 
+
 type Error uint
 
 func (e Error) Error() string { return "pkcs11: " + strconv.Itoa(int(e)) }
@@ -150,6 +151,21 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 	return a
 }
 
+// cAttribute returns the start address and the length of an attribute list
+func cAttribute(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
+	if len(a) == 0 {
+		return nil, 0
+	}
+	cp := make([]C.CK_ATTRIBUTE, len(a))
+	for i := 0; i < len(a); i++ {
+		var l C.CK_ATTRIBUTE
+		l._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
+		l.pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
+		l.ulValueLen = C.CK_ULONG(len(a[i].Value))
+	}
+	return C.CK_ATTRIBUTE_PTR(&(cp[0])), C.CK_ULONG(len(a))
+}
+
 type Date struct {
 	// TODO
 }
@@ -166,7 +182,7 @@ func NewMechanism(typ uint, x interface{}) Mechanism {
 		m.Parameter = nil
 		return m
 	}
-	// A specific types
+	// Add specific types? Ala Attributes?
 	return m
 }
 

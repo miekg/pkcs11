@@ -82,6 +82,13 @@ CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HAN
 	return e;
 }
 
+CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
+	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
+	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
+
+	return (CK_RV)1;
+}
+
 */
 import "C"
 
@@ -148,5 +155,12 @@ func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 }
 
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
+	var (
+		pubkey  C.CK_OBJECT_HANDLE
+		privkey C.CK_OBJECT_HANDLE
+	)
+	ppublic, pubcount := cAttribute(public)
+	ppriv, privcount := cAttribute(private)
+	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(&m), ppublic, pubcount, ppriv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
 	return 0, 0, nil
 }
