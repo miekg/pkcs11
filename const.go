@@ -1,5 +1,24 @@
 package pkcs11
 
+const (
+	CKU_SO               uint = 0
+	CKU_USER             uint = 1
+	CKU_CONTEXT_SPECIFIC uint = 2
+)
+
+const (
+	CKO_DATA              uint = 0x00000000
+	CKO_CERTIFICATE       uint = 0x00000001
+	CKO_PUBLIC_KEY        uint = 0x00000002
+	CKO_PRIVATE_KEY       uint = 0x00000003
+	CKO_SECRET_KEY        uint = 0x00000004
+	CKO_HW_FEATURE        uint = 0x00000005
+	CKO_DOMAIN_PARAMETERS uint = 0x00000006
+	CKO_MECHANISM         uint = 0x00000007
+	CKO_OTP_KEY           uint = 0x00000008
+	CKO_VENDOR_DEFINED    uint = 0x80000000
+)
+
 // Generated with: awk '/#define CK[AFRM]/{ print $2 "=" $3 }' pkcs11t.h
 const (
 	CKF_TOKEN_PRESENT                    = 0x00000001

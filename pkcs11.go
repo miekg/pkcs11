@@ -82,6 +82,11 @@ CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HAN
 	return e;
 }
 
+CK_RV Login(struct ctx* c, CK_SESSION_HANDLE session, CK_USER_TYPE userType, char* pin, CK_ULONG pinLen) {
+	CK_RV e = c->sym->C_Login(session, userType, (CK_UTF8CHAR_PTR)pin, pinLen);
+	return e;
+}
+
 CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
 	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
@@ -153,6 +158,13 @@ func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 	var s C.CK_SESSION_HANDLE
 	e := C.OpenSession(c.ctx, C.CK_ULONG(slotID), C.CK_ULONG(flags), C.CK_SESSION_HANDLE_PTR(&s))
 	return SessionHandle(s), toError(e)
+}
+
+func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
+	p := C.CString(pin)
+	defer C.free(unsafe.Pointer(p))
+	e := C.Login(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_USER_TYPE(userType), p, C.CK_ULONG(len(pin)))
+	return toError(e)
 }
 
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
