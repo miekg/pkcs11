@@ -172,9 +172,9 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []A
 		pubkey  C.CK_OBJECT_HANDLE
 		privkey C.CK_OBJECT_HANDLE
 	)
-	ppublic, pubcount := cAttributeList(public)
-	ppriv, privcount := cAttributeList(private)
-	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), cMechanism(m), ppublic, pubcount, ppriv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
+	pub := cAttributeList(public)
+	priv := cAttributeList(private)
+	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), cMechanism(m), &pub[0], C.CK_ULONG(len(pub)), &priv[0], C.CK_ULONG(len(priv)), C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
 	e1 := toError(e)
 	if e1 == nil {
 		return ObjectHandle(pubkey), ObjectHandle(privkey), nil

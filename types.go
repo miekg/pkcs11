@@ -18,9 +18,8 @@ package pkcs11
 #include <stdlib.h>
 #include "pkcs11.h"
 
-CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) {
-	return array[i];
-}
+CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) { return array[i]; }
+CK_ULONG SizeOf() { return sizeof(CK_ULONG); }
 
 */
 import "C"
@@ -53,7 +52,7 @@ func cBBool(x bool) C.CK_BBOOL {
 
 type Error uint
 
-func (e Error) Error() string { return "pkcs11: " + fmt.Sprintf("0x%x", int(e)) }
+func (e Error) Error() string { return "pkcs11: " + fmt.Sprintf("0x%X", int(e)) }
 
 func toError(e C.CK_RV) error {
 	if e == C.CKR_OK {
@@ -116,6 +115,7 @@ type Attribute struct {
 	Value []byte
 }
 
+//
 func NewAttribute(typ uint, x interface{}) Attribute {
 	var a Attribute
 	a.Type = typ
@@ -131,12 +131,24 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 		}
 		a.Value = []byte{0}
 	case uint:
-		// sizeof ULONG, and a for loop??
-		a.Value = make([]byte, 4)
-		a.Value[0] = byte(x.(uint) >> 24)
-		a.Value[1] = byte(x.(uint) >> 16)
-		a.Value[2] = byte(x.(uint) >> 8)
-		a.Value[3] = byte(x.(uint))
+		switch int(C.SizeOf()) {
+		case 4:
+			a.Value = make([]byte, 4)
+			a.Value[0] = byte(x.(uint) >> 24)
+			a.Value[1] = byte(x.(uint) >> 16)
+			a.Value[2] = byte(x.(uint) >> 8)
+			a.Value[3] = byte(x.(uint))
+		case 8:
+			a.Value = make([]byte, 8)
+			a.Value[0] = byte(x.(uint) >> 56)
+			a.Value[1] = byte(x.(uint) >> 48)
+			a.Value[2] = byte(x.(uint) >> 40)
+			a.Value[3] = byte(x.(uint) >> 32)
+			a.Value[4] = byte(x.(uint) >> 24)
+			a.Value[5] = byte(x.(uint) >> 16)
+			a.Value[6] = byte(x.(uint) >> 8)
+			a.Value[7] = byte(x.(uint))
+		}
 	case []byte: // just copy
 		a.Value = x.([]byte)
 	default:
@@ -155,6 +167,7 @@ func cAttributeList(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 		var l C.CK_ATTRIBUTE
 		l._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
 		l.pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
+		println(l.pValue)
 		l.ulValueLen = C.CK_ULONG(len(a[i].Value))
 		cp[i] = l
 	}
@@ -166,7 +179,7 @@ type Date struct {
 }
 
 type Mechanism struct {
-	Mechanism      uint
+	Mechanism uint
 	Parameter []byte
 }
 
@@ -200,7 +213,7 @@ func cMechanism(m Mechanism) C.CK_MECHANISM_PTR {
 //	m := make([]Mechanism, int(size))
 //	for i := 0; i < len(m); i++ {
 //		cm := C.Index(clist, C.(i))
-//		m[i] = Mechanism{Mechanism: uint(cm.mechanism), 
+//		m[i] = Mechanism{Mechanism: uint(cm.mechanism),
 //	}
 //	defer C.free(unsafe.Pointer(clist))
 //	return m

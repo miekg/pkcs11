@@ -39,7 +39,7 @@ func main() {
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, uint(pkcs11.CKO_PUBLIC_KEY)),
 		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, uint(1024)),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
-		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, uint(257)),
 	}
 	privateKeyTemplate := []pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, uint(pkcs11.CKO_PRIVATE_KEY)),
