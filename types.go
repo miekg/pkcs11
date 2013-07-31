@@ -131,14 +131,14 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 			break
 		}
 		a.Value = []byte{0}
-	case int:
-		if x.(int) < 1<<16 {
+	case uint:
+		if x.(uint) <= 1<<16-1 {
 			a.Value = make([]byte, 2)
 			a.Value[0] = byte(x.(int) >> 8)
 			a.Value[1] = byte(x.(int))
 			break
 		}
-		if x.(int) < 1<<32 {
+		if x.(uint) <= 1<<32-1 {
 			a.Value = make([]byte, 4)
 			a.Value[0] = byte(x.(int) >> 24)
 			a.Value[1] = byte(x.(int) >> 16)
@@ -151,8 +151,8 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 	return a
 }
 
-// cAttribute returns the start address and the length of an attribute list
-func cAttribute(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
+// cAttribute returns the start address and the length of an attribute list.
+func cAttributeList(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	if len(a) == 0 {
 		return nil, 0
 	}
@@ -184,6 +184,15 @@ func NewMechanism(typ uint, x interface{}) Mechanism {
 	}
 	// Add specific types? Ala Attributes?
 	return m
+}
+
+// cMechanism returns a C pointer to the mechanism m.
+func cMechanism(m Mechanism) C.CK_MECHANISM_PTR {
+	var m1 C.CK_MECHANISM
+	m1.mechanism = C.CK_MECHANISM_TYPE(m.Type)
+	m1.pParameter = C.CK_VOID_PTR(&(m.Parameter[0]))
+	m1.ulParameterLen = C.CK_ULONG(len(m.Parameter))
+	return C.CK_MECHANISM_PTR(&m1)
 }
 
 type MechanismInfo struct {

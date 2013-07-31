@@ -85,8 +85,9 @@ CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HAN
 CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
 	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
-
-	return (CK_RV)1;
+	CK_RV e = c->sym->C_GenerateKeyPair(session, mechanism, pub, pubCount, priv, privCount,
+					pubkey, privkey);
+	return e;
 }
 
 */
@@ -159,8 +160,12 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []A
 		pubkey  C.CK_OBJECT_HANDLE
 		privkey C.CK_OBJECT_HANDLE
 	)
-	ppublic, pubcount := cAttribute(public)
-	ppriv, privcount := cAttribute(private)
-	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_MECHANISM_PTR(&m), ppublic, pubcount, ppriv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
-	return 0, 0, nil
+	ppublic, pubcount := cAttributeList(public)
+	ppriv, privcount := cAttributeList(private)
+	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), cMechanism(m), ppublic, pubcount, ppriv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
+	e1 := toError(e)
+	if e1 == nil {
+		return ObjectHandle(pubkey), ObjectHandle(privkey), nil
+	}
+	return 0, 0, e1
 }
