@@ -144,9 +144,9 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 			a.Value[1] = byte(x.(int) >> 16)
 			a.Value[2] = byte(x.(int) >> 8)
 			a.Value[3] = byte(x.(int))
-			break
 		}
-		// TODO(miek): 64 bit
+	case []byte: // just copy
+		a.Value = x.([]byte)
 	}
 	return a
 }
