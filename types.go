@@ -131,19 +131,12 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 		}
 		a.Value = []byte{0}
 	case uint:
-		if x.(uint) <= 1<<16-1 {
-			a.Value = make([]byte, 2)
-			a.Value[0] = byte(x.(uint) >> 8)
-			a.Value[1] = byte(x.(uint))
-			break
-		}
-		if x.(uint) <= 1<<32-1 {
-			a.Value = make([]byte, 4)
-			a.Value[0] = byte(x.(uint) >> 24)
-			a.Value[1] = byte(x.(uint) >> 16)
-			a.Value[2] = byte(x.(uint) >> 8)
-			a.Value[3] = byte(x.(uint))
-		}
+		// sizeof ULONG, and a for loop??
+		a.Value = make([]byte, 4)
+		a.Value[0] = byte(x.(uint) >> 24)
+		a.Value[1] = byte(x.(uint) >> 16)
+		a.Value[2] = byte(x.(uint) >> 8)
+		a.Value[3] = byte(x.(uint))
 	case []byte: // just copy
 		a.Value = x.([]byte)
 	default:
@@ -163,6 +156,7 @@ func cAttributeList(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 		l._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
 		l.pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
 		l.ulValueLen = C.CK_ULONG(len(a[i].Value))
+		cp[i] = l
 	}
 	return C.CK_ATTRIBUTE_PTR(&(cp[0])), C.CK_ULONG(len(a))
 }

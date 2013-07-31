@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
-	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
+	//p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
+	p := pkcs11.New("/home/miek/libsofthsm.so")
 	if p == nil {
 		log.Fatalf("new error\n")
 	}
@@ -33,16 +34,14 @@ func main() {
 	if e := p.Login(session, pkcs11.CKU_USER, "1234"); e != nil {
 		log.Fatal("user pin %s\n", e.Error())
 	}
-
+	//SoftHSM: C_GenerateKeyPair: Missing CKA_MODULUS_BITS in pPublicKeyTemplate
 	publicKeyTemplate := []pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_CLASS, uint(pkcs11.CKO_PUBLIC_KEY)),
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, uint(pkcs11.CKO_PUBLIC_KEY)),
 		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, uint(1024)),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
 		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
 	}
 	privateKeyTemplate := []pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_CLASS, uint(pkcs11.CKO_PRIVATE_KEY)),
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, uint(pkcs11.CKO_PRIVATE_KEY)),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
