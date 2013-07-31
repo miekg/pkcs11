@@ -34,7 +34,7 @@ func main() {
 	fmt.Printf("%v %v\n", slots, session)
 
 	publicKeyTemplate := []pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024),
+		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, uint(1024)),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
 		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
 	}

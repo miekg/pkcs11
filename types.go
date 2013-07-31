@@ -26,7 +26,7 @@ CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) {
 import "C"
 
 import (
-	"strconv"
+	"fmt"
 	"unsafe"
 )
 
@@ -51,10 +51,9 @@ func cBBool(x bool) C.CK_BBOOL {
 	return C.CK_BBOOL(C.CK_FALSE)
 }
 
-
 type Error uint
 
-func (e Error) Error() string { return "pkcs11: " + strconv.Itoa(int(e)) }
+func (e Error) Error() string { return "pkcs11: " + fmt.Sprintf("0x%x", int(e)) }
 
 func toError(e C.CK_RV) error {
 	if e == C.CKR_OK {
@@ -134,19 +133,21 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 	case uint:
 		if x.(uint) <= 1<<16-1 {
 			a.Value = make([]byte, 2)
-			a.Value[0] = byte(x.(int) >> 8)
-			a.Value[1] = byte(x.(int))
+			a.Value[0] = byte(x.(uint) >> 8)
+			a.Value[1] = byte(x.(uint))
 			break
 		}
 		if x.(uint) <= 1<<32-1 {
 			a.Value = make([]byte, 4)
-			a.Value[0] = byte(x.(int) >> 24)
-			a.Value[1] = byte(x.(int) >> 16)
-			a.Value[2] = byte(x.(int) >> 8)
-			a.Value[3] = byte(x.(int))
+			a.Value[0] = byte(x.(uint) >> 24)
+			a.Value[1] = byte(x.(uint) >> 16)
+			a.Value[2] = byte(x.(uint) >> 8)
+			a.Value[3] = byte(x.(uint))
 		}
 	case []byte: // just copy
 		a.Value = x.([]byte)
+	default:
+		panic("pkcs11: unhandled attribute type")
 	}
 	return a
 }
@@ -190,7 +191,11 @@ func NewMechanism(typ uint, x interface{}) Mechanism {
 func cMechanism(m Mechanism) C.CK_MECHANISM_PTR {
 	var m1 C.CK_MECHANISM
 	m1.mechanism = C.CK_MECHANISM_TYPE(m.Type)
-	m1.pParameter = C.CK_VOID_PTR(&(m.Parameter[0]))
+	if len(m.Parameter) == 0 {
+		m1.pParameter = C.CK_VOID_PTR(nil)
+	} else {
+		m1.pParameter = C.CK_VOID_PTR(&(m.Parameter[0]))
+	}
 	m1.ulParameterLen = C.CK_ULONG(len(m.Parameter))
 	return C.CK_MECHANISM_PTR(&m1)
 }
