@@ -172,13 +172,13 @@ type Date struct {
 }
 
 type Mechanism struct {
-	Type      uint
+	Mechanism      uint
 	Parameter []byte
 }
 
-func NewMechanism(typ uint, x interface{}) Mechanism {
+func NewMechanism(mech uint, x interface{}) Mechanism {
 	var m Mechanism
-	m.Type = typ
+	m.Mechanism = mech
 	if x == nil {
 		m.Parameter = nil
 		return m
@@ -187,10 +187,12 @@ func NewMechanism(typ uint, x interface{}) Mechanism {
 	return m
 }
 
+// cMechanismList
+
 // cMechanism returns a C pointer to the mechanism m.
 func cMechanism(m Mechanism) C.CK_MECHANISM_PTR {
 	var m1 C.CK_MECHANISM
-	m1.mechanism = C.CK_MECHANISM_TYPE(m.Type)
+	m1.mechanism = C.CK_MECHANISM_TYPE(m.Mechanism)
 	if len(m.Parameter) == 0 {
 		m1.pParameter = C.CK_VOID_PTR(nil)
 	} else {
@@ -199,6 +201,16 @@ func cMechanism(m Mechanism) C.CK_MECHANISM_PTR {
 	m1.ulParameterLen = C.CK_ULONG(len(m.Parameter))
 	return C.CK_MECHANISM_PTR(&m1)
 }
+
+//func toMechanismList(clist C.CK_MECHANISM_TYPE_PTR, size C.CK_ULONG) []Mechanism {
+//	m := make([]Mechanism, int(size))
+//	for i := 0; i < len(m); i++ {
+//		cm := C.Index(clist, C.(i))
+//		m[i] = Mechanism{Mechanism: uint(cm.mechanism), 
+//	}
+//	defer C.free(unsafe.Pointer(clist))
+//	return m
+//}
 
 type MechanismInfo struct {
 	MinKeySize uint
