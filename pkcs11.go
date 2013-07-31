@@ -90,6 +90,7 @@ CK_RV Login(struct ctx* c, CK_SESSION_HANDLE session, CK_USER_TYPE userType, cha
 CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
 	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
+	fprintf(stderr, "i %p\n", pub[0].pValue);
 	CK_RV e = c->sym->C_GenerateKeyPair(session, mechanism, pub, pubCount, priv, privCount,
 					pubkey, privkey);
 	return e;
@@ -172,9 +173,9 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []A
 		pubkey  C.CK_OBJECT_HANDLE
 		privkey C.CK_OBJECT_HANDLE
 	)
-	pub := cAttributeList(public)
-	priv := cAttributeList(private)
-	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), cMechanism(m), &pub[0], C.CK_ULONG(len(pub)), &priv[0], C.CK_ULONG(len(priv)), C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
+	pub, pubcount := cAttributeList(public)
+	priv, privcount := cAttributeList(private)
+	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), cMechanism(m), pub, pubcount, priv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
 	e1 := toError(e)
 	if e1 == nil {
 		return ObjectHandle(pubkey), ObjectHandle(privkey), nil
