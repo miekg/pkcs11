@@ -134,24 +134,24 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 		switch int(C.SizeOf()) {
 		case 4:
 			a.Value = make([]byte, 4)	
-			a.Value[3] = byte(x.(uint))	// Is this intel??
-			a.Value[2] = byte(x.(uint) >> 8)
-			a.Value[1] = byte(x.(uint) >> 16)
-			a.Value[0] = byte(x.(uint) >> 24)
+			a.Value[0] = byte(x.(uint))	// Is this intel??
+			a.Value[1] = byte(x.(uint) >> 8)
+			a.Value[2] = byte(x.(uint) >> 16)
+			a.Value[3] = byte(x.(uint) >> 24)
 			println("POINTER", typ, &(a.Value[0]), a.Value[0])
 			println("POINTER", typ, &a.Value[1], a.Value[1])
 			println("POINTER", typ, &a.Value[2], a.Value[2])
 			println("POINTER", typ, &a.Value[3], a.Value[3])
 		case 8:
 			a.Value = make([]byte, 8)
-			a.Value[7] = byte(x.(uint) >> 56)
-			a.Value[6] = byte(x.(uint) >> 48)
-			a.Value[5] = byte(x.(uint) >> 40)
-			a.Value[4] = byte(x.(uint) >> 32)
-			a.Value[3] = byte(x.(uint) >> 24)
-			a.Value[2] = byte(x.(uint) >> 16)
-			a.Value[1] = byte(x.(uint) >> 8)
 			a.Value[0] = byte(x.(uint))
+			a.Value[1] = byte(x.(uint) >> 8)
+			a.Value[2] = byte(x.(uint) >> 16)
+			a.Value[3] = byte(x.(uint) >> 24)
+			a.Value[4] = byte(x.(uint) >> 32)
+			a.Value[5] = byte(x.(uint) >> 40)
+			a.Value[6] = byte(x.(uint) >> 48)
+			a.Value[7] = byte(x.(uint) >> 56)
 		}
 	case []byte: // just copy
 		a.Value = x.([]byte)
