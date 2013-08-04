@@ -6,8 +6,8 @@ import (
 )
 
 func main() {
-	//p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
-	p := pkcs11.New("/home/miek/libsofthsm.so")
+	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
+//	p := pkcs11.New("/home/miek/libsofthsm.so")
 	if p == nil {
 		log.Fatalf("new error\n")
 	}
@@ -34,7 +34,6 @@ func main() {
 	if e := p.Login(session, pkcs11.CKU_USER, "1234"); e != nil {
 		log.Fatal("user pin %s\n", e.Error())
 	}
-	//SoftHSM: C_GenerateKeyPair: Missing CKA_MODULUS_BITS in pPublicKeyTemplate
 	publicKeyTemplate := []pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, uint(1024)),
 		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, uint(257)),

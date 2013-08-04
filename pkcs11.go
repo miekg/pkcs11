@@ -90,7 +90,6 @@ CK_RV Login(struct ctx* c, CK_SESSION_HANDLE session, CK_USER_TYPE userType, cha
 CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
 	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
-	fprintf(stderr, "i %p\n", pub[0].pValue);
 	CK_RV e = c->sym->C_GenerateKeyPair(session, mechanism, pub, pubCount, priv, privCount,
 					pubkey, privkey);
 	return e;
