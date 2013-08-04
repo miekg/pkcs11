@@ -130,25 +130,34 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 			break
 		}
 		a.Value = []byte{0}
-	case uint:
+	case uint, int:
+		var y uint
+		if _, ok := x.(int); ok {
+			y = uint(x.(int))
+		}
+		if _, ok := x.(uint); ok {
+			y = x.(uint)
+		}
 		switch int(C.SizeOf()) {
 		case 4:
 			a.Value = make([]byte, 4)
-			a.Value[0] = byte(x.(uint)) // Is this intel??
-			a.Value[1] = byte(x.(uint) >> 8)
-			a.Value[2] = byte(x.(uint) >> 16)
-			a.Value[3] = byte(x.(uint) >> 24)
+			a.Value[0] = byte(y) // Is this intel??
+			a.Value[1] = byte(y >> 8)
+			a.Value[2] = byte(y >> 16)
+			a.Value[3] = byte(y >> 24)
 		case 8:
 			a.Value = make([]byte, 8)
-			a.Value[0] = byte(x.(uint))
-			a.Value[1] = byte(x.(uint) >> 8)
-			a.Value[2] = byte(x.(uint) >> 16)
-			a.Value[3] = byte(x.(uint) >> 24)
-			a.Value[4] = byte(x.(uint) >> 32)
-			a.Value[5] = byte(x.(uint) >> 40)
-			a.Value[6] = byte(x.(uint) >> 48)
-			a.Value[7] = byte(x.(uint) >> 56)
+			a.Value[0] = byte(y)
+			a.Value[1] = byte(y >> 8)
+			a.Value[2] = byte(y >> 16)
+			a.Value[3] = byte(y >> 24)
+			a.Value[4] = byte(y >> 32)
+			a.Value[5] = byte(y >> 40)
+			a.Value[6] = byte(y >> 48)
+			a.Value[7] = byte(y >> 56)
 		}
+	case string:
+		a.Value = []byte(x.(string))
 	case []byte: // just copy
 		a.Value = x.([]byte)
 	default:
@@ -162,6 +171,7 @@ func cAttributeList(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	if len(a) == 0 {
 		return nil, 0
 	}
+	// TODO(miek): not 100% working
 	cp := make([]C.CK_ATTRIBUTE_PTR, len(a))
 	for i := 0; i < len(a); i++ {
 		var l C.CK_ATTRIBUTE
@@ -223,5 +233,3 @@ type MechanismInfo struct {
 	MaxKeySize uint
 	Flags      uint
 }
-
-// stopped after this one

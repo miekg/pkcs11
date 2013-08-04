@@ -1,13 +1,17 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"github.com/miekg/pkcs11"
 )
 
 func main() {
+	flag.Parse()
 	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
-//	p := pkcs11.New("/home/miek/libsofthsm.so")
+	if len(flag.Args()) > 0 {
+		p = pkcs11.New(flag.Arg(0))
+	}
 	if p == nil {
 		log.Fatalf("new error\n")
 	}
@@ -23,25 +27,28 @@ func main() {
 		log.Fatalf("slots %s\n", e.Error())
 		return
 	}
-	// Only works on initialized tokens
-
 	session, e := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
 	if e != nil {
 		log.Fatalf("session %s\n", e.Error())
 	}
+	defer p.CloseSession(session)
 	log.Printf("%v %v\n", slots, session)
 
 	if e := p.Login(session, pkcs11.CKU_USER, "1234"); e != nil {
 		log.Fatal("user pin %s\n", e.Error())
 	}
 	publicKeyTemplate := []pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, uint(1024)),
-		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, uint(257)),
-		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, uint(pkcs11.CKO_PUBLIC_KEY)),
+		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, 257),
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PUBLIC_KEY),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
 	}
 	privateKeyTemplate := []pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, uint(pkcs11.CKO_PRIVATE_KEY)),
+		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PRIVATE_KEY),
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
 	}
