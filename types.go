@@ -138,10 +138,6 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 			a.Value[1] = byte(x.(uint) >> 8)
 			a.Value[2] = byte(x.(uint) >> 16)
 			a.Value[3] = byte(x.(uint) >> 24)
-			println("POINTER", typ, &(a.Value[0]), a.Value[0])
-			println("POINTER", typ, &a.Value[1], a.Value[1])
-			println("POINTER", typ, &a.Value[2], a.Value[2])
-			println("POINTER", typ, &a.Value[3], a.Value[3])
 		case 8:
 			a.Value = make([]byte, 8)
 			a.Value[0] = byte(x.(uint))
