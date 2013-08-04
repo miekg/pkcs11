@@ -133,8 +133,8 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 	case uint:
 		switch int(C.SizeOf()) {
 		case 4:
-			a.Value = make([]byte, 4)	
-			a.Value[0] = byte(x.(uint))	// Is this intel??
+			a.Value = make([]byte, 4)
+			a.Value[0] = byte(x.(uint)) // Is this intel??
 			a.Value[1] = byte(x.(uint) >> 8)
 			a.Value[2] = byte(x.(uint) >> 16)
 			a.Value[3] = byte(x.(uint) >> 24)
@@ -166,17 +166,15 @@ func cAttributeList(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	if len(a) == 0 {
 		return nil, 0
 	}
-	cp := make([]C.CK_ATTRIBUTE, len(a))
+	cp := make([]C.CK_ATTRIBUTE_PTR, len(a))
 	for i := 0; i < len(a); i++ {
 		var l C.CK_ATTRIBUTE
 		l._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
 		l.pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
-		println("pValue", l.pValue)
-		println("Value", *C.CK_ULONG_PTR(l.pValue))
 		l.ulValueLen = C.CK_ULONG(len(a[i].Value))
-		cp[i] = l
+		cp[i] = C.CK_ATTRIBUTE_PTR(&l)
 	}
-	return C.CK_ATTRIBUTE_PTR(&cp[0]), C.CK_ULONG(len(a))
+	return C.CK_ATTRIBUTE_PTR(cp[0]), C.CK_ULONG(len(a))
 }
 
 type Date struct {
