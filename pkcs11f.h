@@ -187,8 +187,6 @@ CK_PKCS11_FUNCTION_INFO(C_CloseSession)
 );
 #endif
 
-/** REMOVE THIS(mg): All above functions implemented */
-
 /* C_CloseAllSessions closes all sessions with a token. */
 CK_PKCS11_FUNCTION_INFO(C_CloseAllSessions)
 #ifdef CK_NEED_ARG_LIST

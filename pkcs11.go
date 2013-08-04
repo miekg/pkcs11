@@ -82,6 +82,11 @@ CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HAN
 	return e;
 }
 
+CK_RV CloseSession(struct ctx *c, CK_SESSION_HANDLE session) {
+	CK_RV e = c->sym->C_CloseSession(session);
+	return e;
+}
+
 CK_RV Login(struct ctx* c, CK_SESSION_HANDLE session, CK_USER_TYPE userType, char* pin, CK_ULONG pinLen) {
 	CK_RV e = c->sym->C_Login(session, userType, (CK_UTF8CHAR_PTR)pin, pinLen);
 	return e;
@@ -158,6 +163,11 @@ func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 	var s C.CK_SESSION_HANDLE
 	e := C.OpenSession(c.ctx, C.CK_ULONG(slotID), C.CK_ULONG(flags), C.CK_SESSION_HANDLE_PTR(&s))
 	return SessionHandle(s), toError(e)
+}
+
+func (c *Ctx) CloseSession(sh SessionHandle) error {
+	e := C.CloseSession(c.ctx, C.CK_SESSION_HANDLE(sh))
+	return toError(e)
 }
 
 func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
