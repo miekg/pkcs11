@@ -115,9 +115,8 @@ type Attribute struct {
 	Value []byte
 }
 
-//
-func NewAttribute(typ uint, x interface{}) Attribute {
-	var a Attribute
+func NewAttribute(typ uint, x interface{}) *Attribute {
+	a := new(Attribute)
 	a.Type = typ
 	if x == nil {
 		a.Value = nil
@@ -167,20 +166,23 @@ func NewAttribute(typ uint, x interface{}) Attribute {
 }
 
 // cAttribute returns the start address and the length of an attribute list.
-func cAttributeList(a []Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
+func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	if len(a) == 0 {
 		return nil, 0
 	}
 	// TODO(miek): not 100% working
-	cp := make([]C.CK_ATTRIBUTE_PTR, len(a))
+	pa := make([]C.CK_ATTRIBUTE_PTR, len(a))
 	for i := 0; i < len(a); i++ {
 		var l C.CK_ATTRIBUTE
+		pa[i] = C.CK_ATTRIBUTE_PTR(&l)
 		l._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
+		if a[i].Value == nil {
+			continue
+		}
 		l.pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
 		l.ulValueLen = C.CK_ULONG(len(a[i].Value))
-		cp[i] = C.CK_ATTRIBUTE_PTR(&l)
 	}
-	return C.CK_ATTRIBUTE_PTR(cp[0]), C.CK_ULONG(len(a))
+	return C.CK_ATTRIBUTE_PTR(pa[0]), C.CK_ULONG(len(a))
 }
 
 type Date struct {
@@ -192,41 +194,34 @@ type Mechanism struct {
 	Parameter []byte
 }
 
-func NewMechanism(mech uint, x interface{}) Mechanism {
-	var m Mechanism
+func NewMechanism(mech uint, x interface{}) *Mechanism {
+	m := new(Mechanism)
 	m.Mechanism = mech
 	if x == nil {
 		m.Parameter = nil
 		return m
 	}
-	// Add specific types? Ala Attributes?
+	// TODO(mg) Not seen anything as elaborate as Attributes, so for know do nothing.
 	return m
 }
 
-// cMechanismList
-
-// cMechanism returns a C pointer to the mechanism m.
-func cMechanism(m Mechanism) C.CK_MECHANISM_PTR {
-	var m1 C.CK_MECHANISM
-	m1.mechanism = C.CK_MECHANISM_TYPE(m.Mechanism)
-	if len(m.Parameter) == 0 {
-		m1.pParameter = C.CK_VOID_PTR(nil)
-	} else {
-		m1.pParameter = C.CK_VOID_PTR(&(m.Parameter[0]))
+func cMechanismList(m []*Mechanism) (C.CK_MECHANISM_PTR, C.CK_ULONG) {
+	if len(m) == 0 {
+		return nil, 0
 	}
-	m1.ulParameterLen = C.CK_ULONG(len(m.Parameter))
-	return C.CK_MECHANISM_PTR(&m1)
+	pm := make([]C.CK_MECHANISM_PTR, len(m))
+	for i := 0; i < len(m); i++ {
+		var l C.CK_MECHANISM
+		pm[i] = C.CK_MECHANISM_PTR(&l)
+		l.mechanism = C.CK_MECHANISM_TYPE(m[i].Mechanism)
+		if m[i].Parameter == nil {
+			continue
+		}
+		l.pParameter = C.CK_VOID_PTR(&(m[i].Parameter[0]))
+		l.ulParameterLen = C.CK_ULONG(len(m[i].Parameter))
+	}
+	return C.CK_MECHANISM_PTR(pm[0]), C.CK_ULONG(len(m))
 }
-
-//func toMechanismList(clist C.CK_MECHANISM_TYPE_PTR, size C.CK_ULONG) []Mechanism {
-//	m := make([]Mechanism, int(size))
-//	for i := 0; i < len(m); i++ {
-//		cm := C.Index(clist, C.(i))
-//		m[i] = Mechanism{Mechanism: uint(cm.mechanism),
-//	}
-//	defer C.free(unsafe.Pointer(clist))
-//	return m
-//}
 
 type MechanismInfo struct {
 	MinKeySize uint

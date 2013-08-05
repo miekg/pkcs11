@@ -100,6 +100,24 @@ CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR
 	return e;
 }
 
+CK_RV SignInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
+	CK_RV e = c->sym->C_SignInit(session, mechanism, key);
+	return e;
+}
+
+CK_RV Sign(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR sig, CK_ULONG_PTR siglen) {
+        CK_RV rv = c->sym->C_Sign(session, message, mlen, NULL, siglen);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        sig = malloc(*siglen * sizeof(CK_BYTE));
+	if (sig == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+        rv = c->sym->C_Sign(session, message, mlen, sig, siglen);
+	return rv;
+}
+
 */
 import "C"
 
@@ -177,17 +195,39 @@ func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
 	return toError(e)
 }
 
-func (c *Ctx) GenerateKeyPair(sh SessionHandle, m Mechanism, public, private []Attribute) (ObjectHandle, ObjectHandle, error) {
+func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private []*Attribute) (ObjectHandle, ObjectHandle, error) {
 	var (
 		pubkey  C.CK_OBJECT_HANDLE
 		privkey C.CK_OBJECT_HANDLE
 	)
 	pub, pubcount := cAttributeList(public)
 	priv, privcount := cAttributeList(private)
-	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), cMechanism(m), pub, pubcount, priv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
+	mech, _ := cMechanismList(m)
+	e := C.GenerateKeyPair(c.ctx, C.CK_SESSION_HANDLE(sh), mech, pub, pubcount, priv, privcount, C.CK_OBJECT_HANDLE_PTR(&pubkey), C.CK_OBJECT_HANDLE_PTR(&privkey))
 	e1 := toError(e)
 	if e1 == nil {
 		return ObjectHandle(pubkey), ObjectHandle(privkey), nil
 	}
 	return 0, 0, e1
+}
+
+func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
+	mech, _ := cMechanismList(m) // only the first is used
+	e := C.SignInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
+	return toError(e)
+}
+
+func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
+	var (
+		sig    C.CK_BYTE
+		siglen C.CK_ULONG
+	)
+	e := C.Sign(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &sig, &siglen)
+	if toError(e) != nil {
+		// TODO(miek): don't now if the malloc of sig succeeded or not
+		return nil, toError(e)
+	}
+	gsig := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
+//	C.free(unsafe.Pointer(&sig))
+	return gsig, nil
 }
