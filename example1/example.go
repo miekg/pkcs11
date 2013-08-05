@@ -38,19 +38,19 @@ func main() {
 		log.Fatal("user pin %s\n", e.Error())
 	}
 	publicKeyTemplate := []*pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024),
-		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, 257),
-		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PUBLIC_KEY),
-		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
+		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024),
+		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, 257),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 	}
 	privateKeyTemplate := []*pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PRIVATE_KEY),
+//		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PRIVATE_KEY),
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
-		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 	}
 	pub, priv, e := p.GenerateKeyPair(session,
 		[]*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
