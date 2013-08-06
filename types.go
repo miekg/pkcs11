@@ -177,7 +177,7 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 			continue
 		}
 		pa[i].pValue = C.CK_VOID_PTR((&a[i].Value[0]))
-		println("pointee", pa[i].pValue, *C.CK_ULONG_PTR(pa[i].pValue))
+		fmt.Printf("pointee %x %x %d\n", pa[i]._type, pa[i].pValue, *C.CK_ULONG_PTR(pa[i].pValue))
 		pa[i].ulValueLen = C.CK_ULONG(len(a[i].Value))
 	}
 	return C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))

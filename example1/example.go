@@ -38,11 +38,11 @@ func main() {
 		log.Fatal("user pin %s\n", e.Error())
 	}
 	publicKeyTemplate := []*pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 0),
+		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024),
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PUBLIC_KEY),
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
-		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, 0),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, 257),
 		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 	}
 	privateKeyTemplate := []*pkcs11.Attribute{
