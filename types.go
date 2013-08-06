@@ -171,18 +171,17 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 		return nil, 0
 	}
 	// TODO(miek): not 100% working
-	pa := make([]C.CK_ATTRIBUTE_PTR, len(a))
+	pa := make([]C.CK_ATTRIBUTE, len(a))
 	for i := 0; i < len(a); i++ {
-		var l C.CK_ATTRIBUTE
-		pa[i] = C.CK_ATTRIBUTE_PTR(&l)
-		l._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
+		pa[i]._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
 		if a[i].Value == nil {
 			continue
 		}
-		l.pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
-		l.ulValueLen = C.CK_ULONG(len(a[i].Value))
+		pa[i].pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
+		println("poinrttter", pa[i].pValue, *C.CK_ULONG_PTR(pa[i].pValue))
+		pa[i].ulValueLen = C.CK_ULONG(len(a[i].Value))
 	}
-	return C.CK_ATTRIBUTE_PTR(pa[0]), C.CK_ULONG(len(a))
+	return C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))
 }
 
 type Date struct {
