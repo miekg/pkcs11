@@ -140,7 +140,7 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 		switch int(C.SizeOf()) {
 		case 4:
 			a.Value = make([]byte, 4)
-			a.Value[0] = byte(y) // Is this intel??
+			a.Value[0] = byte(y)
 			a.Value[1] = byte(y >> 8)
 			a.Value[2] = byte(y >> 16)
 			a.Value[3] = byte(y >> 24)
@@ -170,15 +170,14 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	if len(a) == 0 {
 		return nil, 0
 	}
-	// TODO(miek): not 100% working
 	pa := make([]C.CK_ATTRIBUTE, len(a))
 	for i := 0; i < len(a); i++ {
 		pa[i]._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
 		if a[i].Value == nil {
 			continue
 		}
-		pa[i].pValue = C.CK_VOID_PTR(&(a[i].Value[0]))
-		println("poinrttter", pa[i].pValue, *C.CK_ULONG_PTR(pa[i].pValue))
+		pa[i].pValue = C.CK_VOID_PTR((&a[i].Value[0]))
+		println("pointee", pa[i].pValue, *C.CK_ULONG_PTR(pa[i].pValue))
 		pa[i].ulValueLen = C.CK_ULONG(len(a[i].Value))
 	}
 	return C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))
@@ -200,7 +199,7 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 		m.Parameter = nil
 		return m
 	}
-	// TODO(mg) Not seen anything as elaborate as Attributes, so for know do nothing.
+	// TODO(mg): Not seen anything as elaborate as Attributes, so for know do nothing.
 	return m
 }
 
@@ -208,18 +207,16 @@ func cMechanismList(m []*Mechanism) (C.CK_MECHANISM_PTR, C.CK_ULONG) {
 	if len(m) == 0 {
 		return nil, 0
 	}
-	pm := make([]C.CK_MECHANISM_PTR, len(m))
+	pm := make([]C.CK_MECHANISM, len(m))
 	for i := 0; i < len(m); i++ {
-		var l C.CK_MECHANISM
-		pm[i] = C.CK_MECHANISM_PTR(&l)
-		l.mechanism = C.CK_MECHANISM_TYPE(m[i].Mechanism)
+		pm[i].mechanism = C.CK_MECHANISM_TYPE(m[i].Mechanism)
 		if m[i].Parameter == nil {
 			continue
 		}
-		l.pParameter = C.CK_VOID_PTR(&(m[i].Parameter[0]))
-		l.ulParameterLen = C.CK_ULONG(len(m[i].Parameter))
+		pm[i].pParameter = C.CK_VOID_PTR(&(m[i].Parameter[0]))
+		pm[i].ulParameterLen = C.CK_ULONG(len(m[i].Parameter))
 	}
-	return C.CK_MECHANISM_PTR(pm[0]), C.CK_ULONG(len(m))
+	return C.CK_MECHANISM_PTR(&pm[0]), C.CK_ULONG(len(m))
 }
 
 type MechanismInfo struct {
