@@ -19,7 +19,7 @@ package pkcs11
 #include "pkcs11.h"
 
 CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) { return array[i]; }
-CK_ULONG SizeOf() { return sizeof(CK_ULONG); }
+CK_ULONG Sizeof() { return sizeof(CK_ULONG); }
 
 */
 import "C"
@@ -137,7 +137,7 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 		if _, ok := x.(uint); ok {
 			y = x.(uint)
 		}
-		switch int(C.SizeOf()) {
+		switch int(C.Sizeof()) {
 		case 4:
 			a.Value = make([]byte, 4)
 			a.Value[0] = byte(y)
