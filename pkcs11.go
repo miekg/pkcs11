@@ -237,7 +237,6 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
-	println("siglen", siglen)
 	gsig := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
 	//	C.free(unsafe.Pointer(&sig))
 	return gsig, nil
