@@ -16,6 +16,7 @@ package pkcs11
 #include <stdlib.h>
 #include <stdio.h>
 #include <ltdl.h>
+#include <unistd.h>
 #include "pkcs11.h"
 
 struct ctx {
@@ -89,6 +90,11 @@ CK_RV CloseSession(struct ctx *c, CK_SESSION_HANDLE session) {
 
 CK_RV Login(struct ctx* c, CK_SESSION_HANDLE session, CK_USER_TYPE userType, char* pin, CK_ULONG pinLen) {
 	CK_RV e = c->sym->C_Login(session, userType, (CK_UTF8CHAR_PTR)pin, pinLen);
+	return e;
+}
+
+CK_RV Logout(struct ctx *c, CK_SESSION_HANDLE session) {
+	CK_RV e = c->sym->C_Logout(session);
 	return e;
 }
 
@@ -195,6 +201,11 @@ func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
 	return toError(e)
 }
 
+func (c *Ctx) Logout(sh SessionHandle) error {
+	e := C.Logout(c.ctx, C.CK_SESSION_HANDLE(sh))
+	return toError(e)
+}
+
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private []*Attribute) (ObjectHandle, ObjectHandle, error) {
 	var (
 		pubkey  C.CK_OBJECT_HANDLE
@@ -212,7 +223,7 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private 
 }
 
 func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
-	mech, _ := cMechanismList(m) // only the first is used
+	mech, _ := cMechanismList(m) // Only the first is used, but still use a list.
 	e := C.SignInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
 	return toError(e)
 }
@@ -224,9 +235,9 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	)
 	e := C.Sign(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &sig, &siglen)
 	if toError(e) != nil {
-		// TODO(miek): don't now if the malloc of sig succeeded or not
 		return nil, toError(e)
 	}
+	println("siglen", siglen)
 	gsig := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
 	//	C.free(unsafe.Pointer(&sig))
 	return gsig, nil

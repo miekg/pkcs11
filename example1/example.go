@@ -37,20 +37,21 @@ func main() {
 	if e := p.Login(session, pkcs11.CKU_USER, "1234"); e != nil {
 		log.Fatal("user pin %s\n", e.Error())
 	}
+	defer p.Logout(session)
 	publicKeyTemplate := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PUBLIC_KEY),
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_ENCRYPT, true),
-		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, 257),
+		pkcs11.NewAttribute(pkcs11.CKA_PUBLIC_EXPONENT, []byte{3}),
 		pkcs11.NewAttribute(pkcs11.CKA_MODULUS_BITS, 1024),
-//		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 	}
 	privateKeyTemplate := []*pkcs11.Attribute{
 		pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE, pkcs11.CKO_PRIVATE_KEY),
 		pkcs11.NewAttribute(pkcs11.CKA_TOKEN, true),
 		pkcs11.NewAttribute(pkcs11.CKA_PRIVATE, true),
 		pkcs11.NewAttribute(pkcs11.CKA_SIGN, true),
-//		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, "MyFirstKey"),
 	}
 	pub, priv, e := p.GenerateKeyPair(session,
 		[]*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
@@ -58,13 +59,10 @@ func main() {
 	if e != nil {
 		log.Fatalf("%s\n", e.Error())
 	}
-	println(pub)
-	println(priv)
-
-	
-	e = p.SignInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_RSA_PKCS, nil)}, priv)
+	log.Printf("pub id %d, priv id %d", pub, priv)
+	e = p.SignInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_SHA1_RSA_PKCS, nil)}, priv)
 	if e != nil {
-	log.Fatalf("SignInit: %s\n", e.Error())
+		log.Fatalf("SignInit: %s\n", e.Error())
 	}
 
 	// Sign something with priv
