@@ -17,6 +17,7 @@ const (
 	CKO_MECHANISM         uint = 0x00000007
 	CKO_OTP_KEY           uint = 0x00000008
 	CKO_VENDOR_DEFINED    uint = 0x80000000
+
 )
 
 // Generated with: awk '/#define CK[AFRM]/{ print $2 "=" $3 }' pkcs11t.h
