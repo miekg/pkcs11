@@ -170,6 +170,8 @@ CK_RV Encrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_
 	return rv;
 }
 
+// Random functions
+
 */
 import "C"
 
@@ -322,6 +324,8 @@ func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	return toError(e)
 }
 
+// Sign signs (encrypts with private key) data in a single part, where the signature 
+// is (will be) an appendix to the data, and plaintext cannot be recovered from the signature.
 func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
 		sig    C.CK_BYTE_PTR
