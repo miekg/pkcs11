@@ -28,22 +28,21 @@ The following examples are available:
 
 A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 
-	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
-	p.Initialize()
-	defer p.Destroy()
-	defer p.Finalize()
-	slots, _ := p.GetSlotList(true)
-	session, _ := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
-	defer p.CloseSession(session)
-	p.Login(session, pkcs11.CKU_USER, "1234")
-	defer p.Logout(session)
-        // Create a SHA1 digest
-	p.DigestInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_SHA_1, nil)})
-	hash, err := p.Digest(session, []byte("this is a string"))
-	for _, d := range hash {
-		fmt.Printf("%x", d)
-	}
-	fmt.Println()
+    p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
+    p.Initialize()
+    defer p.Destroy()
+    defer p.Finalize()
+    slots, _ := p.GetSlotList(true)
+    session, _ := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+    defer p.CloseSession(session)
+    p.Login(session, pkcs11.CKU_USER, "1234")
+    defer p.Logout(session)
+    p.DigestInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_SHA_1, nil)})
+    hash, err := p.Digest(session, []byte("this is a string"))
+    for _, d := range hash {
+            fmt.Printf("%x", d)
+    }
+    fmt.Println()
 
 ## TODO
 
