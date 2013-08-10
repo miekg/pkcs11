@@ -450,7 +450,7 @@ func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, erro
 		}
 		return o, ulCount > C.CK_ULONG(max), nil
 	}
-	return nil, false, toError(2)
+	return nil, false, toError(e)
 }
 
 /* C_FindObjectsFinal finishes a search for token and session objects. */
