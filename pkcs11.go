@@ -229,6 +229,25 @@ CK_RV FindObjectsFinal(struct ctx* c, CK_SESSION_HANDLE session) {
 	CK_RV e = c->sym->C_FindObjectsFinal(session);
 	return e;
 }
+
+CK_RV DecryptInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
+	CK_RV e = c->sym->C_DecryptInit(session, mechanism, key);
+	return e;
+}
+
+CK_RV Decrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR cypher, CK_ULONG clen, CK_BYTE_PTR *plain, CK_ULONG_PTR plainlen) {
+        CK_RV rv = c->sym->C_Decrypt(session, cypher, clen, NULL, plainlen);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        *plain = calloc(*plainlen, sizeof(CK_BYTE));
+	if (*plain == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+        rv = c->sym->C_Decrypt(session, cypher, clen, *plain, plainlen);
+	return rv;
+}
+
 */
 import "C"
 
@@ -362,7 +381,7 @@ func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
 	return toError(e)
 }
 
-/* C_Digest digests data in a single part. */
+/* Digest digests data in a single part. */
 func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
 		hash    C.CK_BYTE_PTR
@@ -376,7 +395,7 @@ func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 	return h, nil
 }
 
-/* C_DigestUpdate continues a multiple-part message-digesting operation. */
+/* DigestUpdate continues a multiple-part message-digesting operation. */
 func (c *Ctx) DigestUpdate(sh SessionHandle, message []byte) error {
 	e := C.DigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)))
 	if toError(e) != nil {
@@ -385,7 +404,7 @@ func (c *Ctx) DigestUpdate(sh SessionHandle, message []byte) error {
 	return nil
 }
 
-// C_DigestKey continues a multi-part message-digesting
+// DigestKey continues a multi-part message-digesting
 // operation, by digesting the value of a secret key as part of
 // the data already digested.
 func (c *Ctx) DigestKey(sh SessionHandle, key ObjectHandle) error {
@@ -396,7 +415,7 @@ func (c *Ctx) DigestKey(sh SessionHandle, key ObjectHandle) error {
 	return nil
 }
 
-/* C_DigestFinal finishes a multiple-part message-digesting operation. */
+/* DigestFinal finishes a multiple-part message-digesting operation. */
 func (c *Ctx) DigestFinal(sh SessionHandle) ([]byte, error) {
 	var (
 		hash    C.CK_BYTE_PTR
@@ -452,7 +471,7 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	return s, nil
 }
 
-/* C_CreateObject creates a new object. */
+/* CreateObject creates a new object. */
 func (c *Ctx) CreateObject(sh SessionHandle, temp []*Attribute) (ObjectHandle, error) {
 	var obj C.CK_OBJECT_HANDLE
 	t, tcount := cAttributeList(temp)
@@ -466,13 +485,13 @@ func (c *Ctx) CreateObject(sh SessionHandle, temp []*Attribute) (ObjectHandle, e
 
 // TODO(miek): CopyObject here
 
-/* C_DestroyObject destroys an object. */
+/* DestroyObject destroys an object. */
 func (c *Ctx) DestroyObject(sh SessionHandle, oh ObjectHandle) error {
 	e := C.DestroyObject(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(oh))
 	return toError(e)
 }
 
-/* C_GetObjectSize gets the size of an object in bytes. */
+/* GetObjectSize gets the size of an object in bytes. */
 func (c *Ctx) GetObjectSize(sh SessionHandle, oh ObjectHandle) (uint, error) {
 	var size C.CK_ULONG
 	e := C.GetObjectSize(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(oh), &size)
@@ -488,7 +507,7 @@ func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
 	return toError(e)
 }
 
-// C_FindObjects continues a search for token and session
+// FindObjects continues a search for token and session
 // objects that match a template, obtaining additional object
 // handles. The returned boolean indicates if the list would
 // have been larger than max.
@@ -511,8 +530,30 @@ func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, erro
 	return nil, false, toError(e)
 }
 
-/* C_FindObjectsFinal finishes a search for token and session objects. */
+/* FindObjectsFinal finishes a search for token and session objects. */
 func (c *Ctx) FindObjectsFinal(sh SessionHandle) error {
 	e := C.FindObjectsFinal(c.ctx, C.CK_SESSION_HANDLE(sh))
 	return toError(e)
 }
+
+/* DecryptInit initializes a decryption operation. */
+func (c *Ctx) DecryptInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
+	mech, _ := cMechanismList(m)
+	e := C.DecryptInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
+	return toError(e)
+}
+
+/* Decrypt decrypts encrypted data in a single part. */
+func (c *Ctx) Decrypt(sh SessionHandle, cypher []byte) ([]byte, error) {
+	var (
+		plain    C.CK_BYTE_PTR
+		plainlen C.CK_ULONG
+	)
+	e := C.Decrypt(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cypher[0])), C.CK_ULONG(len(cypher)), &plain, &plainlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	s := C.GoBytes(unsafe.Pointer(plain), C.int(plainlen))
+	return s, nil
+}
+
