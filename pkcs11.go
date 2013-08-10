@@ -120,6 +120,26 @@ CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_U
 	return rv;
 }
 
+CK_RV DigestUpdate(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen) {
+        CK_RV rv = c->sym->C_DigestUpdate(session, message, mlen);
+        return rv;
+}
+
+// DigestKey
+
+CK_RV DigestFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
+        CK_RV rv = c->sym->C_DigestFinal(session, NULL, hashlen);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        *hash = calloc(*hashlen, sizeof(CK_BYTE));
+	if (*hash == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+        rv = c->sym->C_DigestFinal(session, *hash, hashlen);
+	return rv;
+}
+
 CK_RV GenerateKey(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR key) {
 	CK_RV e = c->sym->C_GenerateKey(session, mechanism, temp, tempCount, key);
@@ -339,12 +359,38 @@ func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
 	return toError(e)
 }
 
+/* C_Digest digests data in a single part. */
 func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
 		hash    C.CK_BYTE_PTR
 		hashlen C.CK_ULONG
 	)
 	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &hash, &hashlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(hash), C.int(hashlen))
+	return h, nil
+}
+
+/* C_DigestUpdate continues a multiple-part message-digesting operation. */
+func (c *Ctx) DigestUpdate(sh SessionHandle, message []byte) error {
+	e := C.DigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)))
+	if toError(e) != nil {
+		return toError(e)
+	}
+	return nil
+}
+
+// DigestKey
+
+/* C_DigestFinal finishes a multiple-part message-digesting operation. */
+func (c *Ctx) DigestFinal(sh SessionHandle) ([]byte, error) {
+	var (
+		hash    C.CK_BYTE_PTR
+		hashlen C.CK_ULONG
+	)
+	e := C.DigestFinal(c.ctx, C.CK_SESSION_HANDLE(sh), &hash, &hashlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
