@@ -8,7 +8,7 @@ It is *assumed*, that:
 * Go's uint size == PKCS11's CK_ULONG size
 * CK_ULONG never overflows an Go uint
 
-# SoftHSM
+## SoftHSM
 
 * Make it use a custom configuration file
 
@@ -18,3 +18,10 @@ It is *assumed*, that:
 
         softhsm --init-token --slot 0 --label test --pin 1234
 
+## Examples
+
+The following examples are available:
+
+* sign/ directory contains a program, that generates a keypair and then signs
+    some data;
+* hash/ directory contains a program that hashes a string with SHA1.
