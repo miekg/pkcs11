@@ -52,7 +52,9 @@ func cBBool(x bool) C.CK_BBOOL {
 
 type Error uint
 
-func (e Error) Error() string { return "pkcs11: " + fmt.Sprintf("0x%X", int(e)) }
+func (e Error) Error() string { 
+	return "pkcs11: " + fmt.Sprintf("pkcs11: 0x%X: %s", uint(e), strerror[uint(e)])
+}
 
 func toError(e C.CK_RV) error {
 	if e == C.CKR_OK {
