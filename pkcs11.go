@@ -98,6 +98,24 @@ CK_RV Logout(struct ctx *c, CK_SESSION_HANDLE session) {
 	return e;
 }
 
+CK_RV DigestInit(struct ctx *c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism) {
+	CK_RV e = c->sym->C_DigestInit(session, mechanism);
+	return e;
+}
+
+CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR hash, CK_ULONG_PTR hashlen) {
+        CK_RV rv = c->sym->C_Digest(session, message, mlen, NULL, hashlen);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        hash = malloc(*hashlen * sizeof(CK_BYTE));
+	if (hash == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+        rv = c->sym->C_Digest(session, message, mlen, hash, hashlen);
+	return rv;
+}
+
 CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
 	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
@@ -237,7 +255,27 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
-	gsig := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
+	s := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
 	//	C.free(unsafe.Pointer(&sig))
-	return gsig, nil
+	return s, nil
+}
+
+func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
+	mech, _ := cMechanismList(m)
+	e := C.DigestInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech)
+	return toError(e)
+}
+
+func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
+	var (
+		hash    C.CK_BYTE
+		hashlen C.CK_ULONG
+	)
+	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &hash, &hashlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(&hash), C.int(hashlen))
+	//	C.free(unsafe.Pointer(&sig))
+	return h, nil
 }
