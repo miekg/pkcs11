@@ -20,6 +20,7 @@ const (
 )
 
 // Generated with: awk '/#define CK[AFRM]/{ print $2 "=" $3 }' pkcs11t.h
+
 const (
 	CKF_TOKEN_PRESENT                    = 0x00000001
 	CKF_REMOVABLE_DEVICE                 = 0x00000002

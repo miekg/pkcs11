@@ -1,6 +1,5 @@
+// Package pkcs11 is a thin wrapper around the PKCS#11 crypto library.
 package pkcs11
-
-// Assumption uint is 32 bits on 32 bits platforms and 64 bits on 64 bit platforms
 
 /*
 #cgo LDFLAGS: -lltdl
@@ -174,7 +173,6 @@ import "unsafe"
 type Ctx struct {
 	ctx         *C.struct_ctx
 	initialized bool
-	// mutex?
 }
 
 // New creates a new context.
@@ -197,6 +195,7 @@ func (c *Ctx) Destroy() {
 	C.Destroy(c.ctx)
 }
 
+/* Initialize initializes the Cryptoki library. */
 func (c *Ctx) Initialize() error {
 	args := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
 	e := C.Initialize(c.ctx, C.CK_VOID_PTR(args))
@@ -207,6 +206,9 @@ func (c *Ctx) Initialize() error {
 }
 
 func (c *Ctx) Finalize() error {
+	if !c.initialized {
+		panic("pkcs11: context not initialized")
+	}
 	e := C.Finalize(c.ctx)
 	return toError(e)
 }
