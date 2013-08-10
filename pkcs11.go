@@ -142,6 +142,24 @@ CK_RV Sign(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULO
 	return rv;
 }
 
+CK_RV EncryptInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
+	CK_RV e = c->sym->C_EncryptInit(session, mechanism, key);
+	return e;
+}
+
+CK_RV Encrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR *enc, CK_ULONG_PTR enclen) {
+        CK_RV rv = c->sym->C_Encrypt(session, message, mlen, NULL, enclen);
+        if (rv != CKR_OK) {
+                return rv;
+        }
+        *enc = malloc(*enclen * sizeof(CK_BYTE));
+	if (*enc == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+        rv = c->sym->C_Encrypt(session, message, mlen, *enc, enclen);
+	return rv;
+}
+
 */
 import "C"
 
@@ -240,6 +258,25 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private 
 	return 0, 0, e1
 }
 
+func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
+	mech, _ := cMechanismList(m)
+	e := C.DigestInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech)
+	return toError(e)
+}
+
+func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
+	var (
+		hash    C.CK_BYTE_PTR
+		hashlen C.CK_ULONG
+	)
+	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &hash, &hashlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(hash), C.int(hashlen))
+	return h, nil
+}
+
 func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	mech, _ := cMechanismList(m) // Only the first is used, but still use a list.
 	e := C.SignInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
@@ -259,21 +296,22 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	return s, nil
 }
 
-func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
+func (c *Ctx) EncryptInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	mech, _ := cMechanismList(m)
-	e := C.DigestInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech)
+	e := C.EncryptInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
 	return toError(e)
 }
 
-func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
+func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
-		hash    C.CK_BYTE_PTR
-		hashlen C.CK_ULONG
+		enc    C.CK_BYTE_PTR
+		enclen C.CK_ULONG
 	)
-	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &hash, &hashlen)
+	e := C.Encrypt(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &enc, &enclen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
-	h := C.GoBytes(unsafe.Pointer(hash), C.int(hashlen))
-	return h, nil
+	s := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
+	return s, nil
 }
+
