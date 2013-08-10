@@ -49,7 +49,7 @@ func cBBool(x bool) C.CK_BBOOL {
 
 type Error uint
 
-func (e Error) Error() string { 
+func (e Error) Error() string {
 	return "pkcs11: " + fmt.Sprintf("pkcs11: 0x%X: %s", uint(e), strerror[uint(e)])
 }
 
@@ -138,7 +138,7 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 		}
 		switch int(C.Sizeof()) {
 		case 4:
-			a.Value = make([]byte,4, 4)
+			a.Value = make([]byte, 4, 4)
 			a.Value[0] = byte(y)
 			a.Value[1] = byte(y >> 8)
 			a.Value[2] = byte(y >> 16)
