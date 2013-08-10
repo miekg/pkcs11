@@ -29,7 +29,7 @@ struct ctx * New(const char *module) {
                 return NULL;
         }
         CK_C_GetFunctionList list;
-        struct ctx *c=  calloc(1, sizeof(struct ctx));
+        struct ctx *c = calloc(1, sizeof(struct ctx));
         c->handle = lt_dlopen(module);
         if (c->handle == NULL) {
                 free(c);
@@ -72,7 +72,7 @@ CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, 
 	if (e != CKR_OK) {
 		return e;
 	}
-	*slotList = calloc(1, sizeof(CK_SLOT_ID) * *ulCount);
+	*slotList = calloc(*ulCount, sizeof(CK_SLOT_ID));
 	e = c->sym->C_GetSlotList(tokenPresent, *slotList, ulCount);
 	return e;
 }
@@ -112,7 +112,7 @@ CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_U
         if (rv != CKR_OK) {
                 return rv;
         }
-        *hash = malloc(*hashlen * sizeof(CK_BYTE));
+        *hash = calloc(*hashlen, sizeof(CK_BYTE));
 	if (*hash == NULL) {
 		return CKR_HOST_MEMORY;
 	}
@@ -144,7 +144,7 @@ CK_RV Sign(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULO
         if (rv != CKR_OK) {
                 return rv;
         }
-        *sig = malloc(*siglen * sizeof(CK_BYTE));
+        *sig = calloc(*siglen, sizeof(CK_BYTE));
 	if (*sig == NULL) {
 		return CKR_HOST_MEMORY;
 	}
@@ -162,7 +162,7 @@ CK_RV Encrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_
         if (rv != CKR_OK) {
                 return rv;
         }
-        *enc = malloc(*enclen * sizeof(CK_BYTE));
+        *enc = calloc(*enclen, sizeof(CK_BYTE));
 	if (*enc == NULL) {
 		return CKR_HOST_MEMORY;
 	}
@@ -170,7 +170,7 @@ CK_RV Encrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_
 	return rv;
 }
 
-CK_RV CreateObject(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR temp, 
+CK_RV CreateObject(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR temp,
 		CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR obj) {
 	CK_RV e = c->sym->C_CreateObject(session, temp, tempCount, obj);
 	return e;
@@ -196,7 +196,11 @@ CK_RV FindObjectsInit(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR
 	return e;
 }
 
-//CK_RV FindObjects(struct ctx* c, CK_SESSION_HANDLE session
+CK_RV FindObjects(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE_PTR *obj, CK_ULONG max, CK_ULONG_PTR objCount) {
+	*obj = calloc(max, sizeof(CK_OBJECT_HANDLE));
+	CK_RV e = c->sym->C_FindObjects(session, *obj, max, objCount);
+	return e;
+}
 */
 import "C"
 
@@ -425,4 +429,21 @@ func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
 // objects that match a template, obtaining additional object
 // handles. The returned boolean indicates if the list would
 // have been larger than max.
-// func (c *Ctx) FindOBjects(sh SessionHandle, max int)
+func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, error) {
+	var (
+		objectList C.CK_OBJECT_HANDLE_PTR
+		ulCount    C.CK_ULONG
+	)
+	e := C.FindObjects(c.ctx, C.CK_SESSION_HANDLE(sh), &objectList, C.CK_ULONG(max), &ulCount)
+	if toError(e) == nil {
+		l := toList(C.CK_ULONG_PTR(unsafe.Pointer(objectList)), ulCount)
+		// Make again a new list of the correct type.
+		// This is copying data, but this is not an often used function.
+		o := make([]ObjectHandle, len(l))
+		for i, v := range l {
+			o[i] = ObjectHandle(v)
+		}
+		return o, ulCount > C.CK_ULONG(max), nil
+	}
+	return nil, false, toError(2)
+}
