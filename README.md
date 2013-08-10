@@ -5,8 +5,8 @@ were it makes sense.
 
 It is *assumed*, that:
 
-* Go's int size == PKCS11's CK_ULONG size
-* CK_ULONG never overflows an Go int
+* Go's uint size == PKCS11's CK_ULONG size
+* CK_ULONG never overflows an Go uint
 
 # SoftHSM
 
@@ -16,8 +16,5 @@ It is *assumed*, that:
 
 * Then use `softhsm` to init it
 
-    softhsm --init-token --slot 0 --label test
-
-
-
+        softhsm --init-token --slot 0 --label test --pin 1234
 
