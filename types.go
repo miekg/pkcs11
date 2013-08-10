@@ -29,12 +29,9 @@ import (
 	"unsafe"
 )
 
-// List is used as a "generic" list as all object from PKCS#11 hold a uint (CK_ULONG).
-type List []uint
-
-// ToList converts from a C style array to a List.
-func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) List {
-	l := make(List, int(size))
+// ToList converts from a C style array to a []uint.
+func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) []uint {
+	l := make([]uint, int(size))
 	for i := 0; i < len(l); i++ {
 		l[i] = uint(C.Index(clist, C.CK_ULONG(i)))
 	}

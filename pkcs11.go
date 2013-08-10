@@ -170,8 +170,33 @@ CK_RV Encrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_
 	return rv;
 }
 
-// Random functions
+CK_RV CreateObject(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR temp, 
+		CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR obj) {
+	CK_RV e = c->sym->C_CreateObject(session, temp, tempCount, obj);
+	return e;
+}
 
+// TODO(miek): CopyObject
+
+CK_RV DestroyObject(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object) {
+	CK_RV e = c->sym->C_DestroyObject(session, object);
+	return e;
+}
+
+CK_RV GetObjectSize(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object, CK_ULONG_PTR size) {
+	CK_RV e = c->sym->C_GetObjectSize(session, object, size);
+	return e;
+}
+
+// TODO(miek): GetAttributeValue
+// TODO(miek): SetAttributeValue
+
+CK_RV FindObjectsInit(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount) {
+	CK_RV e = c->sym->C_FindObjectsInit(session, temp, tempCount);
+	return e;
+}
+
+//CK_RV FindObjects(struct ctx* c, CK_SESSION_HANDLE session
 */
 import "C"
 
@@ -223,7 +248,7 @@ func (c *Ctx) Finalize() error {
 }
 
 /* GetSlotList obtains a list of slots in the system. */
-func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
+func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 	var (
 		slotList C.CK_ULONG_PTR
 		ulCount  C.CK_ULONG
@@ -271,7 +296,7 @@ func (c *Ctx) Logout(sh SessionHandle) error {
 
 /* GenerateKey generates a secret key, creating a new key object. */
 func (c *Ctx) GenerateKey(sh SessionHandle, m []*Mechanism, temp []*Attribute) (ObjectHandle, error) {
-	var key  C.CK_OBJECT_HANDLE
+	var key C.CK_OBJECT_HANDLE
 	t, tcount := cAttributeList(temp)
 	mech, _ := cMechanismList(m)
 	e := C.GenerateKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech, t, tcount, C.CK_OBJECT_HANDLE_PTR(&key))
@@ -324,7 +349,7 @@ func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	return toError(e)
 }
 
-// Sign signs (encrypts with private key) data in a single part, where the signature 
+// Sign signs (encrypts with private key) data in a single part, where the signature
 // is (will be) an appendix to the data, and plaintext cannot be recovered from the signature.
 func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
@@ -359,3 +384,45 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	s := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
 	return s, nil
 }
+
+/* C_CreateObject creates a new object. */
+func (c *Ctx) CreateObject(sh SessionHandle, temp []*Attribute) (ObjectHandle, error) {
+	var obj C.CK_OBJECT_HANDLE
+	t, tcount := cAttributeList(temp)
+	e := C.CreateObject(c.ctx, C.CK_SESSION_HANDLE(sh), t, tcount, C.CK_OBJECT_HANDLE_PTR(&obj))
+	e1 := toError(e)
+	if e1 == nil {
+		return ObjectHandle(obj), nil
+	}
+	return 0, e1
+}
+
+// TODO(miek): CopyObject here
+
+/* C_DestroyObject destroys an object. */
+func (c *Ctx) DestroyObject(sh SessionHandle, oh ObjectHandle) error {
+	e := C.DestroyObject(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(oh))
+	return toError(e)
+}
+
+/* C_GetObjectSize gets the size of an object in bytes. */
+func (c *Ctx) GetObjectSize(sh SessionHandle, oh ObjectHandle) (uint, error) {
+	var size C.CK_ULONG
+	e := C.GetObjectSize(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(oh), &size)
+	return uint(size), toError(e)
+}
+
+// TODO(miek): GetAttributeValue
+// TODO(miek): SetAttributeValue
+
+func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
+	t, tcount := cAttributeList(temp)
+	e := C.FindObjectsInit(c.ctx, C.CK_SESSION_HANDLE(sh), t, tcount)
+	return toError(e)
+}
+
+// C_FindObjects continues a search for token and session
+// objects that match a template, obtaining additional object
+// handles. The returned boolean indicates if the list would
+// have been larger than max.
+// func (c *Ctx) FindOBjects(sh SessionHandle, max int)
