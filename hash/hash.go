@@ -44,9 +44,9 @@ func main() {
 	}
 
 	// Sign something with priv
-	data := []byte{1, 2, 3, 4}
+	data := "this is a string"
 
-	hash, err := p.Digest(session, data)
+	hash, err := p.Digest(session, []byte(data))
 	if err != nil {
 		log.Fatalf("sig: %s\n", err.Error())
 	}
