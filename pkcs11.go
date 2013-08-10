@@ -103,16 +103,16 @@ CK_RV DigestInit(struct ctx *c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mech
 	return e;
 }
 
-CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR hash, CK_ULONG_PTR hashlen) {
+CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
         CK_RV rv = c->sym->C_Digest(session, message, mlen, NULL, hashlen);
         if (rv != CKR_OK) {
                 return rv;
         }
-        hash = malloc(*hashlen * sizeof(CK_BYTE));
-	if (hash == NULL) {
+        *hash = malloc(*hashlen * sizeof(CK_BYTE));
+	if (*hash == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-        rv = c->sym->C_Digest(session, message, mlen, hash, hashlen);
+        rv = c->sym->C_Digest(session, message, mlen, *hash, hashlen);
 	return rv;
 }
 
@@ -129,16 +129,16 @@ CK_RV SignInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechan
 	return e;
 }
 
-CK_RV Sign(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR sig, CK_ULONG_PTR siglen) {
+CK_RV Sign(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR *sig, CK_ULONG_PTR siglen) {
         CK_RV rv = c->sym->C_Sign(session, message, mlen, NULL, siglen);
         if (rv != CKR_OK) {
                 return rv;
         }
-        sig = malloc(*siglen * sizeof(CK_BYTE));
-	if (sig == NULL) {
+        *sig = malloc(*siglen * sizeof(CK_BYTE));
+	if (*sig == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-        rv = c->sym->C_Sign(session, message, mlen, sig, siglen);
+        rv = c->sym->C_Sign(session, message, mlen, *sig, siglen);
 	return rv;
 }
 
@@ -248,15 +248,14 @@ func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 
 func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
-		sig    C.CK_BYTE
+		sig    C.CK_BYTE_PTR
 		siglen C.CK_ULONG
 	)
 	e := C.Sign(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &sig, &siglen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
-	s := C.GoBytes(unsafe.Pointer(&sig), C.int(siglen))
-	//	C.free(unsafe.Pointer(&sig))
+	s := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
 	return s, nil
 }
 
@@ -268,14 +267,13 @@ func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
 
 func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
-		hash    C.CK_BYTE
+		hash    C.CK_BYTE_PTR
 		hashlen C.CK_ULONG
 	)
 	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &hash, &hashlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
-	h := C.GoBytes(unsafe.Pointer(&hash), C.int(hashlen))
-	//	C.free(unsafe.Pointer(&sig))
+	h := C.GoBytes(unsafe.Pointer(hash), C.int(hashlen))
 	return h, nil
 }

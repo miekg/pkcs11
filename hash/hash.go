@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/miekg/pkcs11"
 	"log"
 )
@@ -43,12 +44,14 @@ func main() {
 		log.Fatalf("DigestInit: %s\n", e.Error())
 	}
 
-	// Sign something with priv
 	data := "this is a string"
-
 	hash, err := p.Digest(session, []byte(data))
 	if err != nil {
 		log.Fatalf("sig: %s\n", err.Error())
 	}
 	log.Printf("%v\n", hash)
+	for _, d := range hash {
+		fmt.Printf("%x", d)
+	}
+	fmt.Println()
 }
