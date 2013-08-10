@@ -25,3 +25,8 @@ The following examples are available:
 * sign/ directory contains a program, that generates a keypair and then signs
     some data;
 * hash/ directory contains a program that hashes a string with SHA1.
+
+## TODO
+
+* Tests
+* Implement the whole spec
