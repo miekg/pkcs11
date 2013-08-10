@@ -205,6 +205,7 @@ func (c *Ctx) Initialize() error {
 	return toError(e)
 }
 
+/* Finalize indicates that an application is done with the Cryptoki library. */
 func (c *Ctx) Finalize() error {
 	if !c.initialized {
 		panic("pkcs11: context not initialized")
@@ -213,6 +214,7 @@ func (c *Ctx) Finalize() error {
 	return toError(e)
 }
 
+/* GetSlotList obtains a list of slots in the system. */
 func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
 	var (
 		slotList C.CK_ULONG_PTR
@@ -226,22 +228,26 @@ func (c *Ctx) GetSlotList(tokenPresent bool) (List, error) {
 	return nil, toError(e)
 }
 
+/* OpenSession opens a session between an application and a token. */
 func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 	var s C.CK_SESSION_HANDLE
 	e := C.OpenSession(c.ctx, C.CK_ULONG(slotID), C.CK_ULONG(flags), C.CK_SESSION_HANDLE_PTR(&s))
 	return SessionHandle(s), toError(e)
 }
 
+/* CloseSession closes a session between an application and a token. */
 func (c *Ctx) CloseSession(sh SessionHandle) error {
 	e := C.CloseSession(c.ctx, C.CK_SESSION_HANDLE(sh))
 	return toError(e)
 }
 
+/* CloseAllSessions closes all sessions with a token. */
 func (c *Ctx) CloseAllSessions(slotID uint) error {
 	e := C.CloseAllSessions(c.ctx, C.CK_ULONG(slotID))
 	return toError(e)
 }
 
+/* Login logs a user into a token. */
 func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
 	p := C.CString(pin)
 	defer C.free(unsafe.Pointer(p))
@@ -249,6 +255,7 @@ func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
 	return toError(e)
 }
 
+/* Logout logs a user out from a token. */
 func (c *Ctx) Logout(sh SessionHandle) error {
 	e := C.Logout(c.ctx, C.CK_SESSION_HANDLE(sh))
 	return toError(e)
@@ -308,12 +315,14 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	return s, nil
 }
 
+/* EncryptInit initializes an encryption operation. */
 func (c *Ctx) EncryptInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	mech, _ := cMechanismList(m)
 	e := C.EncryptInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
 	return toError(e)
 }
 
+/* Encrypt encrypts single-part data. */
 func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
 		enc    C.CK_BYTE_PTR
@@ -326,4 +335,3 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	s := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
 	return s, nil
 }
-
