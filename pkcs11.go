@@ -125,7 +125,10 @@ CK_RV DigestUpdate(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message
         return rv;
 }
 
-// DigestKey
+CK_RV DigestKey(struct ctx *c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE key) {
+	CK_RV rv = c->sym->C_DigestKey(session, key);
+	return rv;
+}
 
 CK_RV DigestFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
         CK_RV rv = c->sym->C_DigestFinal(session, NULL, hashlen);
@@ -382,7 +385,16 @@ func (c *Ctx) DigestUpdate(sh SessionHandle, message []byte) error {
 	return nil
 }
 
-// DigestKey
+// C_DigestKey continues a multi-part message-digesting
+// operation, by digesting the value of a secret key as part of
+// the data already digested.
+func (c *Ctx) DigestKey(sh SessionHandle, key ObjectHandle) error {
+	e := C.DigestKey(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(key))
+	if toError(e) != nil {
+		return toError(e)
+	}
+	return nil
+}
 
 /* C_DigestFinal finishes a multiple-part message-digesting operation. */
 func (c *Ctx) DigestFinal(sh SessionHandle) ([]byte, error) {
