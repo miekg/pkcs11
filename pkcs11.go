@@ -120,6 +120,12 @@ CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_U
 	return rv;
 }
 
+CK_RV GenerateKey(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
+	CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR key) {
+	CK_RV e = c->sym->C_GenerateKey(session, mechanism, temp, tempCount, key);
+	return e;
+}
+
 CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
 	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
 	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
@@ -261,6 +267,20 @@ func (c *Ctx) Logout(sh SessionHandle) error {
 	return toError(e)
 }
 
+/* GenerateKey generates a secret key, creating a new key object. */
+func (c *Ctx) GenerateKey(sh SessionHandle, m []*Mechanism, temp []*Attribute) (ObjectHandle, error) {
+	var key  C.CK_OBJECT_HANDLE
+	t, tcount := cAttributeList(temp)
+	mech, _ := cMechanismList(m)
+	e := C.GenerateKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech, t, tcount, C.CK_OBJECT_HANDLE_PTR(&key))
+	e1 := toError(e)
+	if e1 == nil {
+		return ObjectHandle(key), nil
+	}
+	return 0, e1
+}
+
+/* GenerateKeyPair generates a public-key/private-key pair creating new key objects. */
 func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private []*Attribute) (ObjectHandle, ObjectHandle, error) {
 	var (
 		pubkey  C.CK_OBJECT_HANDLE
