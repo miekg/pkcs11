@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/miekg/pkcs11"
 	"log"
+	"os"
 )
 
 func main() {
+	wd, _ := os.Getwd()
+	os.Setenv("SOFTHSM_CONF", wd + "/softhsm.conf")
 	flag.Parse()
 	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
 	if len(flag.Args()) > 0 {
