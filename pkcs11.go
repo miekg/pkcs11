@@ -201,6 +201,11 @@ CK_RV FindObjects(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE_PTR
 	CK_RV e = c->sym->C_FindObjects(session, *obj, max, objCount);
 	return e;
 }
+
+CK_RV FindObjectsFinal(struct ctx* c, CK_SESSION_HANDLE session) {
+	CK_RV e = c->sym->C_FindObjectsFinal(session);
+	return e;
+}
 */
 import "C"
 
@@ -446,4 +451,10 @@ func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, erro
 		return o, ulCount > C.CK_ULONG(max), nil
 	}
 	return nil, false, toError(2)
+}
+
+/* C_FindObjectsFinal finishes a search for token and session objects. */
+func (c *Ctx) FindObjectsFinal(sh SessionHandle) error {
+	e := C.FindObjectsFinal(c.ctx, C.CK_SESSION_HANDLE(sh))
+	return toError(e)
 }
