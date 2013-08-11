@@ -131,7 +131,6 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 	a := new(Attribute)
 	a.Type = typ
 	if x == nil {
-		a.Value = nil
 		return a
 	}
 	switch x.(type) {
@@ -211,7 +210,6 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	m := new(Mechanism)
 	m.Mechanism = mech
 	if x == nil {
-		m.Parameter = nil
 		return m
 	}
 	// TODO(miek): Not seen anything as elaborate as Attributes, so for know do nothing.
