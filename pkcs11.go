@@ -64,11 +64,11 @@ CK_RV Initialize(struct ctx* c, CK_VOID_PTR initArgs) {
 }
 
 CK_RV Finalize(struct ctx* c) {
-	return c->sym->C_Finalize(NULL_PTR);
+	return c->sym->C_Finalize(NULL);
 }
 
 CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, CK_ULONG_PTR ulCount) {
-	CK_RV e = c->sym->C_GetSlotList(tokenPresent, NULL_PTR, ulCount);
+	CK_RV e = c->sym->C_GetSlotList(tokenPresent, NULL, ulCount);
 	if (e != CKR_OK) {
 		return e;
 	}
@@ -78,7 +78,7 @@ CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, 
 }
 
 CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HANDLE_PTR session) {
-	CK_RV e = c->sym->C_OpenSession((CK_SLOT_ID)slotID, (CK_FLAGS)flags, NULL_PTR, NULL_PTR, session);
+	CK_RV e = c->sym->C_OpenSession((CK_SLOT_ID)slotID, (CK_FLAGS)flags, NULL, NULL, session);
 	return e;
 }
 
@@ -107,7 +107,8 @@ CK_RV DigestInit(struct ctx *c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mech
 	return e;
 }
 
-CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
+CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, 
+	CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
         CK_RV rv = c->sym->C_Digest(session, message, mlen, NULL, hashlen);
         if (rv != CKR_OK) {
                 return rv;
@@ -155,6 +156,21 @@ CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR
 	CK_RV e = c->sym->C_GenerateKeyPair(session, mechanism, pub, pubCount, priv, privCount,
 					pubkey, privkey);
 	return e;
+}
+
+CK_RV WrapKey(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
+	CK_OBJECT_HANDLE wrappingkey, CK_OBJECT_HANDLE key,
+	CK_BYTE_PTR *wrapped, CK_ULONG_PTR wrappedlen) {
+	CK_RV rv = c->sym->C_WrapKey(session, mechanism, wrappingkey, key, NULL, wrappedlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+        *wrapped = calloc(*wrappedlen, sizeof(CK_BYTE));
+	if (*wrapped == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_WrapKey(session, mechanism, wrappingkey, key, *wrapped, wrappedlen);
+	return rv;
 }
 
 CK_RV SignInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
@@ -373,6 +389,21 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private 
 		return ObjectHandle(pubkey), ObjectHandle(privkey), nil
 	}
 	return 0, 0, e1
+}
+
+func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectHandle) ([]byte, error) {
+	var (
+		wrappedkey    C.CK_BYTE_PTR
+		wrappedkeylen C.CK_ULONG
+	)
+	mech, _ := cMechanismList(m)
+	e := C.WrapKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(wrappingkey), C.CK_OBJECT_HANDLE(key), &wrappedkey, &wrappedkeylen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(wrappedkey), C.int(wrappedkeylen))
+	return h, nil
+	
 }
 
 func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
