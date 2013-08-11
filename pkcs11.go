@@ -173,6 +173,22 @@ CK_RV WrapKey(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechani
 	return rv;
 }
 
+// TODO(miek): UnwrapKey and DeriveKey
+
+CK_RV SeedRandom(struct ctx* c, CK_SESSION_HANDLE session, CK_BYTE_PTR seed, CK_ULONG seedlen) {
+	CK_RV rv = c->sym->C_SeedRandom(session, seed, seedlen);
+	return rv;
+}
+
+CK_RV GenerateRandom(struct ctx* c, CK_SESSION_HANDLE session, CK_BYTE_PTR *rand, CK_ULONG length) {
+        *rand = calloc(length, sizeof(CK_BYTE));
+	if (*rand == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	CK_RV e = c->sym->C_GenerateRandom(session, *rand, length);
+	return e;
+}
+
 CK_RV SignInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
 	CK_RV e = c->sym->C_SignInit(session, mechanism, key);
 	return e;
@@ -403,7 +419,24 @@ func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectH
 	}
 	h := C.GoBytes(unsafe.Pointer(wrappedkey), C.int(wrappedkeylen))
 	return h, nil
-	
+}
+
+// TODO(miek): UnwrapKey
+// TODO(miek): DeriveKey
+
+func (c *Ctx) SeedRandom(sh SessionHandle, seed []byte) error {
+	e := C.SeedRandom(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&seed[0])), C.CK_ULONG(len(seed)))
+	return toError(e)
+}
+
+func (c *Ctx) GenerateRandom(sh SessionHandle, length int) ([]byte, error) {
+	var rand    C.CK_BYTE_PTR
+	e := C.GenerateRandom(c.ctx, C.CK_SESSION_HANDLE(sh), &rand, C.CK_ULONG(length))
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(rand), C.int(length))
+	return h, nil
 }
 
 func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
