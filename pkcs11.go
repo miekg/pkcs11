@@ -83,6 +83,20 @@ CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
 	return e;
 }
 
+CK_RV GetMechanismList(struct ctx *c, CK_ULONG slotID,
+		       CK_ULONG_PTR * mech, CK_ULONG_PTR mechlen)
+{
+	CK_RV e =
+	    c->sym->C_GetMechanismList((CK_SLOT_ID) slotID, NULL, mechlen);
+	if (e != CKR_OK) {
+		return e;
+	}
+	*mech = calloc(*mechlen, sizeof(CK_MECHANISM_TYPE));
+	e = c->sym->C_GetMechanismList((CK_SLOT_ID) slotID,
+				       (CK_MECHANISM_TYPE_PTR) * mech, mechlen);
+	return e;
+}
+
 CK_RV OpenSession(struct ctx * c, CK_ULONG slotID, CK_ULONG flags,
 		  CK_SESSION_HANDLE_PTR session)
 {
@@ -409,6 +423,25 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 	return nil, toError(e)
 }
 
+/* C_GetMechanismList obtains a list of mechanism types supported by a token. */
+func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
+	var (
+		mech    C.CK_ULONG_PTR // in pkcs#11 we're all CK_ULONGs \o/
+		mechlen C.CK_ULONG
+	)
+	e := C.GetMechanismList(c.ctx, C.CK_ULONG(slotID), &mech, &mechlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	// Although the function returns only type, cast them back into really
+	// attributes as this is used in other functions.
+	m := make([]*Mechanism, int(mechlen))
+	for i, typ := range toList(mech, mechlen) {
+		m[i] = NewMechanism(typ, nil)
+	}
+	return m, nil
+}
+
 /* OpenSession opens a session between an application and a token. */
 func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 	var s C.CK_SESSION_HANDLE
@@ -499,7 +532,7 @@ func (c *Ctx) SeedRandom(sh SessionHandle, seed []byte) error {
 
 /* GenerateRandom generates random data. */
 func (c *Ctx) GenerateRandom(sh SessionHandle, length int) ([]byte, error) {
-	var rand    C.CK_BYTE_PTR
+	var rand C.CK_BYTE_PTR
 	e := C.GenerateRandom(c.ctx, C.CK_SESSION_HANDLE(sh), &rand, C.CK_ULONG(length))
 	if toError(e) != nil {
 		return nil, toError(e)
@@ -694,4 +727,3 @@ func (c *Ctx) Decrypt(sh SessionHandle, cypher []byte) ([]byte, error) {
 	s := C.GoBytes(unsafe.Pointer(plain), C.int(plainlen))
 	return s, nil
 }
-
