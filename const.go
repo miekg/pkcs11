@@ -21,6 +21,8 @@ const (
 
 // Generated with: awk '/#define CK[AFRM]/{ print $2 "=" $3 }' pkcs11t.h
 
+// All the flag (CKF_), attribute (CKA_), error code (CKR_) and mechanism (CKM_) constants
+// as defined in PKCS#11.
 const (
 	CKF_TOKEN_PRESENT                    = 0x00000001
 	CKF_REMOVABLE_DEVICE                 = 0x00000002

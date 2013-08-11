@@ -30,7 +30,7 @@ import (
 	"unsafe"
 )
 
-// ToList converts from a C style array to a []uint.
+// toList converts from a C style array to a []uint.
 func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) []uint {
 	l := make([]uint, int(size))
 	for i := 0; i < len(l); i++ {
@@ -40,7 +40,7 @@ func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) []uint {
 	return l
 }
 
-// CBBool converts a bool to a CK_BBOOL.
+// cBBool converts a bool to a CK_BBOOL.
 func cBBool(x bool) C.CK_BBOOL {
 	if x {
 		return C.CK_BBOOL(C.CK_TRUE)
@@ -48,6 +48,7 @@ func cBBool(x bool) C.CK_BBOOL {
 	return C.CK_BBOOL(C.CK_FALSE)
 }
 
+// Error represents and PKCS#11 error.
 type Error uint
 
 func (e Error) Error() string {
@@ -110,6 +111,7 @@ type SessionInfo struct {
 	DeviceError uint
 }
 
+// Attribute holds an attribute type/value combination.
 type Attribute struct {
 	Type  uint
 	Value []byte
@@ -183,9 +185,10 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 }
 
 type Date struct {
-	// TODO
+	// TODO(miek)
 }
 
+// Mechanism holds an attribute type/value combination.
 type Mechanism struct {
 	Mechanism uint
 	Parameter []byte
@@ -198,7 +201,7 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 		m.Parameter = nil
 		return m
 	}
-	// TODO(mg): Not seen anything as elaborate as Attributes, so for know do nothing.
+	// TODO(miek): Not seen anything as elaborate as Attributes, so for know do nothing.
 	return m
 }
 

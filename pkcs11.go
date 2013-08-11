@@ -1,4 +1,4 @@
-// Package pkcs11 is a wrapper around the PKCS#11 crypto library.
+// Package pkcs11 is a wrapper around the PKCS#11 cryptoigraphic library.
 package pkcs11
 
 /*
