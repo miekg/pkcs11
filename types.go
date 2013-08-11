@@ -1,8 +1,3 @@
-// All names loose the CK_ prefix
-// All names loose the hungarian notation
-// All the defines are kept from the C package so: C.CKM_RSA_X_509
-// All struct's get a Go variant
-//
 package pkcs11
 
 /*
@@ -18,9 +13,15 @@ package pkcs11
 #include <stdlib.h>
 #include "pkcs11.h"
 
-CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i) { return array[i]; }
-CK_ULONG Sizeof() { return sizeof(CK_ULONG); }
+CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i)
+{
+	return array[i];
+}
 
+CK_ULONG Sizeof()
+{
+	return sizeof(CK_ULONG);
+}
 */
 import "C"
 
