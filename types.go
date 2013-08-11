@@ -48,7 +48,7 @@ func cBBool(x bool) C.CK_BBOOL {
 	return C.CK_BBOOL(C.CK_FALSE)
 }
 
-// Error represents and PKCS#11 error.
+// Error represents an PKCS#11 error.
 type Error uint
 
 func (e Error) Error() string {

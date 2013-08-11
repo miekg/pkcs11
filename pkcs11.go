@@ -356,7 +356,7 @@ type Ctx struct {
 	initialized bool
 }
 
-// New creates a new context.
+// New creates a new context and initializes the module/library for use.
 func New(module string) *Ctx {
 	c := new(Ctx)
 	mod := C.CString(module)
@@ -368,7 +368,7 @@ func New(module string) *Ctx {
 	return c
 }
 
-// Destroy unload the module and frees any remaining memory.
+// Destroy unloads the module/library and frees any remaining memory.
 func (c *Ctx) Destroy() {
 	if c == nil {
 		return
@@ -472,6 +472,7 @@ func (c *Ctx) GenerateKeyPair(sh SessionHandle, m []*Mechanism, public, private 
 	return 0, 0, e1
 }
 
+/* WrapKey wraps (i.e., encrypts) a key. */
 func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectHandle) ([]byte, error) {
 	var (
 		wrappedkey    C.CK_BYTE_PTR
@@ -489,11 +490,14 @@ func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectH
 // TODO(miek): UnwrapKey
 // TODO(miek): DeriveKey
 
+// SeedRandom mixes additional seed material into the token's
+// random number generator.
 func (c *Ctx) SeedRandom(sh SessionHandle, seed []byte) error {
 	e := C.SeedRandom(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&seed[0])), C.CK_ULONG(len(seed)))
 	return toError(e)
 }
 
+/* GenerateRandom generates random data. */
 func (c *Ctx) GenerateRandom(sh SessionHandle, length int) ([]byte, error) {
 	var rand    C.CK_BYTE_PTR
 	e := C.GenerateRandom(c.ctx, C.CK_SESSION_HANDLE(sh), &rand, C.CK_ULONG(length))
@@ -504,13 +508,14 @@ func (c *Ctx) GenerateRandom(sh SessionHandle, length int) ([]byte, error) {
 	return h, nil
 }
 
+/* DigestInit initializes a message-digesting operation. */
 func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
 	mech, _ := cMechanismList(m)
 	e := C.DigestInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech)
 	return toError(e)
 }
 
-/* Digest digests data in a single part. */
+/* Digest digests message in a single part. */
 func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 	var (
 		hash    C.CK_BYTE_PTR
@@ -558,6 +563,10 @@ func (c *Ctx) DigestFinal(sh SessionHandle) ([]byte, error) {
 	return h, nil
 }
 
+// SignInit initializes a signature (private key encryption)
+// operation, where the signature is (will be) an appendix to
+// the data, and plaintext cannot be recovered from the
+//signature.
 func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	mech, _ := cMechanismList(m) // Only the first is used, but still use a list.
 	e := C.SignInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
