@@ -1,4 +1,4 @@
-// Package pkcs11 is a thin wrapper around the PKCS#11 crypto library.
+// Package pkcs11 is a wrapper around the PKCS#11 crypto library.
 package pkcs11
 
 /*
@@ -19,55 +19,61 @@ package pkcs11
 #include "pkcs11.h"
 
 struct ctx {
-        lt_dlhandle handle;
-        CK_FUNCTION_LIST_PTR sym;
+	lt_dlhandle handle;
+	CK_FUNCTION_LIST_PTR sym;
 };
 
 // New initializes a ctx and fills the symbol table.
-struct ctx * New(const char *module) {
-        if (lt_dlinit() != 0) {
-                return NULL;
-        }
-        CK_C_GetFunctionList list;
-        struct ctx *c = calloc(1, sizeof(struct ctx));
-        c->handle = lt_dlopen(module);
-        if (c->handle == NULL) {
-                free(c);
-                return NULL;
-        }
-        list = (CK_C_GetFunctionList) lt_dlsym(c->handle, "C_GetFunctionList");
-        if (list == NULL) {
-                free(c);
-                return NULL;
-        }
-        list(&c->sym);
-        return c;
+struct ctx *New(const char *module)
+{
+	if (lt_dlinit() != 0) {
+		return NULL;
+	}
+	CK_C_GetFunctionList list;
+	struct ctx *c = calloc(1, sizeof(struct ctx));
+	c->handle = lt_dlopen(module);
+	if (c->handle == NULL) {
+		free(c);
+		return NULL;
+	}
+	list = (CK_C_GetFunctionList) lt_dlsym(c->handle, "C_GetFunctionList");
+	if (list == NULL) {
+		free(c);
+		return NULL;
+	}
+	list(&c->sym);
+	return c;
 }
 
 // Destroy cleans up a ctx.
-void Destroy(struct ctx *c) {
-        if (!c) {
-                return;
-        }
-        if (c->handle == NULL) {
-                return;
-        }
-        if (lt_dlclose(c->handle) < 0) {
-                return;
-        }
-        lt_dlexit();
-        free(c);
+void Destroy(struct ctx *c)
+{
+	if (!c) {
+		return;
+	}
+	if (c->handle == NULL) {
+		return;
+	}
+	if (lt_dlclose(c->handle) < 0) {
+		return;
+	}
+	lt_dlexit();
+	free(c);
 }
 
-CK_RV Initialize(struct ctx* c, CK_VOID_PTR initArgs) {
+CK_RV Initialize(struct ctx * c, CK_VOID_PTR initArgs)
+{
 	return c->sym->C_Initialize(initArgs);
 }
 
-CK_RV Finalize(struct ctx* c) {
+CK_RV Finalize(struct ctx * c)
+{
 	return c->sym->C_Finalize(NULL);
 }
 
-CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, CK_ULONG_PTR ulCount) {
+CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
+		  CK_ULONG_PTR * slotList, CK_ULONG_PTR ulCount)
+{
 	CK_RV e = c->sym->C_GetSlotList(tokenPresent, NULL, ulCount);
 	if (e != CKR_OK) {
 		return e;
@@ -77,111 +83,146 @@ CK_RV GetSlotList(struct ctx* c, CK_BBOOL tokenPresent, CK_ULONG_PTR *slotList, 
 	return e;
 }
 
-CK_RV OpenSession(struct ctx* c, CK_ULONG slotID, CK_ULONG flags, CK_SESSION_HANDLE_PTR session) {
-	CK_RV e = c->sym->C_OpenSession((CK_SLOT_ID)slotID, (CK_FLAGS)flags, NULL, NULL, session);
+CK_RV OpenSession(struct ctx * c, CK_ULONG slotID, CK_ULONG flags,
+		  CK_SESSION_HANDLE_PTR session)
+{
+	CK_RV e =
+	    c->sym->C_OpenSession((CK_SLOT_ID) slotID, (CK_FLAGS) flags, NULL,
+				  NULL, session);
 	return e;
 }
 
-CK_RV CloseSession(struct ctx *c, CK_SESSION_HANDLE session) {
+CK_RV CloseSession(struct ctx * c, CK_SESSION_HANDLE session)
+{
 	CK_RV e = c->sym->C_CloseSession(session);
 	return e;
 }
 
-CK_RV CloseAllSessions(struct ctx *c, CK_ULONG slotID) {
+CK_RV CloseAllSessions(struct ctx * c, CK_ULONG slotID)
+{
 	CK_RV e = c->sym->C_CloseAllSessions(slotID);
 	return e;
 }
 
-CK_RV Login(struct ctx* c, CK_SESSION_HANDLE session, CK_USER_TYPE userType, char* pin, CK_ULONG pinLen) {
-	CK_RV e = c->sym->C_Login(session, userType, (CK_UTF8CHAR_PTR)pin, pinLen);
+CK_RV Login(struct ctx * c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
+	    char *pin, CK_ULONG pinLen)
+{
+	CK_RV e =
+	    c->sym->C_Login(session, userType, (CK_UTF8CHAR_PTR) pin, pinLen);
 	return e;
 }
 
-CK_RV Logout(struct ctx *c, CK_SESSION_HANDLE session) {
+CK_RV Logout(struct ctx * c, CK_SESSION_HANDLE session)
+{
 	CK_RV e = c->sym->C_Logout(session);
 	return e;
 }
 
-CK_RV DigestInit(struct ctx *c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism) {
+CK_RV DigestInit(struct ctx * c, CK_SESSION_HANDLE session,
+		 CK_MECHANISM_PTR mechanism)
+{
 	CK_RV e = c->sym->C_DigestInit(session, mechanism);
 	return e;
 }
 
-CK_RV Digest(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, 
-	CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
-        CK_RV rv = c->sym->C_Digest(session, message, mlen, NULL, hashlen);
-        if (rv != CKR_OK) {
-                return rv;
-        }
-        *hash = calloc(*hashlen, sizeof(CK_BYTE));
+CK_RV Digest(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
+	     CK_ULONG mlen, CK_BYTE_PTR * hash, CK_ULONG_PTR hashlen)
+{
+	CK_RV rv = c->sym->C_Digest(session, message, mlen, NULL, hashlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*hash = calloc(*hashlen, sizeof(CK_BYTE));
 	if (*hash == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-        rv = c->sym->C_Digest(session, message, mlen, *hash, hashlen);
+	rv = c->sym->C_Digest(session, message, mlen, *hash, hashlen);
 	return rv;
 }
 
-CK_RV DigestUpdate(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen) {
-        CK_RV rv = c->sym->C_DigestUpdate(session, message, mlen);
-        return rv;
+CK_RV DigestUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+		   CK_BYTE_PTR message, CK_ULONG mlen)
+{
+	CK_RV rv = c->sym->C_DigestUpdate(session, message, mlen);
+	return rv;
 }
 
-CK_RV DigestKey(struct ctx *c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE key) {
+CK_RV DigestKey(struct ctx * c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE key)
+{
 	CK_RV rv = c->sym->C_DigestKey(session, key);
 	return rv;
 }
 
-CK_RV DigestFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR *hash, CK_ULONG_PTR hashlen) {
-        CK_RV rv = c->sym->C_DigestFinal(session, NULL, hashlen);
-        if (rv != CKR_OK) {
-                return rv;
-        }
-        *hash = calloc(*hashlen, sizeof(CK_BYTE));
-	if (*hash == NULL) {
-		return CKR_HOST_MEMORY;
-	}
-        rv = c->sym->C_DigestFinal(session, *hash, hashlen);
-	return rv;
-}
-
-CK_RV GenerateKey(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
-	CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR key) {
-	CK_RV e = c->sym->C_GenerateKey(session, mechanism, temp, tempCount, key);
-	return e;
-}
-
-CK_RV GenerateKeyPair(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
-	CK_ATTRIBUTE_PTR pub, CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv, CK_ULONG privCount,
-	CK_OBJECT_HANDLE_PTR pubkey, CK_OBJECT_HANDLE_PTR privkey) {
-	CK_RV e = c->sym->C_GenerateKeyPair(session, mechanism, pub, pubCount, priv, privCount,
-					pubkey, privkey);
-	return e;
-}
-
-CK_RV WrapKey(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism,
-	CK_OBJECT_HANDLE wrappingkey, CK_OBJECT_HANDLE key,
-	CK_BYTE_PTR *wrapped, CK_ULONG_PTR wrappedlen) {
-	CK_RV rv = c->sym->C_WrapKey(session, mechanism, wrappingkey, key, NULL, wrappedlen);
+CK_RV DigestFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * hash,
+		  CK_ULONG_PTR hashlen)
+{
+	CK_RV rv = c->sym->C_DigestFinal(session, NULL, hashlen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
-        *wrapped = calloc(*wrappedlen, sizeof(CK_BYTE));
+	*hash = calloc(*hashlen, sizeof(CK_BYTE));
+	if (*hash == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_DigestFinal(session, *hash, hashlen);
+	return rv;
+}
+
+CK_RV GenerateKey(struct ctx * c, CK_SESSION_HANDLE session,
+		  CK_MECHANISM_PTR mechanism, CK_ATTRIBUTE_PTR temp,
+		  CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR key)
+{
+	CK_RV e =
+	    c->sym->C_GenerateKey(session, mechanism, temp, tempCount, key);
+	return e;
+}
+
+CK_RV GenerateKeyPair(struct ctx * c, CK_SESSION_HANDLE session,
+		      CK_MECHANISM_PTR mechanism, CK_ATTRIBUTE_PTR pub,
+		      CK_ULONG pubCount, CK_ATTRIBUTE_PTR priv,
+		      CK_ULONG privCount, CK_OBJECT_HANDLE_PTR pubkey,
+		      CK_OBJECT_HANDLE_PTR privkey)
+{
+	CK_RV e =
+	    c->sym->C_GenerateKeyPair(session, mechanism, pub, pubCount, priv,
+				      privCount,
+				      pubkey, privkey);
+	return e;
+}
+
+CK_RV WrapKey(struct ctx * c, CK_SESSION_HANDLE session,
+	      CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE wrappingkey,
+	      CK_OBJECT_HANDLE key, CK_BYTE_PTR * wrapped,
+	      CK_ULONG_PTR wrappedlen)
+{
+	CK_RV rv =
+	    c->sym->C_WrapKey(session, mechanism, wrappingkey, key, NULL,
+			      wrappedlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*wrapped = calloc(*wrappedlen, sizeof(CK_BYTE));
 	if (*wrapped == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-	rv = c->sym->C_WrapKey(session, mechanism, wrappingkey, key, *wrapped, wrappedlen);
+	rv = c->sym->C_WrapKey(session, mechanism, wrappingkey, key, *wrapped,
+			       wrappedlen);
 	return rv;
 }
 
 // TODO(miek): UnwrapKey and DeriveKey
 
-CK_RV SeedRandom(struct ctx* c, CK_SESSION_HANDLE session, CK_BYTE_PTR seed, CK_ULONG seedlen) {
+CK_RV SeedRandom(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR seed,
+		 CK_ULONG seedlen)
+{
 	CK_RV rv = c->sym->C_SeedRandom(session, seed, seedlen);
 	return rv;
 }
 
-CK_RV GenerateRandom(struct ctx* c, CK_SESSION_HANDLE session, CK_BYTE_PTR *rand, CK_ULONG length) {
-        *rand = calloc(length, sizeof(CK_BYTE));
+CK_RV GenerateRandom(struct ctx * c, CK_SESSION_HANDLE session,
+		     CK_BYTE_PTR * rand, CK_ULONG length)
+{
+	*rand = calloc(length, sizeof(CK_BYTE));
 	if (*rand == NULL) {
 		return CKR_HOST_MEMORY;
 	}
@@ -189,56 +230,70 @@ CK_RV GenerateRandom(struct ctx* c, CK_SESSION_HANDLE session, CK_BYTE_PTR *rand
 	return e;
 }
 
-CK_RV SignInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
+CK_RV SignInit(struct ctx * c, CK_SESSION_HANDLE session,
+	       CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key)
+{
 	CK_RV e = c->sym->C_SignInit(session, mechanism, key);
 	return e;
 }
 
-CK_RV Sign(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR *sig, CK_ULONG_PTR siglen) {
-        CK_RV rv = c->sym->C_Sign(session, message, mlen, NULL, siglen);
-        if (rv != CKR_OK) {
-                return rv;
-        }
-        *sig = calloc(*siglen, sizeof(CK_BYTE));
+CK_RV Sign(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
+	   CK_ULONG mlen, CK_BYTE_PTR * sig, CK_ULONG_PTR siglen)
+{
+	CK_RV rv = c->sym->C_Sign(session, message, mlen, NULL, siglen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*sig = calloc(*siglen, sizeof(CK_BYTE));
 	if (*sig == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-        rv = c->sym->C_Sign(session, message, mlen, *sig, siglen);
+	rv = c->sym->C_Sign(session, message, mlen, *sig, siglen);
 	return rv;
 }
 
-CK_RV EncryptInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
+CK_RV EncryptInit(struct ctx * c, CK_SESSION_HANDLE session,
+		  CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key)
+{
 	CK_RV e = c->sym->C_EncryptInit(session, mechanism, key);
 	return e;
 }
 
-CK_RV Encrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR message, CK_ULONG mlen, CK_BYTE_PTR *enc, CK_ULONG_PTR enclen) {
-        CK_RV rv = c->sym->C_Encrypt(session, message, mlen, NULL, enclen);
-        if (rv != CKR_OK) {
-                return rv;
-        }
-        *enc = calloc(*enclen, sizeof(CK_BYTE));
+CK_RV Encrypt(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
+	      CK_ULONG mlen, CK_BYTE_PTR * enc, CK_ULONG_PTR enclen)
+{
+	CK_RV rv = c->sym->C_Encrypt(session, message, mlen, NULL, enclen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*enc = calloc(*enclen, sizeof(CK_BYTE));
 	if (*enc == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-        rv = c->sym->C_Encrypt(session, message, mlen, *enc, enclen);
+	rv = c->sym->C_Encrypt(session, message, mlen, *enc, enclen);
 	return rv;
 }
 
-CK_RV CreateObject(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR temp,
-		CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR obj) {
+CK_RV CreateObject(struct ctx * c, CK_SESSION_HANDLE session,
+		   CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount,
+		   CK_OBJECT_HANDLE_PTR obj)
+{
 	CK_RV e = c->sym->C_CreateObject(session, temp, tempCount, obj);
 	return e;
 }
 
 // TODO(miek): CopyObject
 
-CK_RV DestroyObject(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object) {
+CK_RV DestroyObject(struct ctx * c, CK_SESSION_HANDLE session,
+		    CK_OBJECT_HANDLE object)
+{
 	CK_RV e = c->sym->C_DestroyObject(session, object);
 	return e;
 }
 
-CK_RV GetObjectSize(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE object, CK_ULONG_PTR size) {
+CK_RV GetObjectSize(struct ctx * c, CK_SESSION_HANDLE session,
+		    CK_OBJECT_HANDLE object, CK_ULONG_PTR size)
+{
 	CK_RV e = c->sym->C_GetObjectSize(session, object, size);
 	return e;
 }
@@ -246,37 +301,47 @@ CK_RV GetObjectSize(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE o
 // TODO(miek): GetAttributeValue
 // TODO(miek): SetAttributeValue
 
-CK_RV FindObjectsInit(struct ctx* c, CK_SESSION_HANDLE session, CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount) {
+CK_RV FindObjectsInit(struct ctx * c, CK_SESSION_HANDLE session,
+		      CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount)
+{
 	CK_RV e = c->sym->C_FindObjectsInit(session, temp, tempCount);
 	return e;
 }
 
-CK_RV FindObjects(struct ctx* c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE_PTR *obj, CK_ULONG max, CK_ULONG_PTR objCount) {
+CK_RV FindObjects(struct ctx * c, CK_SESSION_HANDLE session,
+		  CK_OBJECT_HANDLE_PTR * obj, CK_ULONG max,
+		  CK_ULONG_PTR objCount)
+{
 	*obj = calloc(max, sizeof(CK_OBJECT_HANDLE));
 	CK_RV e = c->sym->C_FindObjects(session, *obj, max, objCount);
 	return e;
 }
 
-CK_RV FindObjectsFinal(struct ctx* c, CK_SESSION_HANDLE session) {
+CK_RV FindObjectsFinal(struct ctx * c, CK_SESSION_HANDLE session)
+{
 	CK_RV e = c->sym->C_FindObjectsFinal(session);
 	return e;
 }
 
-CK_RV DecryptInit(struct ctx* c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key) {
+CK_RV DecryptInit(struct ctx * c, CK_SESSION_HANDLE session,
+		  CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key)
+{
 	CK_RV e = c->sym->C_DecryptInit(session, mechanism, key);
 	return e;
 }
 
-CK_RV Decrypt(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR cypher, CK_ULONG clen, CK_BYTE_PTR *plain, CK_ULONG_PTR plainlen) {
-        CK_RV rv = c->sym->C_Decrypt(session, cypher, clen, NULL, plainlen);
-        if (rv != CKR_OK) {
-                return rv;
-        }
-        *plain = calloc(*plainlen, sizeof(CK_BYTE));
+CK_RV Decrypt(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cypher,
+	      CK_ULONG clen, CK_BYTE_PTR * plain, CK_ULONG_PTR plainlen)
+{
+	CK_RV rv = c->sym->C_Decrypt(session, cypher, clen, NULL, plainlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*plain = calloc(*plainlen, sizeof(CK_BYTE));
 	if (*plain == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-        rv = c->sym->C_Decrypt(session, cypher, clen, *plain, plainlen);
+	rv = c->sym->C_Decrypt(session, cypher, clen, *plain, plainlen);
 	return rv;
 }
 
