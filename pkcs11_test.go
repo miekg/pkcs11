@@ -14,17 +14,10 @@ func setenv() {
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
 }
 
-func TestDigest(t *testing.T) {
-	setenv()
-	p := New("/usr/lib/softhsm/libsofthsm.so")
-	if p == nil {
-		t.Fatalf("new error\n")
-	}
-	defer p.Destroy()
+func getSession(p *Ctx, t *testing.T) SessionHandle {
 	if e := p.Initialize(); e != nil {
 		t.Fatalf("init error %s\n", e.Error())
 	}
-	defer p.Finalize()
 	slots, e := p.GetSlotList(true)
 	if e != nil {
 		t.Fatalf("slots %s\n", e.Error())
@@ -33,15 +26,24 @@ func TestDigest(t *testing.T) {
 	if e != nil {
 		t.Fatalf("session %s\n", e.Error())
 	}
+	return session
+}
+
+func TestDigest(t *testing.T) {
+	setenv()
+	p := New("/usr/lib/softhsm/libsofthsm.so")
+	defer p.Destroy()
+	session := getSession(p, t)
 	defer p.CloseSession(session)
-	e = p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
+	defer p.Finalize()
+	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
 	if e != nil {
 		t.Fatalf("DigestInit: %s\n", e.Error())
 	}
 
-	hash, err := p.Digest(session, []byte("this is a string"))
-	if err != nil {
-		t.Fatalf("sig: %s\n", err.Error())
+	hash, e := p.Digest(session, []byte("this is a string"))
+	if e != nil {
+		t.Fatalf("sig: %s\n", e.Error())
 	}
 	hex := ""
 	for _, d := range hash {
