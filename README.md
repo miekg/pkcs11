@@ -46,5 +46,5 @@ A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 
 ## TODO
 
-* Implement the whole spec
-* sha1sum like implementation
+* Implement the whole spec;
+* sha1sum like example implementation.
