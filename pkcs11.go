@@ -438,11 +438,11 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 		ulCount  C.CK_ULONG
 	)
 	e := C.GetSlotList(c.ctx, cBBool(tokenPresent), &slotList, &ulCount)
-	if toError(e) == nil {
-		l := toList(slotList, ulCount)
-		return l, nil
+	if toError(e) != nil {
+		return nil, toError(e)
 	}
-	return nil, toError(e)
+	l := toList(slotList, ulCount)
+	return l, nil
 }
 
 /* C_GetMechanismList obtains a list of mechanism types supported by a token. */
@@ -732,17 +732,17 @@ func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, erro
 		ulCount    C.CK_ULONG
 	)
 	e := C.FindObjects(c.ctx, C.CK_SESSION_HANDLE(sh), &objectList, C.CK_ULONG(max), &ulCount)
-	if toError(e) == nil {
-		l := toList(C.CK_ULONG_PTR(unsafe.Pointer(objectList)), ulCount)
-		// Make again a new list of the correct type.
-		// This is copying data, but this is not an often used function.
-		o := make([]ObjectHandle, len(l))
-		for i, v := range l {
-			o[i] = ObjectHandle(v)
-		}
-		return o, ulCount > C.CK_ULONG(max), nil
+	if toError(e) != nil {
+		return nil, false, toError(e)
 	}
-	return nil, false, toError(e)
+	l := toList(C.CK_ULONG_PTR(unsafe.Pointer(objectList)), ulCount)
+	// Make again a new list of the correct type.
+	// This is copying data, but this is not an often used function.
+	o := make([]ObjectHandle, len(l))
+	for i, v := range l {
+		o[i] = ObjectHandle(v)
+	}
+	return o, ulCount > C.CK_ULONG(max), nil
 }
 
 /* FindObjectsFinal finishes a search for token and session objects. */
