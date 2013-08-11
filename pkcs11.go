@@ -433,7 +433,7 @@ func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
-	// Although the function returns only type, cast them back into really
+	// Although the function returns only type, cast them back into real
 	// attributes as this is used in other functions.
 	m := make([]*Mechanism, int(mechlen))
 	for i, typ := range toList(mech, mechlen) {
