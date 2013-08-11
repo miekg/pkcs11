@@ -266,6 +266,28 @@ CK_RV Sign(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
 	return rv;
 }
 
+CK_RV SignUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+		   CK_BYTE_PTR message, CK_ULONG mlen)
+{
+	CK_RV rv = c->sym->C_SignUpdate(session, message, mlen);
+	return rv;
+}
+
+CK_RV SignFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
+		CK_ULONG_PTR siglen)
+{
+	CK_RV rv = c->sym->C_SignFinal(session, NULL, siglen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*sig = calloc(*siglen, sizeof(CK_BYTE));
+	if (*sig == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_SignFinal(session, *sig, siglen);
+	return rv;
+}
+
 CK_RV EncryptInit(struct ctx * c, CK_SESSION_HANDLE session,
 		  CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key)
 {
@@ -619,6 +641,28 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 	}
 	s := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
 	return s, nil
+}
+
+// SignUpdate continues a multiple-part signature operation,
+// where the signature is (will be) an appendix to the data,
+// and plaintext cannot be recovered from the signature.
+func (c *Ctx) SignUpdate(sh SessionHandle, message []byte) error {
+	e := C.SignUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)))
+	return toError(e)
+}
+
+/* SignFinal finishes a multiple-part signature operation returning the signature. */
+func (c *Ctx) SignFinal(sh SessionHandle) ([]byte, error) {
+	var (
+		sig    C.CK_BYTE_PTR
+		siglen C.CK_ULONG
+	)
+	e := C.SignFinal(c.ctx, C.CK_SESSION_HANDLE(sh), &sig, &siglen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
+	return h, nil
 }
 
 /* EncryptInit initializes an encryption operation. */
