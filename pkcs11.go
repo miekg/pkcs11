@@ -539,6 +539,7 @@ func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectH
 		return nil, toError(e)
 	}
 	h := C.GoBytes(unsafe.Pointer(wrappedkey), C.int(wrappedkeylen))
+	C.free(unsafe.Pointer(wrappedkey))
 	return h, nil
 }
 
@@ -560,6 +561,7 @@ func (c *Ctx) GenerateRandom(sh SessionHandle, length int) ([]byte, error) {
 		return nil, toError(e)
 	}
 	h := C.GoBytes(unsafe.Pointer(rand), C.int(length))
+	C.free(unsafe.Pointer(rand))
 	return h, nil
 }
 
@@ -581,6 +583,7 @@ func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 		return nil, toError(e)
 	}
 	h := C.GoBytes(unsafe.Pointer(hash), C.int(hashlen))
+	C.free(unsafe.Pointer(hash))
 	return h, nil
 }
 
@@ -615,6 +618,7 @@ func (c *Ctx) DigestFinal(sh SessionHandle) ([]byte, error) {
 		return nil, toError(e)
 	}
 	h := C.GoBytes(unsafe.Pointer(hash), C.int(hashlen))
+	C.free(unsafe.Pointer(hash))
 	return h, nil
 }
 
@@ -640,6 +644,7 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 		return nil, toError(e)
 	}
 	s := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
+	C.free(unsafe.Pointer(sig))
 	return s, nil
 }
 
@@ -662,6 +667,7 @@ func (c *Ctx) SignFinal(sh SessionHandle) ([]byte, error) {
 		return nil, toError(e)
 	}
 	h := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
+	C.free(unsafe.Pointer(sig))
 	return h, nil
 }
 
@@ -683,6 +689,7 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 		return nil, toError(e)
 	}
 	s := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
+	C.free(unsafe.Pointer(enc))
 	return s, nil
 }
 
@@ -769,5 +776,6 @@ func (c *Ctx) Decrypt(sh SessionHandle, cypher []byte) ([]byte, error) {
 		return nil, toError(e)
 	}
 	s := C.GoBytes(unsafe.Pointer(plain), C.int(plainlen))
+	C.free(unsafe.Pointer(plain))
 	return s, nil
 }
