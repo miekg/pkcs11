@@ -62,8 +62,10 @@ func toError(e C.CK_RV) error {
 	return Error(e)
 }
 
+/* SessionHandle is a Cryptoki-assigned value that identifies a session. */
 type SessionHandle uint
 
+/* ObjectHandle is a token-specific identifier for an object.  */
 type ObjectHandle uint
 
 type Version struct {
@@ -71,10 +73,16 @@ type Version struct {
 	Minor byte
 }
 
+// Info provides information about the library and hardware used.
 type Info struct {
-	// TODO
+	CryptokiVersion    Version
+	ManufacturerID     [32]byte
+	Flags              uint
+	LibraryDescription [32]byte
+	LibraryVersion     Version
 }
 
+/* SlotInfo provides information about a slot. */
 type SlotInfo struct {
 	SlotDescription [64]byte
 	ManufacturerID  [32]byte
@@ -83,6 +91,7 @@ type SlotInfo struct {
 	FirmwareVersion Version
 }
 
+/* TokenInfo provides information about a token. */
 type TokenInfo struct {
 	Label              [32]byte
 	ManufacturerID     [32]byte
@@ -104,6 +113,7 @@ type TokenInfo struct {
 	UTCTime            [16]byte
 }
 
+/* SesionInfo provides information about a session. */
 type SessionInfo struct {
 	SlotID      uint
 	Sate        uint
@@ -184,11 +194,14 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	return C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))
 }
 
+/* Date is a structure that defines a date. */
 type Date struct {
-	// TODO(miek)
+	Year  [4]byte // the year ("1900" - "9999")
+	Month [2]byte // the month ("01" - "12")
+	Day   [2]byte // the day   ("01" - "31")
 }
 
-// Mechanism holds an attribute type/value combination.
+// Mechanism holds an mechanism type/value combination.
 type Mechanism struct {
 	Mechanism uint
 	Parameter []byte
