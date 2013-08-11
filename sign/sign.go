@@ -8,6 +8,8 @@ import (
 
 func main() {
 	flag.Parse()
+	wd, _ := os.Getwd()
+	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
 	p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
 	if len(flag.Args()) > 0 {
 		p = pkcs11.New(flag.Arg(0))
