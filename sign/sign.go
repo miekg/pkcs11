@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/miekg/pkcs11"
 	"log"
+	"os"
 )
 
 func main() {
