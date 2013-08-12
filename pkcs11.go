@@ -433,11 +433,8 @@ func New(module string) *Ctx {
 
 // Destroy unloads the module/library and frees any remaining memory.
 func (c *Ctx) Destroy() {
-	if c == nil {
+	if c == nil || c.ctx == nil {
 		return
-	}
-	if c.ctx == nil {
-		return toError(CKR_CRYPTOKI_NOT_INITIALIZED)
 	}
 	C.Destroy(c.ctx)
 	c.ctx = nil
