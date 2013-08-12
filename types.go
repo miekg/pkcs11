@@ -154,13 +154,13 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 		}
 		switch int(C.Sizeof()) {
 		case 4:
-			a.Value = make([]byte, 4, 4)
+			a.Value = make([]byte, 4)
 			a.Value[0] = byte(y)
 			a.Value[1] = byte(y >> 8)
 			a.Value[2] = byte(y >> 16)
 			a.Value[3] = byte(y >> 24)
 		case 8:
-			a.Value = make([]byte, 8, 8)
+			a.Value = make([]byte, 8)
 			a.Value[0] = byte(y)
 			a.Value[1] = byte(y >> 8)
 			a.Value[2] = byte(y >> 16)

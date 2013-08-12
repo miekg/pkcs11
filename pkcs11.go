@@ -156,7 +156,28 @@ CK_RV GetObjectSize(struct ctx * c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-// TODO(miek): GetAttributeValue
+CK_RV GetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
+			CK_OBJECT_HANDLE object, CK_ATTRIBUTE_PTR temp,
+			CK_ULONG templen)
+{
+	// Call for the first time, check the returned ulValue in the attributes, then
+	// allocate enough space and try again.
+	CK_RV e = c->sym->C_GetAttributeValue(session, object, temp, templen);
+	if (e != CKR_OK) {
+		return e;
+	}
+	CK_ULONG i;
+	for (i = 0; i < templen; i++ ) {
+		if ((CK_LONG)temp[i].ulValueLen == -1) {
+			// either access denied or no such object
+			continue;
+		}
+		temp[i].pValue = calloc(temp[i].ulValueLen, sizeof(CK_BYTE));
+	}
+	e = c->sym->C_GetAttributeValue(session, object, temp, templen);
+	return e;
+}
+
 // TODO(miek): SetAttributeValue
 
 CK_RV FindObjectsInit(struct ctx * c, CK_SESSION_HANDLE session,
@@ -551,8 +572,30 @@ func (c *Ctx) GetObjectSize(sh SessionHandle, oh ObjectHandle) (uint, error) {
 	return uint(size), toError(e)
 }
 
-// GetAttributeValue
-// SetAttributeValue
+/* GetAttributeValue obtains the value of one or more object attributes. */
+func (c *Ctx) GetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute) ([]*Attribute, error) {
+	// copy the attribute list and make all the values nil, so that
+	// the C function can (allocate) fill them in
+	pa := make([]C.CK_ATTRIBUTE, len(a))
+	for i := 0; i < len(a); i++ {
+		pa[i]._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
+	}
+	e := C.GetAttributeValue(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(o), C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a)))
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	a1 := make([]*Attribute, len(a))
+	for i, c := range pa {
+		x := new(Attribute)
+		x.Type = uint(c._type)
+		x.Value = C.GoBytes(unsafe.Pointer(c.pValue), C.int(c.ulValueLen))
+		C.free(unsafe.Pointer(c.pValue))
+		a1[i] = x
+	}
+	return a1, nil
+}
+
+func (c *Ctx) SetAttributeValue() {}
 
 func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
 	t, tcount := cAttributeList(temp)
