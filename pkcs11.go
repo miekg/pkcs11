@@ -1,6 +1,11 @@
 // Package pkcs11 is a wrapper around the PKCS#11 cryptographic library.
 package pkcs11
 
+// It is *assumed*, that:
+//  
+// * Go's uint size == PKCS11's CK_ULONG size
+// * CK_ULONG never overflows an Go int
+
 /*
 #cgo LDFLAGS: -lltdl
 #define CK_PTR *

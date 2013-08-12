@@ -3,11 +3,6 @@
 This is a Go implementation of the PKCS#11 API. It wraps the library closely, but uses Go idiom
 were it makes sense.
 
-It is *assumed*, that:
-
-* Go's uint size == PKCS11's CK_ULONG size
-* CK_ULONG never overflows an Go uint
-
 ## SoftHSM
 
 * Make it use a custom configuration file
@@ -43,8 +38,3 @@ A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
             fmt.Printf("%x", d)
     }
     fmt.Println()
-
-## TODO
-
-* Implement the whole spec;
-* sha1sum like example implementation.
