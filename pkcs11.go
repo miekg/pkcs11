@@ -436,6 +436,9 @@ func (c *Ctx) Destroy() {
 	if c == nil {
 		return
 	}
+	if c.ctx == nil {
+		return toError(CKR_CRYPTOKI_NOT_INITIALIZED)
+	}
 	C.Destroy(c.ctx)
 	c.ctx = nil
 }
