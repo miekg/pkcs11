@@ -9,9 +9,11 @@ import (
 	"testing"
 )
 
-func setenv() {
+func setenv() *Ctx {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
+	p := New("/usr/lib/softhsm/libsofthsm.so")
+	return p
 }
 
 func getSession(p *Ctx, t *testing.T) SessionHandle {
@@ -29,11 +31,31 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 	return session
 }
 
-func TestDigest(t *testing.T) {
-	setenv()
-	p := New("/usr/lib/softhsm/libsofthsm.so")
-	defer p.Destroy()
+func TestGetAttributeValue(t *testing.T) {
+	p := setenv()
 	session := getSession(p, t)
+	defer p.Destroy()
+	defer p.CloseSession(session)
+	defer p.Finalize()
+	// There are at least two RSA keys in the hsm.db, objecthandle 1 and 2.
+	template := []*Attribute{
+		NewAttribute(CKA_PUBLIC_EXPONENT, nil),
+		NewAttribute(CKA_MODULUS_BITS, 1024),
+		NewAttribute(CKA_LABEL, "MyFirstKey"),
+	}
+	attr, err := p.GetAttributeValue(session, ObjectHandle(1), template)
+	if err != nil {
+		t.Fatalf("err %s\n", err.Error())
+	}
+	for i, a := range attr {
+		t.Logf("Attr %d, type %d, value %s", i, a.Type, string(a.Value))
+	}
+}
+
+func TestDigest(t *testing.T) {
+	p := setenv()
+	session := getSession(p, t)
+	defer p.Destroy()
 	defer p.CloseSession(session)
 	defer p.Finalize()
 	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})

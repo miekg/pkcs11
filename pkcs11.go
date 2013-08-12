@@ -588,8 +588,10 @@ func (c *Ctx) GetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute
 	for i, c := range pa {
 		x := new(Attribute)
 		x.Type = uint(c._type)
-		x.Value = C.GoBytes(unsafe.Pointer(c.pValue), C.int(c.ulValueLen))
-		C.free(unsafe.Pointer(c.pValue))
+		if int(c.ulValueLen) != -1 {
+			x.Value = C.GoBytes(unsafe.Pointer(c.pValue), C.int(c.ulValueLen))
+			C.free(unsafe.Pointer(c.pValue))
+		}
 		a1[i] = x
 	}
 	return a1, nil
