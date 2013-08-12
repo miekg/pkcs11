@@ -42,3 +42,8 @@ A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
             fmt.Printf("%x", d)
     }
     fmt.Println()
+
+# TODO
+
+* Fix/double check endian stuff, see types.go NewAttribute();
+* Kill C.Sizeof in that same function.
