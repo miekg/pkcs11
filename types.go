@@ -68,6 +68,8 @@ type SessionHandle uint
 /* ObjectHandle is a token-specific identifier for an object.  */
 type ObjectHandle uint
 
+
+// Version represents any version information from the library.
 type Version struct {
 	Major byte
 	Minor byte
