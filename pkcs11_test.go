@@ -5,6 +5,7 @@ package pkcs11
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 	"testing"
 )
@@ -71,6 +72,7 @@ func TestGetAttributeValue(t *testing.T) {
 	template := []*Attribute{
 		NewAttribute(CKA_PUBLIC_EXPONENT, nil),
 		NewAttribute(CKA_MODULUS_BITS, nil),
+		NewAttribute(CKA_MODULUS, nil),
 		NewAttribute(CKA_LABEL, nil),
 	}
 	// ObjectHandle two is the public key
@@ -80,6 +82,11 @@ func TestGetAttributeValue(t *testing.T) {
 	}
 	for i, a := range attr {
 		t.Logf("Attr %d, type %d, valuelen %d", i, a.Type, len(a.Value))
+		if a.Type == CKA_MODULUS {
+			mod := big.NewInt(0)
+			mod.SetBytes(a.Value)
+			t.Logf("Modulus %s\n", mod.String())
+		}
 	}
 }
 
