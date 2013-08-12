@@ -369,16 +369,22 @@ CK_RV DecryptInit(struct ctx * c, CK_SESSION_HANDLE session,
 CK_RV Decrypt(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cypher,
 	      CK_ULONG clen, CK_BYTE_PTR * plain, CK_ULONG_PTR plainlen)
 {
-	CK_RV rv = c->sym->C_Decrypt(session, cypher, clen, NULL, plainlen);
-	if (rv != CKR_OK) {
-		return rv;
+	CK_RV e = c->sym->C_Decrypt(session, cypher, clen, NULL, plainlen);
+	if (e != CKR_OK) {
+		return e;
 	}
 	*plain = calloc(*plainlen, sizeof(CK_BYTE));
 	if (*plain == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-	rv = c->sym->C_Decrypt(session, cypher, clen, *plain, plainlen);
-	return rv;
+	e = c->sym->C_Decrypt(session, cypher, clen, *plain, plainlen);
+	return e;
+}
+
+CK_RV WaitForSlotEvent(struct ctx * c, CK_FLAGS flags, CK_ULONG_PTR slot)
+{
+	CK_RV e = c->sym->C_WaitForSlotEvent(flags, (CK_SLOT_ID_PTR)slot, NULL);
+	return e;
 }
 
 */
@@ -778,4 +784,19 @@ func (c *Ctx) Decrypt(sh SessionHandle, cypher []byte) ([]byte, error) {
 	s := C.GoBytes(unsafe.Pointer(plain), C.int(plainlen))
 	C.free(unsafe.Pointer(plain))
 	return s, nil
+}
+
+// WaitForSlotEvent returns a channel which returns a slot event
+// (token insertion, // removal, etc.) when it occurs.
+func (c *Ctx) WaitForSlotEvent(flags uint) (chan SlotEvent) {
+	sl := make(chan SlotEvent, 1) // hold one element
+	go c.waitForSlotEventHelper(flags, sl)
+	return sl
+}
+
+func (c *Ctx) waitForSlotEventHelper(f uint, sl chan SlotEvent) {
+	var slotID C.CK_ULONG
+	C.WaitForSlotEvent(c.ctx, C.CK_FLAGS(f), &slotID)
+	sl <- SlotEvent{uint(slotID)}
+	close(sl) // TODO(miek) sending and then closing ...?
 }

@@ -73,6 +73,10 @@ type Version struct {
 	Minor byte
 }
 
+type SlotEvent struct {
+	SlotID uint
+}
+
 // Info provides information about the library and hardware used.
 type Info struct {
 	CryptokiVersion    Version
