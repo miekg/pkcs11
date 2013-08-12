@@ -104,7 +104,7 @@ func TestDigest(t *testing.T) {
 
 	hash, e := p.Digest(session, []byte("this is a string"))
 	if e != nil {
-		t.Fatalf("sig: %s\n", e.Error())
+		t.Fatalf("Digest: %s\n", e.Error())
 	}
 	hex := ""
 	for _, d := range hash {
@@ -114,4 +114,35 @@ func TestDigest(t *testing.T) {
 	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
 		t.Fatalf("wrong digest: %s", hex)
 	}
+}
+
+func TestDigestUpdate(t *testing.T) {
+	p := setenv()
+	session := getSession(p, t)
+	defer p.Logout(session)
+	defer p.CloseSession(session)
+	defer p.Finalize()
+	defer p.Destroy()
+	if e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)}); e != nil {
+		t.Fatalf("DigestInit: %s\n", e.Error())
+	}
+	if e := p.DigestUpdate(session, []byte("this is ")); e != nil {
+		t.Fatalf("DigestUpdate: %s\n", e.Error())
+	}
+	if e := p.DigestUpdate(session, []byte("a string")); e != nil {
+		t.Fatalf("DigestUpdate: %s\n", e.Error())
+	}
+	hash, e := p.DigestFinal(session)
+	if e != nil {
+		t.Fatalf("DigestFinal: %s\n", e.Error())
+	}
+	hex := ""
+	for _, d := range hash {
+		hex += fmt.Sprintf("%x", d)
+	}
+	// Teststring create with: echo -n "this is a string" | sha1sum
+	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
+		t.Fatalf("wrong digest: %s", hex)
+	}
+
 }
