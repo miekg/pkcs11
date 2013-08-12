@@ -417,7 +417,6 @@ import "unsafe"
 // Ctx contains the current pkcs11 context.
 type Ctx struct {
 	ctx         *C.struct_ctx
-	initialized bool
 }
 
 // New creates a new context and initializes the module/library for use.
@@ -438,22 +437,20 @@ func (c *Ctx) Destroy() {
 		return
 	}
 	C.Destroy(c.ctx)
+	c.ctx = nil
 }
 
 /* Initialize initializes the Cryptoki library. */
 func (c *Ctx) Initialize() error {
 	args := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
 	e := C.Initialize(c.ctx, C.CK_VOID_PTR(args))
-	if e == C.CKR_OK {
-		c.initialized = true // TODO(miek): keep?
-	}
 	return toError(e)
 }
 
 /* Finalize indicates that an application is done with the Cryptoki library. */
 func (c *Ctx) Finalize() error {
-	if !c.initialized {
-		panic("pkcs11: context not initialized")
+	if c.ctx == nil {
+		return nil
 	}
 	e := C.Finalize(c.ctx)
 	return toError(e)
@@ -515,12 +512,18 @@ func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 
 /* CloseSession closes a session between an application and a token. */
 func (c *Ctx) CloseSession(sh SessionHandle) error {
+	if c.ctx == nil {
+		return nil
+	}
 	e := C.CloseSession(c.ctx, C.CK_SESSION_HANDLE(sh))
 	return toError(e)
 }
 
 /* CloseAllSessions closes all sessions with a token. */
 func (c *Ctx) CloseAllSessions(slotID uint) error {
+	if c.ctx == nil {
+		return nil
+	}
 	e := C.CloseAllSessions(c.ctx, C.CK_ULONG(slotID))
 	return toError(e)
 }
