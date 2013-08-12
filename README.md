@@ -1,7 +1,7 @@
 # PKCS#11
 
 This is a Go implementation of the PKCS#11 API. It wraps the library closely, but uses Go idiom
-were it makes sense.
+were it makes sense. It has been tested with SoftHSM.
 
 ## SoftHSM
 
@@ -12,6 +12,10 @@ were it makes sense.
 * Then use `softhsm` to init it
 
         softhsm --init-token --slot 0 --label test --pin 1234
+
+* Then use `libsofthsm.so` as the pkcs11 module:
+
+        p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
 
 ## Examples
 
