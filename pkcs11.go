@@ -450,7 +450,7 @@ func (c *Ctx) Initialize() error {
 /* Finalize indicates that an application is done with the Cryptoki library. */
 func (c *Ctx) Finalize() error {
 	if c.ctx == nil {
-		return nil
+		return toError(CKR_CRYPTOKI_NOT_INITIALIZED)
 	}
 	e := C.Finalize(c.ctx)
 	return toError(e)
@@ -513,7 +513,7 @@ func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
 /* CloseSession closes a session between an application and a token. */
 func (c *Ctx) CloseSession(sh SessionHandle) error {
 	if c.ctx == nil {
-		return nil
+		return toError(CKR_CRYPTOKI_NOT_INITIALIZED)
 	}
 	e := C.CloseSession(c.ctx, C.CK_SESSION_HANDLE(sh))
 	return toError(e)
@@ -522,7 +522,7 @@ func (c *Ctx) CloseSession(sh SessionHandle) error {
 /* CloseAllSessions closes all sessions with a token. */
 func (c *Ctx) CloseAllSessions(slotID uint) error {
 	if c.ctx == nil {
-		return nil
+		return toError(CKR_CRYPTOKI_NOT_INITIALIZED)
 	}
 	e := C.CloseAllSessions(c.ctx, C.CK_ULONG(slotID))
 	return toError(e)
@@ -544,6 +544,9 @@ func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
 
 /* Logout logs a user out from a token. */
 func (c *Ctx) Logout(sh SessionHandle) error {
+	if c.ctx == nil {
+		return toError(CKR_CRYPTOKI_NOT_INITIALIZED)
+	}
 	e := C.Logout(c.ctx, C.CK_SESSION_HANDLE(sh))
 	return toError(e)
 }
