@@ -145,7 +145,13 @@ CK_RV CreateObject(struct ctx * c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-// TODO(miek): CopyObject
+CK_RV CopyObject(struct ctx *c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE o,
+		 CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount,
+		 CK_OBJECT_HANDLE_PTR obj)
+{
+	CK_RV e = c->sym->C_CopyObject(session, o, temp, tempCount, obj);
+	return e;
+}
 
 CK_RV DestroyObject(struct ctx * c, CK_SESSION_HANDLE session,
 		    CK_OBJECT_HANDLE object)
@@ -608,7 +614,18 @@ func (c *Ctx) CreateObject(sh SessionHandle, temp []*Attribute) (ObjectHandle, e
 	return 0, e1
 }
 
-// TODO(miek): CopyObject here
+/* CopyObject copies an object, creating a new object for the copy. */
+func (c *Ctx) CopyObject(sh SessionHandle, o ObjectHandle, temp []*Attribute) (ObjectHandle, error) {
+	var obj C.CK_OBJECT_HANDLE
+	t, tcount := cAttributeList(temp)
+
+	e := C.CopyObject(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(o), t, tcount, C.CK_OBJECT_HANDLE_PTR(&obj))
+	e1 := toError(e)
+	if e1 == nil {
+		return ObjectHandle(obj), nil
+	}
+	return 0, e1
+}
 
 /* DestroyObject destroys an object. */
 func (c *Ctx) DestroyObject(sh SessionHandle, oh ObjectHandle) error {
