@@ -423,13 +423,20 @@ CK_RV WrapKey(struct ctx * c, CK_SESSION_HANDLE session,
 	return rv;
 }
 
-// TODO(miek): UnwrapKey and DeriveKey
+// TODO(miek): UnwrapKey
+
+CK_RV DeriveKey(struct ctx * c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mech,
+	CK_OBJECT_HANDLE basekey, CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
+{
+	CK_RV e = c->sym->C_DeriveKey(session, mech, basekey, a, alen, key);
+	return e;
+}
 
 CK_RV SeedRandom(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR seed,
 		 CK_ULONG seedlen)
 {
-	CK_RV rv = c->sym->C_SeedRandom(session, seed, seedlen);
-	return rv;
+	CK_RV e = c->sym->C_SeedRandom(session, seed, seedlen);
+	return e;
 }
 
 CK_RV GenerateRandom(struct ctx * c, CK_SESSION_HANDLE session,
@@ -916,7 +923,15 @@ func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectH
 }
 
 // TODO(miek): UnwrapKey
-// TODO(miek): DeriveKey
+
+// C_DeriveKey derives a key from a base key, creating a new key object. */
+func (c *Ctx) DeriveKey(sh SessionHandle, m []*Mechanism, basekey ObjectHandle, a []*Attribute) (ObjectHandle, error) {
+	var key C.CK_OBJECT_HANDLE
+	ac, aclen := cAttributeList(a)
+	mech, _ := cMechanismList(m)
+	e := C.DeriveKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(basekey), ac, aclen, &key)
+	return ObjectHandle(key), toError(e)
+}
 
 // SeedRandom mixes additional seed material into the token's
 // random number generator.
