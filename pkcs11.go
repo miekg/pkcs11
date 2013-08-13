@@ -367,6 +367,20 @@ CK_RV Verify(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
 	return rv;
 }
 
+CK_RV VerifyUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+		   CK_BYTE_PTR part, CK_ULONG partlen)
+{
+	CK_RV rv = c->sym->C_VerifyUpdate(session, part, partlen);
+	return rv;
+}
+
+CK_RV VerifyFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
+		CK_ULONG siglen)
+{
+	CK_RV rv = c->sym->C_VerifyFinal(session, sig, siglen);
+	return rv;
+}
+
 CK_RV GenerateKey(struct ctx * c, CK_SESSION_HANDLE session,
 		  CK_MECHANISM_PTR mechanism, CK_ATTRIBUTE_PTR temp,
 		  CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR key)
@@ -837,6 +851,21 @@ func (c *Ctx) VerifyInit(sh SessionHandle, m []*Mechanism, key ObjectHandle) err
 // cannot be recovered from the signature.
 func (c *Ctx) Verify(sh SessionHandle, data []byte, signature []byte) error {
 	e := C.Verify(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&data[0])), C.CK_ULONG(len(data)), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)))
+	return toError(e)
+}
+
+// VerifyUpdate continues a multiple-part verification
+// operation, where the signature is an appendix to the data,
+// and plaintext cannot be recovered from the signature.
+func (c *Ctx) VerifyUpdate(sh SessionHandle, part []byte) error {
+	e := C.VerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&part[0])), C.CK_ULONG(len(part)))
+	return toError(e)
+}
+
+// VerifyFinal finishes a multiple-part verification
+// operation, checking the signature.
+func (c *Ctx) VerifyFinal(sh SessionHandle, signature []byte) error {
+	e := C.VerifyFinal(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)))
 	return toError(e)
 }
 
