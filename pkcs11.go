@@ -183,7 +183,14 @@ CK_RV GetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-// TODO(miek): SetAttributeValue
+CK_RV SetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
+			CK_OBJECT_HANDLE object, CK_ATTRIBUTE_PTR temp,
+			CK_ULONG templen)
+{
+	CK_RV e = c->sym->C_SetAttributeValue(session, object, temp, templen);
+	return e;
+}
+
 
 CK_RV FindObjectsInit(struct ctx * c, CK_SESSION_HANDLE session,
 		      CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount)
@@ -608,8 +615,15 @@ func (c *Ctx) GetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute
 	return a1, nil
 }
 
-func (c *Ctx) SetAttributeValue() {}
+/* C_SetAttributeValue modifies the value of one or more object attributes */
+func (c *Ctx) SetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute) error {
+	pa, palen := cAttributeList(a)
+	e := C.SetAttributeValue(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(o), pa, palen)
+	return toError(e)
+}
 
+// C_FindObjectsInit initializes a search for token and session
+// objects that match a template.
 func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
 	t, tcount := cAttributeList(temp)
 	e := C.FindObjectsInit(c.ctx, C.CK_SESSION_HANDLE(sh), t, tcount)
