@@ -88,7 +88,7 @@ CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
 	return e;
 }
 
-CK_RV GetMechanismList(struct ctx *c, CK_ULONG slotID,
+CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 		       CK_ULONG_PTR * mech, CK_ULONG_PTR mechlen)
 {
 	CK_RV e =
@@ -161,7 +161,7 @@ CK_RV GetObjectSize(struct ctx * c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-CK_RV GetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV GetAttributeValue(struct ctx * c, CK_SESSION_HANDLE session,
 			CK_OBJECT_HANDLE object, CK_ATTRIBUTE_PTR temp,
 			CK_ULONG templen)
 {
@@ -172,8 +172,8 @@ CK_RV GetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
 		return e;
 	}
 	CK_ULONG i;
-	for (i = 0; i < templen; i++ ) {
-		if ((CK_LONG)temp[i].ulValueLen == -1) {
+	for (i = 0; i < templen; i++) {
+		if ((CK_LONG) temp[i].ulValueLen == -1) {
 			// either access denied or no such object
 			continue;
 		}
@@ -183,14 +183,13 @@ CK_RV GetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-CK_RV SetAttributeValue(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV SetAttributeValue(struct ctx * c, CK_SESSION_HANDLE session,
 			CK_OBJECT_HANDLE object, CK_ATTRIBUTE_PTR temp,
 			CK_ULONG templen)
 {
 	CK_RV e = c->sym->C_SetAttributeValue(session, object, temp, templen);
 	return e;
 }
-
 
 CK_RV FindObjectsInit(struct ctx * c, CK_SESSION_HANDLE session,
 		      CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount)
@@ -331,13 +330,13 @@ CK_RV Sign(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
 }
 
 CK_RV SignUpdate(struct ctx * c, CK_SESSION_HANDLE session,
-		   CK_BYTE_PTR message, CK_ULONG mlen)
+		 CK_BYTE_PTR message, CK_ULONG mlen)
 {
 	CK_RV rv = c->sym->C_SignUpdate(session, message, mlen);
 	return rv;
 }
 
-CK_RV SignFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
+CK_RV SignFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
 		CK_ULONG_PTR siglen)
 {
 	CK_RV rv = c->sym->C_SignFinal(session, NULL, siglen);
@@ -352,7 +351,7 @@ CK_RV SignFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
 	return rv;
 }
 
-CK_RV VerifyInit(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV VerifyInit(struct ctx * c, CK_SESSION_HANDLE session,
 		 CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
 {
 	CK_RV rv = c->sym->C_VerifyInit(session, mech, key);
@@ -362,8 +361,7 @@ CK_RV VerifyInit(struct ctx *c, CK_SESSION_HANDLE session,
 CK_RV Verify(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
 	     CK_ULONG mesglen, CK_BYTE_PTR sig, CK_ULONG siglen)
 {
-	CK_RV rv =
-	    c->sym->C_Verify(session, message, mesglen, sig, siglen);
+	CK_RV rv = c->sym->C_Verify(session, message, mesglen, sig, siglen);
 	return rv;
 }
 
@@ -374,8 +372,8 @@ CK_RV VerifyUpdate(struct ctx * c, CK_SESSION_HANDLE session,
 	return rv;
 }
 
-CK_RV VerifyFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
-		CK_ULONG siglen)
+CK_RV VerifyFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
+		  CK_ULONG siglen)
 {
 	CK_RV rv = c->sym->C_VerifyFinal(session, sig, siglen);
 	return rv;
@@ -408,9 +406,8 @@ CK_RV WrapKey(struct ctx * c, CK_SESSION_HANDLE session,
 	      CK_OBJECT_HANDLE key, CK_BYTE_PTR * wrapped,
 	      CK_ULONG_PTR wrappedlen)
 {
-	CK_RV rv =
-	    c->sym->C_WrapKey(session, mechanism, wrappingkey, key, NULL,
-			      wrappedlen);
+	CK_RV rv = c->sym->C_WrapKey(session, mechanism, wrappingkey, key, NULL,
+				     wrappedlen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
@@ -425,8 +422,9 @@ CK_RV WrapKey(struct ctx * c, CK_SESSION_HANDLE session,
 
 // TODO(miek): UnwrapKey
 
-CK_RV DeriveKey(struct ctx * c, CK_SESSION_HANDLE session, CK_MECHANISM_PTR mech,
-	CK_OBJECT_HANDLE basekey, CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
+CK_RV DeriveKey(struct ctx * c, CK_SESSION_HANDLE session,
+		CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE basekey,
+		CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
 {
 	CK_RV e = c->sym->C_DeriveKey(session, mech, basekey, a, alen, key);
 	return e;
@@ -452,10 +450,10 @@ CK_RV GenerateRandom(struct ctx * c, CK_SESSION_HANDLE session,
 
 CK_RV WaitForSlotEvent(struct ctx * c, CK_FLAGS flags, CK_ULONG_PTR slot)
 {
-	CK_RV e = c->sym->C_WaitForSlotEvent(flags, (CK_SLOT_ID_PTR)slot, NULL);
+	CK_RV e =
+	    c->sym->C_WaitForSlotEvent(flags, (CK_SLOT_ID_PTR) slot, NULL);
 	return e;
 }
-
 */
 import "C"
 
