@@ -2,7 +2,7 @@
 package pkcs11
 
 // It is *assumed*, that:
-//  
+//
 // * Go's uint size == PKCS11's CK_ULONG size
 // * CK_ULONG never overflows an Go int
 
@@ -352,6 +352,20 @@ CK_RV SignFinal(struct ctx *c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
 	return rv;
 }
 
+CK_RV VerifyInit(struct ctx *c, CK_SESSION_HANDLE session,
+		 CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
+{
+	CK_RV rv = c->sym->C_VerifyInit(session, mech, key);
+	return rv;
+}
+
+CK_RV Verify(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
+	     CK_ULONG mesglen, CK_BYTE_PTR sig, CK_ULONG siglen)
+{
+	CK_RV rv =
+	    c->sym->C_Verify(session, message, mesglen, sig, siglen);
+	return rv;
+}
 
 CK_RV GenerateKey(struct ctx * c, CK_SESSION_HANDLE session,
 		  CK_MECHANISM_PTR mechanism, CK_ATTRIBUTE_PTR temp,
@@ -428,7 +442,7 @@ import "unsafe"
 
 // Ctx contains the current pkcs11 context.
 type Ctx struct {
-	ctx         *C.struct_ctx
+	ctx *C.struct_ctx
 }
 
 // New creates a new context and initializes the module/library for use.
@@ -807,6 +821,23 @@ func (c *Ctx) SignFinal(sh SessionHandle) ([]byte, error) {
 	h := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
 	C.free(unsafe.Pointer(sig))
 	return h, nil
+}
+
+// VerifyInit initializes a verification operation, where the
+// signature is an appendix to the data, and plaintext cannot
+// be recovered from the signature (e.g. DSA).
+func (c *Ctx) VerifyInit(sh SessionHandle, m []*Mechanism, key ObjectHandle) error {
+	mech, _ := cMechanismList(m) // only use one here
+	e := C.VerifyInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(key))
+	return toError(e)
+}
+
+// Verify verifies a signature in a single-part operation,
+// where the signature is an appendix to the data, and plaintext
+// cannot be recovered from the signature.
+func (c *Ctx) Verify(sh SessionHandle, data []byte, signature []byte) error {
+	e := C.Verify(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&data[0])), C.CK_ULONG(len(data)), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)))
+	return toError(e)
 }
 
 /* GenerateKey generates a secret key, creating a new key object. */
