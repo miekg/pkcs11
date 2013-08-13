@@ -426,13 +426,22 @@ CK_RV WrapKey(struct ctx * c, CK_SESSION_HANDLE session,
 	return rv;
 }
 
-// TODO(miek): UnwrapKey
-
-CK_RV DeriveKey(struct ctx * c, CK_SESSION_HANDLE session,
+CK_RV DeriveKey(struct ctx *c, CK_SESSION_HANDLE session,
 		CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE basekey,
 		CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
 {
 	CK_RV e = c->sym->C_DeriveKey(session, mech, basekey, a, alen, key);
+	return e;
+}
+
+CK_RV UnwrapKey(struct ctx * c, CK_SESSION_HANDLE session,
+		CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE unwrappingkey,
+		CK_BYTE_PTR wrappedkey, CK_ULONG wrappedkeylen,
+		CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
+{
+	CK_RV e =
+	    c->sym->C_UnwrapKey(session, mech, unwrappingkey, wrappedkey,
+				wrappedkeylen, a, alen, key);
 	return e;
 }
 
@@ -937,9 +946,16 @@ func (c *Ctx) WrapKey(sh SessionHandle, m []*Mechanism, wrappingkey, key ObjectH
 	return h, nil
 }
 
-// TODO(miek): UnwrapKey
+/* UnwrapKey unwraps (decrypts) a wrapped key, creating a new key object. */
+func (c *Ctx) UnwrapKey(sh SessionHandle, m []*Mechanism, unwrappingkey ObjectHandle, wrappedkey []byte, a []*Attribute) (ObjectHandle, error) {
+	var key C.CK_OBJECT_HANDLE
+	ac, aclen := cAttributeList(a)
+	mech, _ := cMechanismList(m)
+	e := C.UnwrapKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(unwrappingkey), C.CK_BYTE_PTR(unsafe.Pointer(&wrappedkey[0])), C.CK_ULONG(len(wrappedkey)), ac, aclen, &key)
+	return ObjectHandle(key), toError(e)
+}
 
-// C_DeriveKey derives a key from a base key, creating a new key object. */
+// DeriveKey derives a key from a base key, creating a new key object. */
 func (c *Ctx) DeriveKey(sh SessionHandle, m []*Mechanism, basekey ObjectHandle, a []*Attribute) (ObjectHandle, error) {
 	var key C.CK_OBJECT_HANDLE
 	ac, aclen := cAttributeList(a)
