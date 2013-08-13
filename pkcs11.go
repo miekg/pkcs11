@@ -357,6 +357,28 @@ CK_RV SignFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
 	return rv;
 }
 
+CK_RV SignRecoverInit(struct ctx *c, CK_SESSION_HANDLE session,
+		      CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
+{
+	CK_RV rv = c->sym->C_SignRecoverInit(session, mech, key);
+	return rv;
+}
+
+CK_RV SignRecover(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR data,
+		  CK_ULONG datalen, CK_BYTE_PTR * sig, CK_ULONG_PTR siglen)
+{
+	CK_RV rv = c->sym->C_SignRecover(session, data, datalen, NULL, siglen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*sig = calloc(*siglen, sizeof(CK_BYTE));
+	if (*sig == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_SignRecover(session, data, datalen, *sig, siglen);
+	return rv;
+}
+
 CK_RV VerifyInit(struct ctx * c, CK_SESSION_HANDLE session,
 		 CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
 {
@@ -740,6 +762,9 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	return s, nil
 }
 
+// EncryptUpdate
+// EncryptFinal
+
 /* DecryptInit initializes a decryption operation. */
 func (c *Ctx) DecryptInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	mech, _ := cMechanismList(m)
@@ -761,6 +786,9 @@ func (c *Ctx) Decrypt(sh SessionHandle, cypher []byte) ([]byte, error) {
 	C.free(unsafe.Pointer(plain))
 	return s, nil
 }
+
+// DecryptUpdate
+// DecryptFinal
 
 /* DigestInit initializes a message-digesting operation. */
 func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
@@ -868,6 +896,30 @@ func (c *Ctx) SignFinal(sh SessionHandle) ([]byte, error) {
 	return h, nil
 }
 
+// SignRecoverInit initializes a signature operation, where
+// the data can be recovered from the signature.
+func (c *Ctx) SignRecoverInit(sh SessionHandle, m []*Mechanism, key ObjectHandle) error {
+	mech, _ := cMechanismList(m)
+	e := C.SignRecoverInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(key))
+	return toError(e)
+}
+
+// SignRecover signs data in a single operation, where the
+// data can be recovered from the signature.
+func (c *Ctx) SignRecover(sh SessionHandle, data []byte) ([]byte, error) {
+	var (
+		sig    C.CK_BYTE_PTR
+		siglen C.CK_ULONG
+	)
+	e := C.SignRecover(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&data[0])), C.CK_ULONG(len(data)), &sig, &siglen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(sig), C.int(siglen))
+	C.free(unsafe.Pointer(sig))
+	return h, nil
+}
+
 // VerifyInit initializes a verification operation, where the
 // signature is an appendix to the data, and plaintext cannot
 // be recovered from the signature (e.g. DSA).
@@ -899,6 +951,13 @@ func (c *Ctx) VerifyFinal(sh SessionHandle, signature []byte) error {
 	e := C.VerifyFinal(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)))
 	return toError(e)
 }
+
+// VerifyRecoverInit
+// VerrifyRecover
+// DigestEncryptUpdate
+// DecryptDigestUpdate
+// SignEncryptUpdate
+// DecryptVerifyUpdate
 
 /* GenerateKey generates a secret key, creating a new key object. */
 func (c *Ctx) GenerateKey(sh SessionHandle, m []*Mechanism, temp []*Attribute) (ObjectHandle, error) {
