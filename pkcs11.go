@@ -407,6 +407,66 @@ CK_RV VerifyFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
 	return rv;
 }
 
+CK_RV DigestEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR part,
+		  CK_ULONG partlen, CK_BYTE_PTR * enc, CK_ULONG_PTR enclen)
+{
+	CK_RV rv = c->sym->C_DigestEncryptUpdate(session, part, partlen, NULL, enclen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*enc = calloc(*enclen, sizeof(CK_BYTE));
+	if (*enc == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_DigestEncryptUpdate(session, part, partlen, *enc, enclen);
+	return rv;
+}
+
+CK_RV DecryptDigestUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cipher,
+		  CK_ULONG cipherlen, CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
+{
+	CK_RV rv = c->sym->C_DecryptDigestUpdate(session, cipher, cipherlen, NULL, partlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*part = calloc(*partlen, sizeof(CK_BYTE));
+	if (*part == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_DecryptDigestUpdate(session, cipher, cipherlen, *part, partlen);
+	return rv;
+}
+
+CK_RV SignEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR part,
+		  CK_ULONG partlen, CK_BYTE_PTR * enc, CK_ULONG_PTR enclen)
+{
+	CK_RV rv = c->sym->C_SignEncryptUpdate(session, part, partlen, NULL, enclen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*enc = calloc(*enclen, sizeof(CK_BYTE));
+	if (*enc == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_SignEncryptUpdate(session, part, partlen, *enc, enclen);
+	return rv;
+}
+
+CK_RV DecryptVerifyUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cipher,
+		  CK_ULONG cipherlen, CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
+{
+	CK_RV rv = c->sym->C_DecryptVerifyUpdate(session, cipher, cipherlen, NULL, partlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*part = calloc(*partlen, sizeof(CK_BYTE));
+	if (*part == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_DecryptVerifyUpdate(session, cipher, cipherlen, *part, partlen);
+	return rv;
+}
+
 CK_RV GenerateKey(struct ctx * c, CK_SESSION_HANDLE session,
 		  CK_MECHANISM_PTR mechanism, CK_ATTRIBUTE_PTR temp,
 		  CK_ULONG tempCount, CK_OBJECT_HANDLE_PTR key)
@@ -954,10 +1014,68 @@ func (c *Ctx) VerifyFinal(sh SessionHandle, signature []byte) error {
 
 // VerifyRecoverInit
 // VerrifyRecover
-// DigestEncryptUpdate
-// DecryptDigestUpdate
-// SignEncryptUpdate
-// DecryptVerifyUpdate
+
+
+// DigestEncryptUpdate continues a multiple-part digesting
+// and encryption operation.
+func (c *Ctx) DigestEncryptUpdate(sh SessionHandle, part []byte) ([]byte, error) {
+	var (
+		enc    C.CK_BYTE_PTR
+		enclen C.CK_ULONG
+	)
+	e := C.DigestEncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&part[0])), C.CK_ULONG(len(part)), &enc, &enclen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
+	C.free(unsafe.Pointer(enc))
+	return h, nil
+}
+
+/* DecryptDigestUpdate continues a multiple-part decryption and digesting operation. */
+func (c *Ctx) DecryptDigestUpdate(sh SessionHandle, cipher []byte) ([]byte, error) {
+	var (
+		part    C.CK_BYTE_PTR
+		partlen C.CK_ULONG
+	)
+	e := C.DecryptDigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &part, &partlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(part), C.int(partlen))
+	C.free(unsafe.Pointer(part))
+	return h, nil
+}
+
+/* SignEncryptUpdate continues a multiple-part signing and encryption operation. */
+func (c *Ctx) SignEncryptUpdate(sh SessionHandle, part []byte) ([]byte, error) {
+	var (
+		enc    C.CK_BYTE_PTR
+		enclen C.CK_ULONG
+	)
+	e := C.SignEncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&part[0])), C.CK_ULONG(len(part)), &enc, &enclen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
+	C.free(unsafe.Pointer(enc))
+	return h, nil
+}
+
+/* DecryptVerifyUpdate continues a multiple-part decryption and verify operation. */
+func (c *Ctx) DecryptVerifyUpdate(sh SessionHandle, cipher []byte) ([]byte, error) {
+	var (
+		part    C.CK_BYTE_PTR
+		partlen C.CK_ULONG
+	)
+	e := C.DecryptVerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &part, &partlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(part), C.int(partlen))
+	C.free(unsafe.Pointer(part))
+	return h, nil
+}
 
 /* GenerateKey generates a secret key, creating a new key object. */
 func (c *Ctx) GenerateKey(sh SessionHandle, m []*Mechanism, temp []*Attribute) (ObjectHandle, error) {
