@@ -1042,6 +1042,8 @@ func (c *Ctx) VerifyRecoverInit(sh SessionHandle, m []*Mechanism, key ObjectHand
 	return toError(e)
 }
 
+// VerifyRecover verifies a signature in a single-part
+// operation, where the data is recovered from the signature.
 func (c *Ctx) VerifyRecover(sh SessionHandle, signature []byte) ([]byte, error) {
 	var (
 		data    C.CK_BYTE_PTR
