@@ -407,6 +407,28 @@ CK_RV VerifyFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
 	return rv;
 }
 
+CK_RV VerifyRecoverInit(struct ctx *c, CK_SESSION_HANDLE session,
+		      CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
+{
+	CK_RV rv = c->sym->C_VerifyRecoverInit(session, mech, key);
+	return rv;
+}
+
+CK_RV VerifyRecover(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
+		  CK_ULONG siglen, CK_BYTE_PTR * data, CK_ULONG_PTR datalen)
+{
+	CK_RV rv = c->sym->C_VerifyRecover(session, sig, siglen, NULL, datalen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*data = calloc(*datalen, sizeof(CK_BYTE));
+	if (*data == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_VerifyRecover(session, sig, siglen, *data, datalen);
+	return rv;
+}
+
 CK_RV DigestEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR part,
 		  CK_ULONG partlen, CK_BYTE_PTR * enc, CK_ULONG_PTR enclen)
 {
@@ -1012,9 +1034,27 @@ func (c *Ctx) VerifyFinal(sh SessionHandle, signature []byte) error {
 	return toError(e)
 }
 
-// VerifyRecoverInit
-// VerrifyRecover
+// VerifyRecoverInit initializes a signature verification
+// operation, where the data is recovered from the signature.
+func (c *Ctx) VerifyRecoverInit(sh SessionHandle, m []*Mechanism, key ObjectHandle) error {
+	mech, _ := cMechanismList(m)
+	e := C.VerifyRecoverInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(key))
+	return toError(e)
+}
 
+func (c *Ctx) VerifyRecover(sh SessionHandle, signature []byte) ([]byte, error) {
+	var (
+		data    C.CK_BYTE_PTR
+		datalen C.CK_ULONG
+	)
+	e := C.DecryptVerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)), &data, &datalen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(data), C.int(datalen))
+	C.free(unsafe.Pointer(data))
+	return h, nil
+}
 
 // DigestEncryptUpdate continues a multiple-part digesting
 // and encryption operation.
