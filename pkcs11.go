@@ -263,6 +263,36 @@ CK_RV Decrypt(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cypher,
 	return e;
 }
 
+CK_RV DecryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cipher,
+		  CK_ULONG cipherlen, CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
+{
+	CK_RV rv = c->sym->C_DecryptUpdate(session, cipher, cipherlen, NULL, partlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*part = calloc(*partlen, sizeof(CK_BYTE));
+	if (*part == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_DecryptUpdate(session, cipher, cipherlen, *part, partlen);
+	return rv;
+}
+
+CK_RV DecryptFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * plain,
+		CK_ULONG_PTR plainlen)
+{
+	CK_RV rv = c->sym->C_DecryptFinal(session, NULL, plainlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*plain = calloc(*plainlen, sizeof(CK_BYTE));
+	if (*plain == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_DecryptFinal(session, *plain, plainlen);
+	return rv;
+}
+
 CK_RV DigestInit(struct ctx * c, CK_SESSION_HANDLE session,
 		 CK_MECHANISM_PTR mechanism)
 {
@@ -869,8 +899,35 @@ func (c *Ctx) Decrypt(sh SessionHandle, cypher []byte) ([]byte, error) {
 	return s, nil
 }
 
-// DecryptUpdate
-// DecryptFinal
+/* DecryptUpdate continues a multiple-part decryption operation. */
+func (c *Ctx) DecryptUpdate(sh SessionHandle, cipher []byte) ([]byte, error) {
+	var (
+		part    C.CK_BYTE_PTR
+		partlen C.CK_ULONG
+	)
+	e := C.DecryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &part, &partlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(part), C.int(partlen))
+	C.free(unsafe.Pointer(part))
+	return h, nil
+}
+
+/* DecryptFinal finishes a multiple-part decryption operation. */
+func (c *Ctx) DecryptFinal(sh SessionHandle) ([]byte, error) {
+	var (
+		plain    C.CK_BYTE_PTR
+		plainlen C.CK_ULONG
+	)
+	e := C.DecryptFinal(c.ctx, C.CK_SESSION_HANDLE(sh), &plain, &plainlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(plain), C.int(plainlen))
+	C.free(unsafe.Pointer(plain))
+	return h, nil
+}
 
 /* DigestInit initializes a message-digesting operation. */
 func (c *Ctx) DigestInit(sh SessionHandle, m []*Mechanism) error {
@@ -932,7 +989,7 @@ func (c *Ctx) DigestFinal(sh SessionHandle) ([]byte, error) {
 // SignInit initializes a signature (private key encryption)
 // operation, where the signature is (will be) an appendix to
 // the data, and plaintext cannot be recovered from the
-//signature.
+// signature.
 func (c *Ctx) SignInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
 	mech, _ := cMechanismList(m) // Only the first is used, but still use a list.
 	e := C.SignInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(o))
