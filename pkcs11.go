@@ -737,7 +737,11 @@ func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
 	return m, nil
 }
 
-// GetMechanismInfo
+// GetMechanismInfo obtains information about a particular
+// mechanism possibly supported by a token.
+func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error) {
+	return nil, nil
+}
 
 // InitToken
 
