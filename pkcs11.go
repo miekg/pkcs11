@@ -145,7 +145,7 @@ CK_RV CreateObject(struct ctx * c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-CK_RV CopyObject(struct ctx *c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE o,
+CK_RV CopyObject(struct ctx * c, CK_SESSION_HANDLE session, CK_OBJECT_HANDLE o,
 		 CK_ATTRIBUTE_PTR temp, CK_ULONG tempCount,
 		 CK_OBJECT_HANDLE_PTR obj)
 {
@@ -241,6 +241,39 @@ CK_RV Encrypt(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR message,
 	return rv;
 }
 
+CK_RV EncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+		    CK_BYTE_PTR plain, CK_ULONG plainlen, CK_BYTE_PTR * cipher,
+		    CK_ULONG_PTR cipherlen)
+{
+	CK_RV rv =
+	    c->sym->C_EncryptUpdate(session, plain, plainlen, NULL, cipherlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*cipher = calloc(*cipherlen, sizeof(CK_BYTE));
+	if (*cipher == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_EncryptUpdate(session, plain, plainlen, *cipher,
+				     cipherlen);
+	return rv;
+}
+
+CK_RV EncryptFinal(struct ctx * c, CK_SESSION_HANDLE session,
+		   CK_BYTE_PTR * cipher, CK_ULONG_PTR cipherlen)
+{
+	CK_RV rv = c->sym->C_EncryptFinal(session, NULL, cipherlen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*cipher = calloc(*cipherlen, sizeof(CK_BYTE));
+	if (*cipher == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_EncryptFinal(session, *cipher, cipherlen);
+	return rv;
+}
+
 CK_RV DecryptInit(struct ctx * c, CK_SESSION_HANDLE session,
 		  CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key)
 {
@@ -263,10 +296,12 @@ CK_RV Decrypt(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cypher,
 	return e;
 }
 
-CK_RV DecryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cipher,
-		  CK_ULONG cipherlen, CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
+CK_RV DecryptUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+		    CK_BYTE_PTR cipher, CK_ULONG cipherlen, CK_BYTE_PTR * part,
+		    CK_ULONG_PTR partlen)
 {
-	CK_RV rv = c->sym->C_DecryptUpdate(session, cipher, cipherlen, NULL, partlen);
+	CK_RV rv =
+	    c->sym->C_DecryptUpdate(session, cipher, cipherlen, NULL, partlen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
@@ -274,12 +309,13 @@ CK_RV DecryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR ciphe
 	if (*part == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-	rv = c->sym->C_DecryptUpdate(session, cipher, cipherlen, *part, partlen);
+	rv = c->sym->C_DecryptUpdate(session, cipher, cipherlen, *part,
+				     partlen);
 	return rv;
 }
 
-CK_RV DecryptFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * plain,
-		CK_ULONG_PTR plainlen)
+CK_RV DecryptFinal(struct ctx * c, CK_SESSION_HANDLE session,
+		   CK_BYTE_PTR * plain, CK_ULONG_PTR plainlen)
 {
 	CK_RV rv = c->sym->C_DecryptFinal(session, NULL, plainlen);
 	if (rv != CKR_OK) {
@@ -387,7 +423,7 @@ CK_RV SignFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * sig,
 	return rv;
 }
 
-CK_RV SignRecoverInit(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV SignRecoverInit(struct ctx * c, CK_SESSION_HANDLE session,
 		      CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
 {
 	CK_RV rv = c->sym->C_SignRecoverInit(session, mech, key);
@@ -437,15 +473,15 @@ CK_RV VerifyFinal(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
 	return rv;
 }
 
-CK_RV VerifyRecoverInit(struct ctx *c, CK_SESSION_HANDLE session,
-		      CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
+CK_RV VerifyRecoverInit(struct ctx * c, CK_SESSION_HANDLE session,
+			CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE key)
 {
 	CK_RV rv = c->sym->C_VerifyRecoverInit(session, mech, key);
 	return rv;
 }
 
 CK_RV VerifyRecover(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
-		  CK_ULONG siglen, CK_BYTE_PTR * data, CK_ULONG_PTR datalen)
+		    CK_ULONG siglen, CK_BYTE_PTR * data, CK_ULONG_PTR datalen)
 {
 	CK_RV rv = c->sym->C_VerifyRecover(session, sig, siglen, NULL, datalen);
 	if (rv != CKR_OK) {
@@ -459,10 +495,12 @@ CK_RV VerifyRecover(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR sig,
 	return rv;
 }
 
-CK_RV DigestEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR part,
-		  CK_ULONG partlen, CK_BYTE_PTR * enc, CK_ULONG_PTR enclen)
+CK_RV DigestEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR part, CK_ULONG partlen, CK_BYTE_PTR * enc,
+			  CK_ULONG_PTR enclen)
 {
-	CK_RV rv = c->sym->C_DigestEncryptUpdate(session, part, partlen, NULL, enclen);
+	CK_RV rv =
+	    c->sym->C_DigestEncryptUpdate(session, part, partlen, NULL, enclen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
@@ -470,14 +508,18 @@ CK_RV DigestEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR
 	if (*enc == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-	rv = c->sym->C_DigestEncryptUpdate(session, part, partlen, *enc, enclen);
+	rv = c->sym->C_DigestEncryptUpdate(session, part, partlen, *enc,
+					   enclen);
 	return rv;
 }
 
-CK_RV DecryptDigestUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cipher,
-		  CK_ULONG cipherlen, CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
+CK_RV DecryptDigestUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR cipher, CK_ULONG cipherlen,
+			  CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
 {
-	CK_RV rv = c->sym->C_DecryptDigestUpdate(session, cipher, cipherlen, NULL, partlen);
+	CK_RV rv =
+	    c->sym->C_DecryptDigestUpdate(session, cipher, cipherlen, NULL,
+					  partlen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
@@ -485,14 +527,17 @@ CK_RV DecryptDigestUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR
 	if (*part == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-	rv = c->sym->C_DecryptDigestUpdate(session, cipher, cipherlen, *part, partlen);
+	rv = c->sym->C_DecryptDigestUpdate(session, cipher, cipherlen, *part,
+					   partlen);
 	return rv;
 }
 
-CK_RV SignEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR part,
-		  CK_ULONG partlen, CK_BYTE_PTR * enc, CK_ULONG_PTR enclen)
+CK_RV SignEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+			CK_BYTE_PTR part, CK_ULONG partlen, CK_BYTE_PTR * enc,
+			CK_ULONG_PTR enclen)
 {
-	CK_RV rv = c->sym->C_SignEncryptUpdate(session, part, partlen, NULL, enclen);
+	CK_RV rv =
+	    c->sym->C_SignEncryptUpdate(session, part, partlen, NULL, enclen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
@@ -504,10 +549,13 @@ CK_RV SignEncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR p
 	return rv;
 }
 
-CK_RV DecryptVerifyUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR cipher,
-		  CK_ULONG cipherlen, CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
+CK_RV DecryptVerifyUpdate(struct ctx * c, CK_SESSION_HANDLE session,
+			  CK_BYTE_PTR cipher, CK_ULONG cipherlen,
+			  CK_BYTE_PTR * part, CK_ULONG_PTR partlen)
 {
-	CK_RV rv = c->sym->C_DecryptVerifyUpdate(session, cipher, cipherlen, NULL, partlen);
+	CK_RV rv =
+	    c->sym->C_DecryptVerifyUpdate(session, cipher, cipherlen, NULL,
+					  partlen);
 	if (rv != CKR_OK) {
 		return rv;
 	}
@@ -515,7 +563,8 @@ CK_RV DecryptVerifyUpdate(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR
 	if (*part == NULL) {
 		return CKR_HOST_MEMORY;
 	}
-	rv = c->sym->C_DecryptVerifyUpdate(session, cipher, cipherlen, *part, partlen);
+	rv = c->sym->C_DecryptVerifyUpdate(session, cipher, cipherlen, *part,
+					   partlen);
 	return rv;
 }
 
@@ -560,7 +609,7 @@ CK_RV WrapKey(struct ctx * c, CK_SESSION_HANDLE session,
 	return rv;
 }
 
-CK_RV DeriveKey(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV DeriveKey(struct ctx * c, CK_SESSION_HANDLE session,
 		CK_MECHANISM_PTR mech, CK_OBJECT_HANDLE basekey,
 		CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
 {
@@ -573,9 +622,8 @@ CK_RV UnwrapKey(struct ctx * c, CK_SESSION_HANDLE session,
 		CK_BYTE_PTR wrappedkey, CK_ULONG wrappedkeylen,
 		CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
 {
-	CK_RV e =
-	    c->sym->C_UnwrapKey(session, mech, unwrappingkey, wrappedkey,
-				wrappedkeylen, a, alen, key);
+	CK_RV e = c->sym->C_UnwrapKey(session, mech, unwrappingkey, wrappedkey,
+				      wrappedkeylen, a, alen, key);
 	return e;
 }
 
@@ -876,6 +924,36 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 
 // EncryptUpdate
 // EncryptFinal
+
+/* EncryptUpdate continues a multiple-part encryption operation. */
+func (c *Ctx) EncryptUpdate(sh SessionHandle, plain []byte) ([]byte, error) {
+	var (
+		part    C.CK_BYTE_PTR
+		partlen C.CK_ULONG
+	)
+	e := C.EncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&plain[0])), C.CK_ULONG(len(plain)), &part, &partlen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(part), C.int(partlen))
+	C.free(unsafe.Pointer(part))
+	return h, nil
+}
+
+// EncryptFinal finishes a multiple-part encryption operation.
+func (c *Ctx) EncryptFinal(sh SessionHandle) ([]byte, error) {
+	var (
+		enc    C.CK_BYTE_PTR
+		enclen C.CK_ULONG
+	)
+	e := C.EncryptFinal(c.ctx, C.CK_SESSION_HANDLE(sh), &enc, &enclen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	h := C.GoBytes(unsafe.Pointer(enc), C.int(enclen))
+	C.free(unsafe.Pointer(enc))
+	return h, nil
+}
 
 /* DecryptInit initializes a decryption operation. */
 func (c *Ctx) DecryptInit(sh SessionHandle, m []*Mechanism, o ObjectHandle) error {
