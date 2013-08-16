@@ -755,6 +755,7 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 
 /* GetSlotInfo obtains information about a particular slot in the system. */
 func (c *Ctx) GetSlotInfo(slotID uint) (SlotInfo, error) {
+	// TODO(miek)
 	var csi C.CK_SLOT_INFO
 	e := C.GetSlotInfo(c.ctx, C.CK_ULONG(slotID), &csi)
 	var s SlotInfo
@@ -942,14 +943,14 @@ func (c *Ctx) GetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute
 	return a1, nil
 }
 
-/* C_SetAttributeValue modifies the value of one or more object attributes */
+/* SetAttributeValue modifies the value of one or more object attributes */
 func (c *Ctx) SetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute) error {
 	pa, palen := cAttributeList(a)
 	e := C.SetAttributeValue(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(o), pa, palen)
 	return toError(e)
 }
 
-// C_FindObjectsInit initializes a search for token and session
+// FindObjectsInit initializes a search for token and session
 // objects that match a template.
 func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
 	t, tcount := cAttributeList(temp)
