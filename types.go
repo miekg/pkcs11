@@ -31,6 +31,7 @@ import "C"
 
 import (
 	"fmt"
+	"time"
 	"unsafe"
 )
 
@@ -183,6 +184,8 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 		a.Value = []byte(x.(string))
 	case []byte: // just copy
 		a.Value = x.([]byte)
+	case time.Time: // for CKA_DATE
+		a.Value = cDate(x.(time.Time))
 	default:
 		panic("pkcs11: unhandled attribute type")
 	}
@@ -206,11 +209,16 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	return C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))
 }
 
-/* Date is a structure that defines a date. */
-type Date struct {
-	Year  [4]byte // the year ("1900" - "9999")
-	Month [2]byte // the month ("01" - "12")
-	Day   [2]byte // the day   ("01" - "31")
+func cDate(t time.Time) []byte {
+	b := make([]byte, 8)
+	year, month, day := t.Date()
+	y := fmt.Sprintf("%4d", year)
+	m := fmt.Sprintf("%02d", month)
+	d1 := fmt.Sprintf("%02d", day)
+	b[0], b[1], b[2], b[3] = y[0], y[1], y[2], y[3]
+	b[4], b[5] = m[0], m[1]
+	b[6], b[7] = d1[0], d1[1]
+	return b
 }
 
 // Mechanism holds an mechanism type/value combination.
