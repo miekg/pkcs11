@@ -108,7 +108,11 @@ CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 
 // GetMechanismInfo
 
-// InitToken
+CK_RV InitToken(struct ctx *c, CK_ULONG slotID, char *pin, CK_ULONG pinlen, char *label)
+{
+	CK_RV e = c->sym->C_InitToken((CK_SLOT_ID)slotID, (CK_UTF8CHAR_PTR) pin, pinlen, (CK_UTF8CHAR_PTR)label);
+	return e;
+}
 
 CK_RV InitPIN(struct ctx *c, CK_SESSION_HANDLE sh, char *pin, CK_ULONG pinlen)
 {
@@ -764,7 +768,21 @@ func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error
 	return nil, nil
 }
 
-// InitToken
+// InitToken initializes a token. The label must be 32 characters
+// long, it is blank padded if it is not.
+func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
+	p :=  C.CString(pin)
+	defer C.free(unsafe.Pointer(p))
+	ll := len(label)
+	for ll < 32 {
+		label += " "
+		ll++
+	}
+	l :=  C.CString(label)
+	defer C.free(unsafe.Pointer(l))
+	e := C.InitToken(c.ctx, C.CK_ULONG(slotID), p, C.CK_ULONG(len(pin)), l)
+	return toError(e)
+}
 
 /* InitPIN initializes the normal user's PIN. */
 func (c *Ctx) InitPIN(sh SessionHandle, pin string) error {
