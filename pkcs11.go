@@ -142,6 +142,13 @@ CK_RV CloseSession(struct ctx * c, CK_SESSION_HANDLE session)
 	return e;
 }
 
+CK_RV GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE session,
+		     CK_SESSION_INFO_PTR info)
+{
+	CK_RV e = c->sym->C_GetSessionInfo(session, info);
+	return e;
+}
+
 CK_RV CloseAllSessions(struct ctx * c, CK_ULONG slotID)
 {
 	CK_RV e = c->sym->C_CloseAllSessions(slotID);
@@ -771,14 +778,14 @@ func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error
 // InitToken initializes a token. The label must be 32 characters
 // long, it is blank padded if it is not.
 func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
-	p :=  C.CString(pin)
+	p := C.CString(pin)
 	defer C.free(unsafe.Pointer(p))
 	ll := len(label)
 	for ll < 32 {
 		label += " "
 		ll++
 	}
-	l :=  C.CString(label)
+	l := C.CString(label)
 	defer C.free(unsafe.Pointer(l))
 	e := C.InitToken(c.ctx, C.CK_ULONG(slotID), p, C.CK_ULONG(len(pin)), l)
 	return toError(e)
@@ -786,7 +793,7 @@ func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
 
 /* InitPIN initializes the normal user's PIN. */
 func (c *Ctx) InitPIN(sh SessionHandle, pin string) error {
-	p :=  C.CString(pin)
+	p := C.CString(pin)
 	defer C.free(unsafe.Pointer(p))
 	e := C.InitPIN(c.ctx, C.CK_SESSION_HANDLE(sh), p, C.CK_ULONG(len(pin)))
 	return toError(e)
@@ -794,9 +801,9 @@ func (c *Ctx) InitPIN(sh SessionHandle, pin string) error {
 
 /* SetPIN modifies the PIN of the user who is logged in. */
 func (c *Ctx) SetPIN(sh SessionHandle, oldpin string, newpin string) error {
-	old :=  C.CString(oldpin)
+	old := C.CString(oldpin)
 	defer C.free(unsafe.Pointer(old))
-	new :=  C.CString(newpin)
+	new := C.CString(newpin)
 	defer C.free(unsafe.Pointer(new))
 	e := C.SetPIN(c.ctx, C.CK_SESSION_HANDLE(sh), old, C.CK_ULONG(len(oldpin)), new, C.CK_ULONG(len(newpin)))
 	return toError(e)
@@ -827,7 +834,16 @@ func (c *Ctx) CloseAllSessions(slotID uint) error {
 	return toError(e)
 }
 
-// GetSessionInfo
+func (c *Ctx) GetSessionInfo(sh SessionHandle) (SessionInfo, error) {
+	var csi C.CK_SESSION_INFO
+	e := C.GetSessionInfo(c.ctx, C.CK_SESSION_HANDLE(sh), &csi)
+	s := SessionInfo{SlotID: uint(csi.slotID),
+		State:       uint(csi.state),
+		Flags:       uint(csi.flags),
+		DeviceError: uint(csi.ulDeviceError),
+	}
+	return s, toError(e)
+}
 
 // GetOperationState
 

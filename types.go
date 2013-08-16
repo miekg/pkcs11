@@ -125,7 +125,7 @@ type TokenInfo struct {
 /* SesionInfo provides information about a session. */
 type SessionInfo struct {
 	SlotID      uint
-	Sate        uint
+	State       uint
 	Flags       uint
 	DeviceError uint
 }
