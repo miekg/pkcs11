@@ -92,6 +92,13 @@ CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
 	return e;
 }
 
+CK_RV GetSlotInfo(struct ctx *c, CK_ULONG slotID,
+		     CK_SLOT_INFO_PTR info)
+{
+	CK_RV e = c->sym->C_GetSlotInfo((CK_SLOT_ID)slotID, info);
+	return e;
+}
+
 CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 		       CK_ULONG_PTR * mech, CK_ULONG_PTR mechlen)
 {
@@ -746,7 +753,13 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 	return l, nil
 }
 
-// GetSlotInfo
+/* GetSlotInfo obtains information about a particular slot in the system. */
+func (c *Ctx) GetSlotInfo(slotID uint) (SlotInfo, error) {
+	var csi C.CK_SLOT_INFO
+	e := C.GetSlotInfo(c.ctx, C.CK_ULONG(slotID), &csi)
+	var s SlotInfo
+	return s, toError(e+1)
+}
 
 // GetTokenInfo
 
@@ -772,7 +785,7 @@ func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
 // GetMechanismInfo obtains information about a particular
 // mechanism possibly supported by a token.
 func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error) {
-	return nil, nil
+	return nil, toError(1)
 }
 
 // InitToken initializes a token. The label must be 32 characters
