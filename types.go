@@ -78,6 +78,10 @@ type Version struct {
 	Minor byte
 }
 
+func toVersion(version C.CK_VERSION) Version {
+	return Version{byte(version.major), byte(version.minor)}
+}
+
 type SlotEvent struct {
 	SlotID uint
 }
