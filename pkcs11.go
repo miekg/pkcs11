@@ -106,6 +106,23 @@ CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 	return e;
 }
 
+// GetMechanismInfo
+
+// InitToken
+
+CK_RV InitPIN(struct ctx *c, CK_SESSION_HANDLE sh, char *pin, CK_ULONG pinlen)
+{
+	CK_RV e = c->sym->C_InitPIN(sh, (CK_UTF8CHAR_PTR) pin, pinlen);
+	return e;
+}
+
+CK_RV SetPIN(struct ctx *c, CK_SESSION_HANDLE sh, char *oldpin,
+	     CK_ULONG oldpinlen, char *newpin, CK_ULONG newpinlen)
+{
+	CK_RV e = c->sym->C_SetPIN(sh, (CK_UTF8CHAR_PTR) oldpin, oldpinlen,
+				   (CK_UTF8CHAR_PTR) newpin, newpinlen);
+	return e;
+}
 CK_RV OpenSession(struct ctx * c, CK_ULONG slotID, CK_ULONG flags,
 		  CK_SESSION_HANDLE_PTR session)
 {
@@ -749,9 +766,23 @@ func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error
 
 // InitToken
 
-// InitPIN
+/* InitPIN initializes the normal user's PIN. */
+func (c *Ctx) InitPIN(sh SessionHandle, pin string) error {
+	p :=  C.CString(pin)
+	defer C.free(unsafe.Pointer(p))
+	e := C.InitPIN(c.ctx, C.CK_SESSION_HANDLE(sh), p, C.CK_ULONG(len(pin)))
+	return toError(e)
+}
 
-// SetPIN
+/* SetPIN modifies the PIN of the user who is logged in. */
+func (c *Ctx) SetPIN(sh SessionHandle, oldpin string, newpin string) error {
+	old :=  C.CString(oldpin)
+	defer C.free(unsafe.Pointer(old))
+	new :=  C.CString(newpin)
+	defer C.free(unsafe.Pointer(new))
+	e := C.SetPIN(c.ctx, C.CK_SESSION_HANDLE(sh), old, C.CK_ULONG(len(oldpin)), new, C.CK_ULONG(len(newpin)))
+	return toError(e)
+}
 
 /* OpenSession opens a session between an application and a token. */
 func (c *Ctx) OpenSession(slotID uint, flags uint) (SessionHandle, error) {
