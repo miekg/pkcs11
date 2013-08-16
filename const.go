@@ -85,11 +85,11 @@ const (
 	CKA_VERIFY                           = 0x0000010A
 	CKA_VERIFY_RECOVER                   = 0x0000010B
 	CKA_DERIVE                           = 0x0000010C
-	CKA_START_DATE                       = 0x00000110 // Use time.Time as a value
-	CKA_END_DATE                         = 0x00000111 // Use time.Time as a value
+	CKA_START_DATE                       = 0x00000110 // Use time.Time as a value.
+	CKA_END_DATE                         = 0x00000111 // Use time.Time as a value.
 	CKA_MODULUS                          = 0x00000120
 	CKA_MODULUS_BITS                     = 0x00000121
-	CKA_PUBLIC_EXPONENT                  = 0x00000122
+	CKA_PUBLIC_EXPONENT                  = 0x00000122 // Use []byte slice as a value.
 	CKA_PRIVATE_EXPONENT                 = 0x00000123
 	CKA_PRIME_1                          = 0x00000124
 	CKA_PRIME_2                          = 0x00000125
