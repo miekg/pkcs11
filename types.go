@@ -90,9 +90,9 @@ type SlotEvent struct {
 // Info provides information about the library and hardware used.
 type Info struct {
 	CryptokiVersion    Version
-	ManufacturerID     [32]byte
+	ManufacturerID     string
 	Flags              uint
-	LibraryDescription [32]byte
+	LibraryDescription string
 	LibraryVersion     Version
 }
 

@@ -80,6 +80,11 @@ CK_RV Finalize(struct ctx * c)
 	return c->sym->C_Finalize(NULL);
 }
 
+CK_RV GetInfo(struct ctx * c, CK_INFO_PTR info)
+{
+	return c->sym->C_GetInfo(info);
+}
+
 CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
 		  CK_ULONG_PTR * slotList, CK_ULONG_PTR ulCount)
 {
@@ -751,7 +756,19 @@ func (c *Ctx) Finalize() error {
 	return toError(e)
 }
 
-// GetInfo
+/* GetInfo returns general information about Cryptoki. */
+func (c *Ctx) GetInfo() (Info, error) {
+	var p C.CK_INFO
+	e := C.GetInfo(c.ctx, C.CK_INFO_PTR(&p))
+	i := Info{
+		CryptokiVersion:    toVersion(p.cryptokiVersion),
+		ManufacturerID:     string(C.GoBytes(unsafe.Pointer(&p.manufacturerID[0]), 32)),
+		Flags:              uint(p.flags),
+		LibraryDescription: string(C.GoBytes(unsafe.Pointer(&p.libraryDescription[0]), 32)),
+		LibraryVersion:     toVersion(p.libraryVersion),
+	}
+	return i, toError(e)
+}
 
 /* GetSlotList obtains a list of slots in the system. */
 func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
