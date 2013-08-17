@@ -19,12 +19,6 @@ were it makes sense. It has been tested with SoftHSM.
 
 ## Examples
 
-The following examples are available:
-
-* sign/ directory contains a program, that generates a keypair and then signs
-    some data;
-* sha1sum/ directory contains a program that hashes a string with SHA1.
-
 A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 
     p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
@@ -42,6 +36,8 @@ A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
             fmt.Printf("%x", d)
     }
     fmt.Println()
+
+Further examples are included in the tests.
 
 # TODO
 
