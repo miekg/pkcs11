@@ -734,6 +734,7 @@ CK_RV WaitForSlotEvent(struct ctx * c, CK_FLAGS flags, CK_ULONG_PTR slot)
 }
 */
 import "C"
+import "strings"
 
 import "unsafe"
 
@@ -785,9 +786,9 @@ func (c *Ctx) GetInfo() (Info, error) {
 	e := C.GetInfo(c.ctx, C.CK_INFO_PTR(&p))
 	i := Info{
 		CryptokiVersion:    toVersion(p.cryptokiVersion),
-		ManufacturerID:     string(C.GoBytes(unsafe.Pointer(&p.manufacturerID[0]), 32)),
+		ManufacturerID:     strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&p.manufacturerID[0]), 32)), " "),
 		Flags:              uint(p.flags),
-		LibraryDescription: string(C.GoBytes(unsafe.Pointer(&p.libraryDescription[0]), 32)),
+		LibraryDescription: strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&p.libraryDescription[0]), 32)), " "),
 		LibraryVersion:     toVersion(p.libraryVersion),
 	}
 	return i, toError(e)
@@ -812,8 +813,8 @@ func (c *Ctx) GetSlotInfo(slotID uint) (SlotInfo, error) {
 	var csi C.CK_SLOT_INFO
 	e := C.GetSlotInfo(c.ctx, C.CK_ULONG(slotID), &csi)
 	s := SlotInfo{
-		SlotDescription: string(C.GoBytes(unsafe.Pointer(&csi.slotDescription[0]), 64)),
-		ManufacturerID:  string(C.GoBytes(unsafe.Pointer(&csi.manufacturerID[0]), 32)),
+		SlotDescription: strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&csi.slotDescription[0]), 64)), " "),
+		ManufacturerID:  strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&csi.manufacturerID[0]), 32)), " "),
 		Flags:           uint(csi.flags),
 		HardwareVersion: toVersion(csi.hardwareVersion),
 		FirmwareVersion: toVersion(csi.firmwareVersion),
@@ -827,10 +828,10 @@ func (c *Ctx) GetTokenInfo(slotID uint) (TokenInfo, error) {
 	var cti C.CK_TOKEN_INFO
 	e := C.GetTokenInfo(c.ctx, C.CK_ULONG(slotID), &cti)
 	s := TokenInfo{
-		Label:              string(C.GoBytes(unsafe.Pointer(&cti.label[0]), 32)),
-		ManufacturerID:     string(C.GoBytes(unsafe.Pointer(&cti.manufacturerID[0]), 32)),
-		Model:              string(C.GoBytes(unsafe.Pointer(&cti.model[0]), 16)),
-		SerialNumber:       string(C.GoBytes(unsafe.Pointer(&cti.serialNumber[0]), 16)),
+		Label:              strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&cti.label[0]), 32)), " "),
+		ManufacturerID:     strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&cti.manufacturerID[0]), 32)), " "),
+		Model:              strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&cti.model[0]), 16)), " "),
+		SerialNumber:       strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&cti.serialNumber[0]), 16)), " "),
 		Flags:              uint(cti.flags),
 		MaxSessionCount:    uint(cti.ulMaxSessionCount),
 		SessionCount:       uint(cti.ulSessionCount),
@@ -844,7 +845,7 @@ func (c *Ctx) GetTokenInfo(slotID uint) (TokenInfo, error) {
 		FreePrivateMemory:  uint(cti.ulFreePrivateMemory),
 		HardwareVersion:    toVersion(cti.hardwareVersion),
 		FirmwareVersion:    toVersion(cti.firmwareVersion),
-		UTCTime:            string(C.GoBytes(unsafe.Pointer(&cti.utcTime[0]), 16)),
+		UTCTime:            strings.TrimRight(string(C.GoBytes(unsafe.Pointer(&cti.utcTime[0]), 16)), " "),
 	}
 	return s, toError(e)
 }

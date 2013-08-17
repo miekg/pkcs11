@@ -49,3 +49,4 @@ A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 * Kill C.Sizeof in that same function.
 * Look at the memory coping in fast function (sign, hash etc).
 * Fix inconsistencies in naming?
+* Add tests -- there are way to few

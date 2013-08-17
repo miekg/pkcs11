@@ -41,6 +41,23 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 	return session
 }
 
+func TestGetInfo(t *testing.T) {
+	p := setenv()
+	session := getSession(p, t)
+	defer p.Logout(session)
+	defer p.CloseSession(session)
+	defer p.Finalize()
+	defer p.Destroy()
+	info, err := p.GetInfo()
+	if err != nil {
+		t.Fatalf("Non zero error %s\n", err.Error())
+	}
+	if info.ManufacturerID != "SoftHSM" {
+		t.Fatal("ID should be SoftHSM")
+	}
+	t.Logf("%+v\n", info)
+}
+
 func TestObjectFinding(t *testing.T) {
 	p := setenv()
 	session := getSession(p, t)
