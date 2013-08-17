@@ -106,7 +106,7 @@ CK_RV GetTokenInfo(struct ctx * c, CK_ULONG slotID,
 	return e;
 }
 
-CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
+CK_RV GetMechanismList(struct ctx *c, CK_ULONG slotID,
 		       CK_ULONG_PTR * mech, CK_ULONG_PTR mechlen)
 {
 	CK_RV e =
@@ -120,21 +120,28 @@ CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 	return e;
 }
 
-// GetMechanismInfo
-
-CK_RV InitToken(struct ctx *c, CK_ULONG slotID, char *pin, CK_ULONG pinlen, char *label)
+CK_RV GetMechanismInfo(struct ctx * c, CK_ULONG slotID, CK_MECHANISM_TYPE mech,
+		       CK_MECHANISM_INFO_PTR info)
 {
-	CK_RV e = c->sym->C_InitToken((CK_SLOT_ID)slotID, (CK_UTF8CHAR_PTR) pin, pinlen, (CK_UTF8CHAR_PTR)label);
+	CK_RV e = c->sym->C_GetMechanismInfo((CK_SLOT_ID) slotID, mech, info);
+	return e;
+}
+CK_RV InitToken(struct ctx *c, CK_ULONG slotID, char *pin, CK_ULONG pinlen,
+		char *label)
+{
+	CK_RV e =
+	    c->sym->C_InitToken((CK_SLOT_ID) slotID, (CK_UTF8CHAR_PTR) pin,
+				pinlen, (CK_UTF8CHAR_PTR) label);
 	return e;
 }
 
-CK_RV InitPIN(struct ctx *c, CK_SESSION_HANDLE sh, char *pin, CK_ULONG pinlen)
+CK_RV InitPIN(struct ctx * c, CK_SESSION_HANDLE sh, char *pin, CK_ULONG pinlen)
 {
 	CK_RV e = c->sym->C_InitPIN(sh, (CK_UTF8CHAR_PTR) pin, pinlen);
 	return e;
 }
 
-CK_RV SetPIN(struct ctx *c, CK_SESSION_HANDLE sh, char *oldpin,
+CK_RV SetPIN(struct ctx * c, CK_SESSION_HANDLE sh, char *oldpin,
 	     CK_ULONG oldpinlen, char *newpin, CK_ULONG newpinlen)
 {
 	CK_RV e = c->sym->C_SetPIN(sh, (CK_UTF8CHAR_PTR) oldpin, oldpinlen,
@@ -817,8 +824,16 @@ func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
 
 // GetMechanismInfo obtains information about a particular
 // mechanism possibly supported by a token.
-func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error) {
-	return nil, toError(1)
+func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) (MechanismInfo, error) {
+	var cm C.CK_MECHANISM_INFO
+	e := C.GetMechanismInfo(c.ctx, C.CK_ULONG(slotID), C.CK_MECHANISM_TYPE(m[0].Mechanism),
+		C.CK_MECHANISM_INFO_PTR(&cm))
+	mi := MechanismInfo{
+		MinKeySize: uint(cm.ulMinKeySize),
+		MaxKeySize: uint(cm.ulMaxKeySize),
+		Flags:      uint(cm.flags),
+	}
+	return mi, toError(e)
 }
 
 // InitToken initializes a token. The label must be 32 characters
