@@ -97,21 +97,19 @@ CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
 	return e;
 }
 
-CK_RV GetSlotInfo(struct ctx * c, CK_ULONG slotID,
-		     CK_SLOT_INFO_PTR info)
+CK_RV GetSlotInfo(struct ctx * c, CK_ULONG slotID, CK_SLOT_INFO_PTR info)
 {
-	CK_RV e = c->sym->C_GetSlotInfo((CK_SLOT_ID)slotID, info);
+	CK_RV e = c->sym->C_GetSlotInfo((CK_SLOT_ID) slotID, info);
 	return e;
 }
 
-CK_RV GetTokenInfo(struct ctx * c, CK_ULONG slotID,
-			CK_TOKEN_INFO_PTR info)
+CK_RV GetTokenInfo(struct ctx * c, CK_ULONG slotID, CK_TOKEN_INFO_PTR info)
 {
-	CK_RV e = c->sym->C_GetTokenInfo((CK_SLOT_ID)slotID, info);
+	CK_RV e = c->sym->C_GetTokenInfo((CK_SLOT_ID) slotID, info);
 	return e;
 }
 
-CK_RV GetMechanismList(struct ctx *c, CK_ULONG slotID,
+CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 		       CK_ULONG_PTR * mech, CK_ULONG_PTR mechlen)
 {
 	CK_RV e =
@@ -131,7 +129,8 @@ CK_RV GetMechanismInfo(struct ctx * c, CK_ULONG slotID, CK_MECHANISM_TYPE mech,
 	CK_RV e = c->sym->C_GetMechanismInfo((CK_SLOT_ID) slotID, mech, info);
 	return e;
 }
-CK_RV InitToken(struct ctx *c, CK_ULONG slotID, char *pin, CK_ULONG pinlen,
+
+CK_RV InitToken(struct ctx * c, CK_ULONG slotID, char *pin, CK_ULONG pinlen,
 		char *label)
 {
 	CK_RV e =
@@ -153,6 +152,7 @@ CK_RV SetPIN(struct ctx * c, CK_SESSION_HANDLE sh, char *oldpin,
 				   (CK_UTF8CHAR_PTR) newpin, newpinlen);
 	return e;
 }
+
 CK_RV OpenSession(struct ctx * c, CK_ULONG slotID, CK_ULONG flags,
 		  CK_SESSION_HANDLE_PTR session)
 {
@@ -174,14 +174,14 @@ CK_RV CloseAllSessions(struct ctx * c, CK_ULONG slotID)
 	return e;
 }
 
-CK_RV GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV GetSessionInfo(struct ctx * c, CK_SESSION_HANDLE session,
 		     CK_SESSION_INFO_PTR info)
 {
 	CK_RV e = c->sym->C_GetSessionInfo(session, info);
 	return e;
 }
 
-CK_RV GetOperationState(struct ctx *c, CK_SESSION_HANDLE session,
+CK_RV GetOperationState(struct ctx * c, CK_SESSION_HANDLE session,
 			CK_BYTE_PTR * state, CK_ULONG_PTR statelen)
 {
 	CK_RV rv = c->sym->C_GetOperationState(session, NULL, statelen);
@@ -203,6 +203,7 @@ CK_RV SetOperationState(struct ctx * c, CK_SESSION_HANDLE session,
 	return c->sym->C_SetOperationState(session, state, statelen, encryptkey,
 					   authkey);
 }
+
 CK_RV Login(struct ctx * c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
 	    char *pin, CK_ULONG pinLen)
 {
