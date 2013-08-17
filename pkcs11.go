@@ -168,6 +168,12 @@ CK_RV CloseSession(struct ctx * c, CK_SESSION_HANDLE session)
 	return e;
 }
 
+CK_RV CloseAllSessions(struct ctx * c, CK_ULONG slotID)
+{
+	CK_RV e = c->sym->C_CloseAllSessions(slotID);
+	return e;
+}
+
 CK_RV GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE session,
 		     CK_SESSION_INFO_PTR info)
 {
@@ -175,10 +181,23 @@ CK_RV GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-CK_RV CloseAllSessions(struct ctx * c, CK_ULONG slotID)
+CK_RV GetOperationState(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * state, CK_ULONG_PTR statelen)
 {
-	CK_RV e = c->sym->C_CloseAllSessions(slotID);
-	return e;
+	CK_RV rv = c->sym->C_GetOperationState(session, NULL, statelen);
+	if (rv != CKR_OK) {
+		return rv;
+	}
+	*state = calloc(*statelen, sizeof(CK_BYTE));
+	if (*state == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	rv = c->sym->C_GetOperationState(session, *state, statelen);
+	return rv;
+}
+
+CK_RV SetOperationState(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR state, CK_ULONG_PTR statelen, CK_OBJECT_HANDLE encryptKey, CK_OBJECT_HANDLE authkey)
+{
+	return 1;
 }
 
 CK_RV Login(struct ctx * c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
@@ -930,9 +949,23 @@ func (c *Ctx) GetSessionInfo(sh SessionHandle) (SessionInfo, error) {
 	return s, toError(e)
 }
 
-// GetOperationState
+func (c *Ctx) GetOperationState(sh SessionHandle) ([]byte, error) {
+	var (
+		state    C.CK_BYTE_PTR
+		statelen C.CK_ULONG
+	)
+	e := C.GetOperationState(c.ctx, C.CK_SESSION_HANDLE(sh), &state, &statelen)
+	if toError(e) != nil {
+		return nil, toError(e)
+	}
+	b := C.GoBytes(unsafe.Pointer(state), C.int(statelen))
+	C.free(unsafe.Pointer(state))
+	return b, nil
+}
 
-// SetOperationState
+func (c *Ctx) SetOperationState(sh SessionHandle, state []byte, encryptKey, authKey ObjectHandle) ([]byte, error) {
+	return nil, nil
+}
 
 /* Login logs a user into a token. */
 func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
