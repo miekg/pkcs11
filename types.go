@@ -83,6 +83,8 @@ func toVersion(version C.CK_VERSION) Version {
 	return Version{byte(version.major), byte(version.minor)}
 }
 
+// SlotEvent holds the SlotID which for which an slot event (token insertion,
+// removal, etc.) occurred.
 type SlotEvent struct {
 	SlotID uint
 }
@@ -253,6 +255,7 @@ func cMechanismList(m []*Mechanism) (C.CK_MECHANISM_PTR, C.CK_ULONG) {
 	return C.CK_MECHANISM_PTR(&pm[0]), C.CK_ULONG(len(m))
 }
 
+// MechanismInfo provides information about a particular mechanism.
 type MechanismInfo struct {
 	MinKeySize uint
 	MaxKeySize uint

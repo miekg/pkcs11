@@ -943,6 +943,7 @@ func (c *Ctx) CloseAllSessions(slotID uint) error {
 	return toError(e)
 }
 
+/* GetSessionInfo obtains information about the session. */
 func (c *Ctx) GetSessionInfo(sh SessionHandle) (SessionInfo, error) {
 	var csi C.CK_SESSION_INFO
 	e := C.GetSessionInfo(c.ctx, C.CK_SESSION_HANDLE(sh), &csi)
@@ -1538,7 +1539,7 @@ func (c *Ctx) GenerateRandom(sh SessionHandle, length int) ([]byte, error) {
 }
 
 // WaitForSlotEvent returns a channel which returns a slot event
-// (token insertion, // removal, etc.) when it occurs.
+// (token insertion, removal, etc.) when it occurs.
 func (c *Ctx) WaitForSlotEvent(flags uint) chan SlotEvent {
 	sl := make(chan SlotEvent, 1) // hold one element
 	go c.waitForSlotEventHelper(flags, sl)
