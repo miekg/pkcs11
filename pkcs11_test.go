@@ -167,3 +167,41 @@ func TestDigestUpdate(t *testing.T) {
 	}
 
 }
+
+// ExampleSign show how to sign some data with a private key.
+// Note: error correction is not implemented in this function.
+func ExampleSign() {
+	p := setenv()
+	p.Initialize()
+	defer p.Destroy()
+	defer p.Finalize()
+	slots, _ := p.GetSlotList(true)
+	session, _ := p.OpenSession(slots[0], CKF_SERIAL_SESSION|CKF_RW_SESSION)
+	defer p.CloseSession(session)
+	p.Login(session, CKU_USER, "1234")
+	defer p.Logout(session)
+	publicKeyTemplate := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_TOKEN, true),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{3}),
+		NewAttribute(CKA_MODULUS_BITS, 1024),
+		NewAttribute(CKA_LABEL, "MyFirstKey"),
+	}
+	privateKeyTemplate := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKO_PRIVATE_KEY),
+		NewAttribute(CKA_TOKEN, true),
+		NewAttribute(CKA_PRIVATE, true),
+		NewAttribute(CKA_SIGN, true),
+		NewAttribute(CKA_LABEL, "MyFirstKey"),
+	}
+	pub, priv, _ := p.GenerateKeyPair(session,
+		[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
+		publicKeyTemplate, privateKeyTemplate)
+	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, priv)
+	// Sign something with the private key.
+	data := []byte("Lets sign this data")
+
+	sig, _ := p.Sign(session, data)
+	fmt.Printf("%v validate with %v\n", sig, pub)
+}
