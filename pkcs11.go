@@ -181,7 +181,8 @@ CK_RV GetSessionInfo(struct ctx *c, CK_SESSION_HANDLE session,
 	return e;
 }
 
-CK_RV GetOperationState(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR * state, CK_ULONG_PTR statelen)
+CK_RV GetOperationState(struct ctx *c, CK_SESSION_HANDLE session,
+			CK_BYTE_PTR * state, CK_ULONG_PTR statelen)
 {
 	CK_RV rv = c->sym->C_GetOperationState(session, NULL, statelen);
 	if (rv != CKR_OK) {
@@ -195,11 +196,13 @@ CK_RV GetOperationState(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR *
 	return rv;
 }
 
-CK_RV SetOperationState(struct ctx * c, CK_SESSION_HANDLE session, CK_BYTE_PTR state, CK_ULONG_PTR statelen, CK_OBJECT_HANDLE encryptKey, CK_OBJECT_HANDLE authkey)
+CK_RV SetOperationState(struct ctx * c, CK_SESSION_HANDLE session,
+			CK_BYTE_PTR state, CK_ULONG statelen,
+			CK_OBJECT_HANDLE encryptkey, CK_OBJECT_HANDLE authkey)
 {
-	return 1;
+	return c->sym->C_SetOperationState(session, state, statelen, encryptkey,
+					   authkey);
 }
-
 CK_RV Login(struct ctx * c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
 	    char *pin, CK_ULONG pinLen)
 {
@@ -949,6 +952,7 @@ func (c *Ctx) GetSessionInfo(sh SessionHandle) (SessionInfo, error) {
 	return s, toError(e)
 }
 
+/* GetOperationState obtains the state of the cryptographic operation in a session. */
 func (c *Ctx) GetOperationState(sh SessionHandle) ([]byte, error) {
 	var (
 		state    C.CK_BYTE_PTR
@@ -963,8 +967,10 @@ func (c *Ctx) GetOperationState(sh SessionHandle) ([]byte, error) {
 	return b, nil
 }
 
-func (c *Ctx) SetOperationState(sh SessionHandle, state []byte, encryptKey, authKey ObjectHandle) ([]byte, error) {
-	return nil, nil
+/* SetOperationState restores the state of the cryptographic operation in a session. */
+func (c *Ctx) SetOperationState(sh SessionHandle, state []byte, encryptKey, authKey ObjectHandle) error {
+	e := C.SetOperationState(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&state[0])), C.CK_ULONG(len(state)), C.CK_OBJECT_HANDLE(encryptKey), C.CK_OBJECT_HANDLE(authKey))
+	return toError(e)
 }
 
 /* Login logs a user into a token. */
