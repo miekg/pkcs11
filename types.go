@@ -107,10 +107,10 @@ type SlotInfo struct {
 
 /* TokenInfo provides information about a token. */
 type TokenInfo struct {
-	Label              [32]byte
-	ManufacturerID     [32]byte
-	Model              [16]byte
-	SerialNumber       [16]byte
+	Label              string
+	ManufacturerID     string
+	Model              string
+	SerialNumber       string
 	Flags              uint
 	MaxSessionCount    uint
 	SessionCount       uint
@@ -122,9 +122,9 @@ type TokenInfo struct {
 	FreePublicMemory   uint
 	TotalPrivateMemory uint
 	FreePrivateMemory  uint
-	hardwareVersion    Version
-	firmwareVersion    Version
-	UTCTime            [16]byte
+	HardwareVersion    Version
+	FirmwareVersion    Version
+	UTCTime            string
 }
 
 /* SesionInfo provides information about a session. */

@@ -47,3 +47,5 @@ A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 
 * Fix/double check endian stuff, see types.go NewAttribute();
 * Kill C.Sizeof in that same function.
+* Look at the memory coping in fast function (sign, hash etc).
+* Fix inconsistencies in naming?? Doubting if this is welcome.

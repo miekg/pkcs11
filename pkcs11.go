@@ -92,10 +92,17 @@ CK_RV GetSlotList(struct ctx * c, CK_BBOOL tokenPresent,
 	return e;
 }
 
-CK_RV GetSlotInfo(struct ctx *c, CK_ULONG slotID,
+CK_RV GetSlotInfo(struct ctx * c, CK_ULONG slotID,
 		     CK_SLOT_INFO_PTR info)
 {
 	CK_RV e = c->sym->C_GetSlotInfo((CK_SLOT_ID)slotID, info);
+	return e;
+}
+
+CK_RV GetTokenInfo(struct ctx * c, CK_ULONG slotID,
+			CK_TOKEN_INFO_PTR info)
+{
+	CK_RV e = c->sym->C_GetTokenInfo((CK_SLOT_ID)slotID, info);
 	return e;
 }
 
@@ -755,14 +762,39 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 
 /* GetSlotInfo obtains information about a particular slot in the system. */
 func (c *Ctx) GetSlotInfo(slotID uint) (SlotInfo, error) {
-	// TODO(miek)
 	var csi C.CK_SLOT_INFO
 	e := C.GetSlotInfo(c.ctx, C.CK_ULONG(slotID), &csi)
-	var s SlotInfo
-	return s, toError(e+1)
+	s := SlotInfo{}
+	return s, toError(e + 1)
 }
 
-// GetTokenInfo
+// GetTokenInfo obtains information about a particular token
+// in the system.
+func (c *Ctx) GetTokenInfo(slotID uint) (TokenInfo, error) {
+	var cti C.CK_TOKEN_INFO
+	e := C.GetTokenInfo(c.ctx, C.CK_ULONG(slotID), &cti)
+	s := TokenInfo{
+		Label:              string(C.GoBytes(unsafe.Pointer(&cti.label[0]), 32)),
+		ManufacturerID:     string(C.GoBytes(unsafe.Pointer(&cti.manufacturerID[0]), 32)),
+		Model:              string(C.GoBytes(unsafe.Pointer(&cti.model[0]), 16)),
+		SerialNumber:       string(C.GoBytes(unsafe.Pointer(&cti.serialNumber[0]), 16)),
+		Flags:              uint(cti.flags),
+		MaxSessionCount:    uint(cti.ulMaxSessionCount),
+		SessionCount:       uint(cti.ulSessionCount),
+		MaxRwSessionCount:  uint(cti.ulMaxRwSessionCount),
+		RwSessionCount:     uint(cti.ulRwSessionCount),
+		MaxPinLen:          uint(cti.ulMaxPinLen),
+		MinPinLen:          uint(cti.ulMinPinLen),
+		TotalPublicMemory:  uint(cti.ulTotalPublicMemory),
+		FreePublicMemory:   uint(cti.ulFreePublicMemory),
+		TotalPrivateMemory: uint(cti.ulTotalPrivateMemory),
+		FreePrivateMemory:  uint(cti.ulFreePrivateMemory),
+		HardwareVersion:    toVersion(cti.hardwareVersion),
+		FirmwareVersion:    toVersion(cti.firmwareVersion),
+		UTCTime:            string(C.GoBytes(unsafe.Pointer(&cti.utcTime[0]), 16)),
+	}
+	return s, toError(e)
+}
 
 /* GetMechanismList obtains a list of mechanism types supported by a token. */
 func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
@@ -790,7 +822,8 @@ func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) ([]*Mechanism, error
 }
 
 // InitToken initializes a token. The label must be 32 characters
-// long, it is blank padded if it is not.
+// long, it is blank padded if it is not. If it is longer it is capped
+// to 32 characters.
 func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
 	p := C.CString(pin)
 	defer C.free(unsafe.Pointer(p))
@@ -799,7 +832,7 @@ func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
 		label += " "
 		ll++
 	}
-	l := C.CString(label)
+	l := C.CString(label[:32])
 	defer C.free(unsafe.Pointer(l))
 	e := C.InitToken(c.ctx, C.CK_ULONG(slotID), p, C.CK_ULONG(len(pin)), l)
 	return toError(e)
