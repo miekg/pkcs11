@@ -204,7 +204,7 @@ CK_RV SetOperationState(struct ctx * c, CK_SESSION_HANDLE session,
 					   authkey);
 }
 
-CK_RV Login(struct ctx * c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
+CK_RV Login(struct ctx *c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
 	    char *pin, CK_ULONG pinLen)
 {
 	CK_RV e =
