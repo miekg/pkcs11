@@ -969,7 +969,8 @@ func (c *Ctx) GetOperationState(sh SessionHandle) ([]byte, error) {
 
 /* SetOperationState restores the state of the cryptographic operation in a session. */
 func (c *Ctx) SetOperationState(sh SessionHandle, state []byte, encryptKey, authKey ObjectHandle) error {
-	e := C.SetOperationState(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&state[0])), C.CK_ULONG(len(state)), C.CK_OBJECT_HANDLE(encryptKey), C.CK_OBJECT_HANDLE(authKey))
+	e := C.SetOperationState(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&state[0])),
+		C.CK_ULONG(len(state)), C.CK_OBJECT_HANDLE(encryptKey), C.CK_OBJECT_HANDLE(authKey))
 	return toError(e)
 }
 
