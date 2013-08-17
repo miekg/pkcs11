@@ -788,8 +788,14 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 func (c *Ctx) GetSlotInfo(slotID uint) (SlotInfo, error) {
 	var csi C.CK_SLOT_INFO
 	e := C.GetSlotInfo(c.ctx, C.CK_ULONG(slotID), &csi)
-	s := SlotInfo{}
-	return s, toError(e + 1)
+	s := SlotInfo{
+		SlotDescription: string(C.GoBytes(unsafe.Pointer(&csi.slotDescription[0]), 64)),
+		ManufacturerID:  string(C.GoBytes(unsafe.Pointer(&csi.manufacturerID[0]), 32)),
+		Flags:           uint(csi.flags),
+		HardwareVersion: toVersion(csi.hardwareVersion),
+		FirmwareVersion: toVersion(csi.firmwareVersion),
+	}
+	return s, toError(e)
 }
 
 // GetTokenInfo obtains information about a particular token
@@ -1501,5 +1507,5 @@ func (c *Ctx) waitForSlotEventHelper(f uint, sl chan SlotEvent) {
 	var slotID C.CK_ULONG
 	C.WaitForSlotEvent(c.ctx, C.CK_FLAGS(f), &slotID)
 	sl <- SlotEvent{uint(slotID)}
-	close(sl) // TODO(miek) sending and then closing ...?
+	close(sl) // TODO(miek): Sending and then closing ...?
 }

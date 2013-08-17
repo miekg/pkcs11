@@ -98,8 +98,8 @@ type Info struct {
 
 /* SlotInfo provides information about a slot. */
 type SlotInfo struct {
-	SlotDescription [64]byte
-	ManufacturerID  [32]byte
+	SlotDescription string // 64 bytes.
+	ManufacturerID  string // 32 bytes.
 	Flags           uint
 	HardwareVersion Version
 	FirmwareVersion Version
