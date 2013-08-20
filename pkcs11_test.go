@@ -14,10 +14,13 @@ import (
 	"testing"
 )
 
-func setenv() *Ctx {
+func setenv(t *testing.T) *Ctx {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
 	p := New("/usr/lib/softhsm/libsofthsm.so")
+	if p == nil {
+		t.Fatal("Failed to init lib")
+	}
 	// Debug lib
 	// p := New("/home/miek/libsofthsm.so")
 	return p
@@ -42,7 +45,7 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 }
 
 func TestGetInfo(t *testing.T) {
-	p := setenv()
+	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
 	defer p.CloseSession(session)
@@ -59,7 +62,7 @@ func TestGetInfo(t *testing.T) {
 }
 
 func TestObjectFinding(t *testing.T) {
-	p := setenv()
+	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
 	defer p.CloseSession(session)
@@ -83,7 +86,7 @@ func TestObjectFinding(t *testing.T) {
 }
 
 func TestGetAttributeValue(t *testing.T) {
-	p := setenv()
+	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
 	defer p.Destroy()
@@ -112,7 +115,7 @@ func TestGetAttributeValue(t *testing.T) {
 }
 
 func TestDigest(t *testing.T) {
-	p := setenv()
+	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
 	defer p.CloseSession(session)
@@ -138,7 +141,7 @@ func TestDigest(t *testing.T) {
 }
 
 func TestDigestUpdate(t *testing.T) {
-	p := setenv()
+	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
 	defer p.CloseSession(session)
@@ -171,7 +174,7 @@ func TestDigestUpdate(t *testing.T) {
 // ExampleSign show how to sign some data with a private key.
 // Note: error correction is not implemented in this function.
 func ExampleSign() {
-	p := setenv()
+	p := setenv(nil)
 	p.Initialize()
 	defer p.Destroy()
 	defer p.Finalize()
