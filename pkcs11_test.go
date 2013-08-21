@@ -17,8 +17,7 @@ import (
 func setenv(t *testing.T) *Ctx {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
-	p := New("/home/miek/libsofthsm.so")
-	//p := New("/usr/lib/softhsm/libsofthsm.so")
+	p := New("/usr/lib/softhsm/libsofthsm.so") //p := New("/home/miek/libsofthsm.so")
 	if p == nil {
 		t.Fatal("Failed to init lib")
 	}
