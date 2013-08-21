@@ -17,12 +17,11 @@ import (
 func setenv(t *testing.T) *Ctx {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
-	p := New("/usr/lib/softhsm/libsofthsm.so")
+	p := New("/home/miek/libsofthsm.so")
+	//p := New("/usr/lib/softhsm/libsofthsm.so")
 	if p == nil {
 		t.Fatal("Failed to init lib")
 	}
-	// Debug lib
-	// p := New("/home/miek/libsofthsm.so")
 	return p
 }
 
@@ -171,7 +170,7 @@ func TestDigestUpdate(t *testing.T) {
 
 }
 
-func TestDestroyObject(t *testing.T) {
+func testDestroyObject(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
@@ -179,8 +178,14 @@ func TestDestroyObject(t *testing.T) {
 	defer p.Finalize()
 	defer p.Destroy()
 
+	p.Logout(session) // log out the normal user
+	if e := p.Login(session, CKU_SO, "1234"); e != nil {
+		t.Fatal("security officer pin %s\n", e.Error())
+	}
+
+	// Looking the int values is tricky because they are stored in 64 bits in hsm.db,
+	// this means looking up stuff on 32 bits will not found them.
 	template := []*Attribute{
-		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
 		NewAttribute(CKA_LABEL, "MyFirstKey")}
 
 	if e := p.FindObjectsInit(session, template); e != nil {
