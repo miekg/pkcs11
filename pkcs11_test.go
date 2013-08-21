@@ -4,7 +4,7 @@
 
 package pkcs11
 
-// These t depend on SoftHSM and the library being in
+// These tests depend on SoftHSM and the library being in
 // in /usr/lib/softhsm/libsofthsm.so
 
 import (
@@ -61,7 +61,7 @@ func TestGetInfo(t *testing.T) {
 	t.Logf("%+v\n", info)
 }
 
-func TestObjectFinding(t *testing.T) {
+func TestFindObject(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer p.Logout(session)
@@ -169,6 +169,34 @@ func TestDigestUpdate(t *testing.T) {
 		t.Fatalf("wrong digest: %s", hex)
 	}
 
+}
+
+func TestDestroyObject(t *testing.T) {
+	p := setenv(t)
+	session := getSession(p, t)
+	defer p.Logout(session)
+	defer p.CloseSession(session)
+	defer p.Finalize()
+	defer p.Destroy()
+
+	template := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_LABEL, "MyFirstKey")}
+
+	if e := p.FindObjectsInit(session, template); e != nil {
+		t.Fatalf("Failed to init: %s\n", e.Error())
+	}
+	obj, _, e := p.FindObjects(session, 1)
+	if e != nil || len(obj) == 0 {
+		t.Fatalf("Failed to find objects\n")
+	}
+	if e := p.FindObjectsFinal(session); e != nil {
+		t.Fatalf("Failed to finalize: %s\n", e.Error())
+	}
+
+	if err := p.DestroyObject(session, obj[0]); err != nil {
+		t.Fatal("DestroyObject failed" + err.Error())
+	}
 }
 
 // ExampleSign show how to sign some data with a private key.
