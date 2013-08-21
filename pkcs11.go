@@ -1123,9 +1123,6 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 	return s, nil
 }
 
-// EncryptUpdate
-// EncryptFinal
-
 /* EncryptUpdate continues a multiple-part encryption operation. */
 func (c *Ctx) EncryptUpdate(sh SessionHandle, plain []byte) ([]byte, error) {
 	var (
