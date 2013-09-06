@@ -144,7 +144,7 @@ type Attribute struct {
 }
 
 // NewAttribute allocates a Attribute and returns a pointer to it.
-// Note that this is merely a convience function, as values returned 
+// Note that this is merely a convience function, as values returned
 // from the HSM are not converted back to Go values, those are just raw
 // byte slices.
 func NewAttribute(typ uint, x interface{}) *Attribute {
