@@ -148,6 +148,9 @@ type Attribute struct {
 // from the HSM are not converted back to Go values, those are just raw
 // byte slices.
 func NewAttribute(typ uint, x interface{}) *Attribute {
+	// This function nicely transforms *to* an attribute, but there is
+	// no corresponding function that transform back *from* an attribute,
+	// which in PKCS#11 is just an byte array.
 	a := new(Attribute)
 	a.Type = typ
 	if x == nil {
@@ -168,6 +171,7 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 		if _, ok := x.(uint); ok {
 			y = x.(uint)
 		}
+		// TODO(miek): ugly!
 		switch int(C.Sizeof()) {
 		case 4:
 			a.Value = make([]byte, 4)
