@@ -43,6 +43,6 @@ Further examples are included in the tests.
 
 * Fix/double check endian stuff, see types.go NewAttribute();
 * Kill C.Sizeof in that same function.
-* Look at the memory copying in fast function (sign, hash etc).
+* Look at the memory copying in fast functions (sign, hash etc).
 * Fix inconsistencies in naming?
-* Add tests -- there are way to few
+* Add tests -- there are way too few
