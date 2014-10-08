@@ -23,10 +23,10 @@ const (
 	CKO_VENDOR_DEFINED    uint = 0x80000000
 )
 
-// Generated with: awk '/#define CK[AFRM]/{ print $2 "=" $3 }' pkcs11t.h
+// Generated with: awk '/#define CK[AFKMR]/{ print $2 "=" $3 }' pkcs11t.h
 
-// All the flag (CKF_), attribute (CKA_), error code (CKR_) and mechanism (CKM_) constants
-// as defined in PKCS#11.
+// All the flag (CKF_), attribute (CKA_), error code (CKR_), key type (CKK_) and 
+// mechanism (CKM_) constants as defined in PKCS#11.
 const (
 	CKF_TOKEN_PRESENT                    = 0x00000001
 	CKF_REMOVABLE_DEVICE                 = 0x00000002
@@ -51,6 +51,38 @@ const (
 	CKF_SO_PIN_TO_BE_CHANGED             = 0x00800000
 	CKF_RW_SESSION                       = 0x00000002
 	CKF_SERIAL_SESSION                   = 0x00000004
+	CKK_RSA                              = 0x00000000
+	CKK_DSA                              = 0x00000001
+	CKK_DH                               = 0x00000002
+	CKK_ECDSA                            = 0x00000003
+	CKK_EC                               = 0x00000003
+	CKK_X9_42_DH                         = 0x00000004
+	CKK_KEA                              = 0x00000005
+	CKK_GENERIC_SECRET                   = 0x00000010
+	CKK_RC2                              = 0x00000011
+	CKK_RC4                              = 0x00000012
+	CKK_DES                              = 0x00000013
+	CKK_DES2                             = 0x00000014
+	CKK_DES3                             = 0x00000015
+	CKK_CAST                             = 0x00000016
+	CKK_CAST3                            = 0x00000017
+	CKK_CAST5                            = 0x00000018
+	CKK_CAST128                          = 0x00000018
+	CKK_RC5                              = 0x00000019
+	CKK_IDEA                             = 0x0000001A
+	CKK_SKIPJACK                         = 0x0000001B
+	CKK_BATON                            = 0x0000001C
+	CKK_JUNIPER                          = 0x0000001D
+	CKK_CDMF                             = 0x0000001E
+	CKK_AES                              = 0x0000001F
+	CKK_BLOWFISH                         = 0x00000020
+	CKK_TWOFISH                          = 0x00000021
+	CKK_SECURID                          = 0x00000022
+	CKK_HOTP                             = 0x00000023
+	CKK_ACTI                             = 0x00000024
+	CKK_CAMELLIA                         = 0x00000025
+	CKK_ARIA                             = 0x00000026
+	CKK_VENDOR_DEFINED                   = 0x80000000
 	CKF_ARRAY_ATTRIBUTE                  = 0x40000000
 	CKA_CLASS                            = 0x00000000
 	CKA_TOKEN                            = 0x00000001
