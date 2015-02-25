@@ -243,7 +243,10 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	if x == nil {
 		return m
 	}
-	// TODO(miek): Not seen anything as elaborate as Attributes, so for know do nothing.
+
+	// Add any parameters passed (For now presume always bytes were passed in, is there another case?)
+	m.Parameter = x.([]byte)
+
 	return m
 }
 
