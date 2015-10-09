@@ -42,13 +42,17 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 	return session
 }
 
+func finishSession(p *Ctx, session SessionHandle) {
+	p.Logout(session)
+	p.CloseSession(session)
+	p.Finalize()
+	p.Destroy()
+}
+
 func TestGetInfo(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
-	defer p.Logout(session)
-	defer p.CloseSession(session)
-	defer p.Finalize()
-	defer p.Destroy()
+	defer finishSession(p, session)
 	info, err := p.GetInfo()
 	if err != nil {
 		t.Fatalf("Non zero error %s\n", err.Error())
@@ -62,10 +66,7 @@ func TestGetInfo(t *testing.T) {
 func TestFindObject(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
-	defer p.Logout(session)
-	defer p.CloseSession(session)
-	defer p.Finalize()
-	defer p.Destroy()
+	defer finishSession(p, session)
 	// There are 2 keys in the db with this tag
 	template := []*Attribute{NewAttribute(CKA_LABEL, "MyFirstKey")}
 	if e := p.FindObjectsInit(session, template); e != nil {
@@ -86,10 +87,7 @@ func TestFindObject(t *testing.T) {
 func TestGetAttributeValue(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
-	defer p.Logout(session)
-	defer p.Destroy()
-	defer p.Finalize()
-	defer p.CloseSession(session)
+	defer finishSession(p, session)
 	// There are at least two RSA keys in the hsm.db, objecthandle 1 and 2.
 	template := []*Attribute{
 		NewAttribute(CKA_PUBLIC_EXPONENT, nil),
@@ -115,10 +113,7 @@ func TestGetAttributeValue(t *testing.T) {
 func TestDigest(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
-	defer p.Logout(session)
-	defer p.CloseSession(session)
-	defer p.Finalize()
-	defer p.Destroy()
+	defer finishSession(p, session)
 	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
 	if e != nil {
 		t.Fatalf("DigestInit: %s\n", e.Error())
@@ -141,10 +136,7 @@ func TestDigest(t *testing.T) {
 func TestDigestUpdate(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
-	defer p.Logout(session)
-	defer p.CloseSession(session)
-	defer p.Finalize()
-	defer p.Destroy()
+	defer finishSession(p, session)
 	if e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)}); e != nil {
 		t.Fatalf("DigestInit: %s\n", e.Error())
 	}
@@ -172,10 +164,7 @@ func TestDigestUpdate(t *testing.T) {
 func testDestroyObject(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
-	defer p.Logout(session)
-	defer p.CloseSession(session)
-	defer p.Finalize()
-	defer p.Destroy()
+	defer finishSession(p, session)
 
 	p.Logout(session) // log out the normal user
 	if e := p.Login(session, CKU_SO, "1234"); e != nil {
