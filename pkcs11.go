@@ -207,6 +207,9 @@ CK_RV SetOperationState(struct ctx * c, CK_SESSION_HANDLE session,
 CK_RV Login(struct ctx *c, CK_SESSION_HANDLE session, CK_USER_TYPE userType,
 	    char *pin, CK_ULONG pinLen)
 {
+	if (pinLen == 0) {
+		pin = NULL;
+	}
 	CK_RV e =
 	    c->sym->C_Login(session, userType, (CK_UTF8CHAR_PTR) pin, pinLen);
 	return e;
