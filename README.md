@@ -22,16 +22,37 @@ were it makes sense. It has been tested with SoftHSM.
 A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 
     p := pkcs11.New("/usr/lib/softhsm/libsofthsm.so")
-    p.Initialize()
+    err := p.Initialize()
+    if err != nil {
+        panic(err);
+    }
+
     defer p.Destroy()
     defer p.Finalize()
-    slots, _ := p.GetSlotList(true)
-    session, _ := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+
+    slots, err := p.GetSlotList(true)
+    if err != nil {
+        panic(err);
+    }
+
+    session, err := p.OpenSession(slots[0], pkcs11.CKF_SERIAL_SESSION|pkcs11.CKF_RW_SESSION)
+    if err != nil {
+        panic(err);
+    }
     defer p.CloseSession(session)
-    p.Login(session, pkcs11.CKU_USER, "1234")
+
+    err = p.Login(session, pkcs11.CKU_USER, "1234")
+    if err != nil {
+        panic(err);
+    }
     defer p.Logout(session)
+
     p.DigestInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_SHA_1, nil)})
     hash, err := p.Digest(session, []byte("this is a string"))
+    if err != nil {
+        panic(err);
+    }
+
     for _, d := range hash {
             fmt.Printf("%x", d)
     }
