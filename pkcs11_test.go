@@ -37,7 +37,7 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 		t.Fatalf("session %s\n", e.Error())
 	}
 	if e := p.Login(session, CKU_USER, "1234"); e != nil {
-		t.Fatal("user pin %s\n", e.Error())
+		t.Fatalf("user pin %s\n", e.Error())
 	}
 	return session
 }
@@ -168,7 +168,7 @@ func testDestroyObject(t *testing.T) {
 
 	p.Logout(session) // log out the normal user
 	if e := p.Login(session, CKU_SO, "1234"); e != nil {
-		t.Fatal("security officer pin %s\n", e.Error())
+		t.Fatalf("security officer pin %s\n", e.Error())
 	}
 
 	// Looking the int values is tricky because they are stored in 64 bits in hsm.db,
