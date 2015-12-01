@@ -21,11 +21,6 @@ CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i)
 {
 	return array[i];
 }
-
-CK_ULONG Sizeof()
-{
-	return sizeof(CK_ULONG);
-}
 */
 import "C"
 
@@ -51,6 +46,11 @@ func cBBool(x bool) C.CK_BBOOL {
 		return C.CK_BBOOL(C.CK_TRUE)
 	}
 	return C.CK_BBOOL(C.CK_FALSE)
+}
+
+func uintToBytes(x uint64) []byte {
+	ul := C.CK_ULONG(x)
+	return C.GoBytes(unsafe.Pointer(&ul), C.int(unsafe.Sizeof(ul)))
 }
 
 // Error represents an PKCS#11 error.
@@ -156,46 +156,23 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 	if x == nil {
 		return a
 	}
-	switch x.(type) {
-	case bool: // create bbool
-		if x.(bool) {
+	switch v := x.(type) {
+	case bool:
+		if v {
 			a.Value = []byte{1}
-			break
+		} else {
+			a.Value = []byte{0}
 		}
-		a.Value = []byte{0}
-	case uint, int:
-		var y uint
-		if _, ok := x.(int); ok {
-			y = uint(x.(int))
-		}
-		if _, ok := x.(uint); ok {
-			y = x.(uint)
-		}
-		// TODO(miek): ugly!
-		switch int(C.Sizeof()) {
-		case 4:
-			a.Value = make([]byte, 4)
-			a.Value[0] = byte(y)
-			a.Value[1] = byte(y >> 8)
-			a.Value[2] = byte(y >> 16)
-			a.Value[3] = byte(y >> 24)
-		case 8:
-			a.Value = make([]byte, 8)
-			a.Value[0] = byte(y)
-			a.Value[1] = byte(y >> 8)
-			a.Value[2] = byte(y >> 16)
-			a.Value[3] = byte(y >> 24)
-			a.Value[4] = byte(y >> 32)
-			a.Value[5] = byte(y >> 40)
-			a.Value[6] = byte(y >> 48)
-			a.Value[7] = byte(y >> 56)
-		}
+	case int:
+		a.Value = uintToBytes(uint64(v))
+	case uint:
+		a.Value = uintToBytes(uint64(v))
 	case string:
-		a.Value = []byte(x.(string))
-	case []byte: // just copy
-		a.Value = x.([]byte)
+		a.Value = []byte(v)
+	case []byte:
+		a.Value = v
 	case time.Time: // for CKA_DATE
-		a.Value = cDate(x.(time.Time))
+		a.Value = cDate(v)
 	default:
 		panic("pkcs11: unhandled attribute type")
 	}
