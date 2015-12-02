@@ -15,6 +15,7 @@ package pkcs11
 #define CK_CALLBACK_FUNCTION(returnType, name) returnType (* name)
 
 #include <stdlib.h>
+#include <string.h>
 #include "pkcs11.h"
 
 CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i)
@@ -29,6 +30,21 @@ import (
 	"time"
 	"unsafe"
 )
+
+type arena []unsafe.Pointer
+
+func (a *arena) Allocate(obj []byte) (C.CK_VOID_PTR, C.CK_ULONG) {
+	cobj := C.calloc(C.size_t(len(obj)), 1)
+	*a = append(*a, cobj)
+	C.memmove(cobj, unsafe.Pointer(&obj[0]), C.size_t(len(obj)))
+	return C.CK_VOID_PTR(cobj), C.CK_ULONG(len(obj))
+}
+
+func (a arena) Free() {
+	for _, p := range a {
+		C.free(p)
+	}
+}
 
 // toList converts from a C style array to a []uint.
 func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) []uint {
@@ -180,9 +196,10 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 }
 
 // cAttribute returns the start address and the length of an attribute list.
-func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
+func cAttributeList(a []*Attribute) (arena, C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
+	var arena arena
 	if len(a) == 0 {
-		return nil, 0
+		return nil, nil, 0
 	}
 	pa := make([]C.CK_ATTRIBUTE, len(a))
 	for i := 0; i < len(a); i++ {
@@ -190,10 +207,9 @@ func cAttributeList(a []*Attribute) (C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 		if a[i].Value == nil {
 			continue
 		}
-		pa[i].pValue = C.CK_VOID_PTR((&a[i].Value[0]))
-		pa[i].ulValueLen = C.CK_ULONG(len(a[i].Value))
+		pa[i].pValue, pa[i].ulValueLen = arena.Allocate(a[i].Value)
 	}
-	return C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))
+	return arena, C.CK_ATTRIBUTE_PTR(&pa[0]), C.CK_ULONG(len(a))
 }
 
 func cDate(t time.Time) []byte {
@@ -227,9 +243,10 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	return m
 }
 
-func cMechanismList(m []*Mechanism) (C.CK_MECHANISM_PTR, C.CK_ULONG) {
+func cMechanismList(m []*Mechanism) (arena, C.CK_MECHANISM_PTR, C.CK_ULONG) {
+	var arena arena
 	if len(m) == 0 {
-		return nil, 0
+		return nil, nil, 0
 	}
 	pm := make([]C.CK_MECHANISM, len(m))
 	for i := 0; i < len(m); i++ {
@@ -237,10 +254,9 @@ func cMechanismList(m []*Mechanism) (C.CK_MECHANISM_PTR, C.CK_ULONG) {
 		if m[i].Parameter == nil {
 			continue
 		}
-		pm[i].pParameter = C.CK_VOID_PTR(&(m[i].Parameter[0]))
-		pm[i].ulParameterLen = C.CK_ULONG(len(m[i].Parameter))
+		pm[i].pParameter, pm[i].ulParameterLen = arena.Allocate(m[i].Parameter)
 	}
-	return C.CK_MECHANISM_PTR(&pm[0]), C.CK_ULONG(len(m))
+	return arena, C.CK_MECHANISM_PTR(&pm[0]), C.CK_ULONG(len(m))
 }
 
 // MechanismInfo provides information about a particular mechanism.
