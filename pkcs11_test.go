@@ -14,32 +14,65 @@ import (
 	"testing"
 )
 
+/*
+This test supports the following environment variables:
+
+* SOFTHSM_LIB: complete path to libsofthsm.so
+*/
+
 func setenv(t *testing.T) *Ctx {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
-	p := New("/usr/lib/softhsm/libsofthsm.so") //p := New("/home/miek/libsofthsm.so")
+
+	// If we have set SOFTHSM_LIB, use this as the location for the libsofthsm.so
+	lib := "/usr/lib/softhsm/libsofthsm.so"
+	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
+		lib = x
+	}
+	t.Logf("loading %s", lib)
+	p := New(lib)
 	if p == nil {
 		t.Fatal("Failed to init lib")
 	}
 	return p
 }
 
+func TestSetenv(t *testing.T) {
+	wd, _ := os.Getwd()
+	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
+	t.Logf("loading hsm.so")
+	p := New("/usr/lib/softhsm/libsofthsm.so") //p := New("/home/miek/libsofthsm.so")
+	if p == nil {
+		t.Fatal("Failed to init lib")
+	}
+	p.Destroy()
+	return
+}
+
 func getSession(p *Ctx, t *testing.T) SessionHandle {
 	if e := p.Initialize(); e != nil {
-		t.Fatalf("init error %s\n", e.Error())
+		t.Fatalf("init error %s\n", e)
 	}
 	slots, e := p.GetSlotList(true)
 	if e != nil {
-		t.Fatalf("slots %s\n", e.Error())
+		t.Fatalf("slots %s\n", e)
 	}
 	session, e := p.OpenSession(slots[0], CKF_SERIAL_SESSION)
 	if e != nil {
-		t.Fatalf("session %s\n", e.Error())
+		t.Fatalf("session %s\n", e)
 	}
 	if e := p.Login(session, CKU_USER, "1234"); e != nil {
-		t.Fatalf("user pin %s\n", e.Error())
+		t.Fatalf("user pin %s\n", e)
 	}
 	return session
+}
+
+func TestInitialize(t *testing.T) {
+	p := setenv(t)
+	if e := p.Initialize(); e != nil {
+		t.Fatalf("init error %s\n", e)
+	}
+	p.Destroy()
 }
 
 func finishSession(p *Ctx, session SessionHandle) {
@@ -55,7 +88,7 @@ func TestGetInfo(t *testing.T) {
 	defer finishSession(p, session)
 	info, err := p.GetInfo()
 	if err != nil {
-		t.Fatalf("Non zero error %s\n", err.Error())
+		t.Fatalf("non zero error %s\n", err)
 	}
 	if info.ManufacturerID != "SoftHSM" {
 		t.Fatal("ID should be SoftHSM")
@@ -70,14 +103,14 @@ func TestFindObject(t *testing.T) {
 	// There are 2 keys in the db with this tag
 	template := []*Attribute{NewAttribute(CKA_LABEL, "MyFirstKey")}
 	if e := p.FindObjectsInit(session, template); e != nil {
-		t.Fatalf("Failed to init: %s\n", e.Error())
+		t.Fatalf("failed to init: %s\n", e)
 	}
 	obj, b, e := p.FindObjects(session, 2)
 	if e != nil {
-		t.Fatalf("Failed to find: %s %v\n", e.Error(), b)
+		t.Fatalf("failed to find: %s %v\n", e, b)
 	}
 	if e := p.FindObjectsFinal(session); e != nil {
-		t.Fatalf("Failed to finalize: %s\n", e.Error())
+		t.Fatalf("failed to finalize: %s\n", e)
 	}
 	if len(obj) != 2 {
 		t.Fatal("should have found two objects")
@@ -98,14 +131,14 @@ func TestGetAttributeValue(t *testing.T) {
 	// ObjectHandle two is the public key
 	attr, err := p.GetAttributeValue(session, ObjectHandle(2), template)
 	if err != nil {
-		t.Fatalf("err %s\n", err.Error())
+		t.Fatalf("err %s\n", err)
 	}
 	for i, a := range attr {
-		t.Logf("Attr %d, type %d, valuelen %d", i, a.Type, len(a.Value))
+		t.Logf("attr %d, type %d, valuelen %d", i, a.Type, len(a.Value))
 		if a.Type == CKA_MODULUS {
 			mod := big.NewInt(0)
 			mod.SetBytes(a.Value)
-			t.Logf("Modulus %s\n", mod.String())
+			t.Logf("modulus %s\n", mod.String())
 		}
 	}
 }
@@ -116,12 +149,12 @@ func TestDigest(t *testing.T) {
 	defer finishSession(p, session)
 	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
 	if e != nil {
-		t.Fatalf("DigestInit: %s\n", e.Error())
+		t.Fatalf("DigestInit: %s\n", e)
 	}
 
 	hash, e := p.Digest(session, []byte("this is a string"))
 	if e != nil {
-		t.Fatalf("Digest: %s\n", e.Error())
+		t.Fatalf("digest: %s\n", e)
 	}
 	hex := ""
 	for _, d := range hash {
@@ -138,17 +171,17 @@ func TestDigestUpdate(t *testing.T) {
 	session := getSession(p, t)
 	defer finishSession(p, session)
 	if e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)}); e != nil {
-		t.Fatalf("DigestInit: %s\n", e.Error())
+		t.Fatalf("DigestInit: %s\n", e)
 	}
 	if e := p.DigestUpdate(session, []byte("this is ")); e != nil {
-		t.Fatalf("DigestUpdate: %s\n", e.Error())
+		t.Fatalf("DigestUpdate: %s\n", e)
 	}
 	if e := p.DigestUpdate(session, []byte("a string")); e != nil {
-		t.Fatalf("DigestUpdate: %s\n", e.Error())
+		t.Fatalf("DigestUpdate: %s\n", e)
 	}
 	hash, e := p.DigestFinal(session)
 	if e != nil {
-		t.Fatalf("DigestFinal: %s\n", e.Error())
+		t.Fatalf("DigestFinal: %s\n", e)
 	}
 	hex := ""
 	for _, d := range hash {
@@ -158,7 +191,6 @@ func TestDigestUpdate(t *testing.T) {
 	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
 		t.Fatalf("wrong digest: %s", hex)
 	}
-
 }
 
 func testDestroyObject(t *testing.T) {
@@ -168,32 +200,30 @@ func testDestroyObject(t *testing.T) {
 
 	p.Logout(session) // log out the normal user
 	if e := p.Login(session, CKU_SO, "1234"); e != nil {
-		t.Fatalf("security officer pin %s\n", e.Error())
+		t.Fatalf("security officer pin %s\n", e)
 	}
 
-	// Looking the int values is tricky because they are stored in 64 bits in hsm.db,
-	// this means looking up stuff on 32 bits will not found them.
 	template := []*Attribute{
 		NewAttribute(CKA_LABEL, "MyFirstKey")}
 
 	if e := p.FindObjectsInit(session, template); e != nil {
-		t.Fatalf("Failed to init: %s\n", e.Error())
+		t.Fatalf("failed to init: %s\n", e)
 	}
 	obj, _, e := p.FindObjects(session, 1)
 	if e != nil || len(obj) == 0 {
-		t.Fatalf("Failed to find objects\n")
+		t.Fatalf("failed to find objects\n")
 	}
 	if e := p.FindObjectsFinal(session); e != nil {
-		t.Fatalf("Failed to finalize: %s\n", e.Error())
+		t.Fatalf("failed to finalize: %s\n", e)
 	}
 
-	if err := p.DestroyObject(session, obj[0]); err != nil {
-		t.Fatal("DestroyObject failed" + err.Error())
+	if e := p.DestroyObject(session, obj[0]); e != nil {
+		t.Fatal("DestroyObject failed: %s\n", e)
 	}
 }
 
-// ExampleSign show how to sign some data with a private key.
-// Note: error correction is not implemented in this function.
+// ExampleSign shows how to sign some data with a private key.
+// Note: error correction is not implemented in this example.
 func ExampleSign() {
 	p := setenv(nil)
 	p.Initialize()
