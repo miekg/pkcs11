@@ -43,6 +43,8 @@ func init() {
 	if x := os.Getenv("SOFTHSM_PIN"); x != "" {
 		pin = x
 	}
+	wd, _ := os.Getwd()
+	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
 }
 
 func initPKCS11Context(modulePath string) (*Ctx, error) {

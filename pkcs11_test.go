@@ -24,10 +24,6 @@ This test supports the following environment variables:
 */
 
 func setenv(t *testing.T) *Ctx {
-	wd, _ := os.Getwd()
-	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
-
-	// If we have set SOFTHSM_LIB, use this as the location for the libsofthsm.so
 	lib := "/usr/lib/softhsm/libsofthsm.so"
 	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
 		lib = x
@@ -44,7 +40,8 @@ func TestSetenv(t *testing.T) {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
 	t.Logf("loading hsm.so")
-	p := New("/usr/lib/softhsm/libsofthsm.so") //p := New("/home/miek/libsofthsm.so")
+	// TODO(miek): env var
+	p := New("/usr/lib/softhsm/libsofthsm.so")
 	if p == nil {
 		t.Fatal("Failed to init pkcs11")
 	}
