@@ -24,10 +24,10 @@ import (
 )
 
 var (
-	module       = "/usr/lib/softhsm/libsofthsm.so"
-	tokenLabel   = "softhsm token"
-	privkeyLabel = "my key"
-	pin          = "1234"
+	module          = "/usr/lib/softhsm/libsofthsm.so"
+	tokenLabel      = "softhsm token"
+	privateKeyLabel = "my key"
+	pin             = "1234"
 )
 
 func init() {
@@ -38,7 +38,7 @@ func init() {
 		tokenLabel = x
 	}
 	if x := os.Getenv("SOFTHSM_PRIVKEYLABEL"); x != "" {
-		privkeyLabel = x
+		privateKeyLabel = x
 	}
 	if x := os.Getenv("SOFTHSM_PIN"); x != "" {
 		pin = x
