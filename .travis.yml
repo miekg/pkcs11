@@ -1,0 +1,13 @@
+language: go
+sudo: required
+dist: trusty
+
+go:
+  - 1.4
+  - 1.5
+
+script:
+  - go test -v ./...
+
+before_script:
+  - sudo apt-get install libsofthsm
