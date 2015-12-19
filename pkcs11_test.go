@@ -43,7 +43,7 @@ func TestSetenv(t *testing.T) {
 	t.Logf("loading hsm.so")
 	p := New("/usr/lib/softhsm/libsofthsm.so") //p := New("/home/miek/libsofthsm.so")
 	if p == nil {
-		t.Fatal("Failed to init lib")
+		t.Fatal("Failed to init pkcs11")
 	}
 	p.Destroy()
 	return
