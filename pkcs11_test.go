@@ -39,9 +39,12 @@ func setenv(t *testing.T) *Ctx {
 func TestSetenv(t *testing.T) {
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
-	t.Logf("loading hsm.so")
-	// TODO(miek): env var
-	p := New("/usr/lib/softhsm/libsofthsm.so")
+
+	lib := "/usr/lib/softhsm/libsofthsm.so"
+	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
+		lib = x
+	}
+	p := New(lib)
 	if p == nil {
 		t.Fatal("Failed to init pkcs11")
 	}

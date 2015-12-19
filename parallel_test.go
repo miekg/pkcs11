@@ -14,7 +14,7 @@ package pkcs11
 // there are no signers available, the caller blocks until there is one
 // available.
 //
-// Please set the appropiate env variables
+// Please set the appropiate env variables. See the init function.
 import (
 	"fmt"
 	"log"
@@ -185,7 +185,8 @@ func (c *cache) sign(input []byte) ([]byte, error) {
 	return instance.sign(input)
 }
 
-func TestParallel(t *testing.T) {
+// TODO(miek): disabled for now. Fill out the correct values in hsm.db so we can use it.
+func testParallel(t *testing.T) {
 	if module == "" || tokenLabel == "" || pin == "" || privateKeyLabel == "" {
 		t.Fatal("Must pass all flags: module, tokenLabel, pin, and privateKeyLabel")
 		return
