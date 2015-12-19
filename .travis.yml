@@ -11,4 +11,4 @@ script:
 
 before_script:
   - sudo apt-get update
-  - sudo apt-get install libsofthsm
+  - sudo apt-get -y install libsofthsm
