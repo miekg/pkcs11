@@ -108,7 +108,7 @@ type signer struct {
 }
 
 func makeSigner(context *Ctx) (*signer, error) {
-	slot, err := getSlot(context, *tokenLabel)
+	slot, err := getSlot(context, tokenLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -117,12 +117,12 @@ func makeSigner(context *Ctx) (*signer, error) {
 		return nil, err
 	}
 
-	if err = context.Login(session, CKU_USER, *pin); err != nil {
+	if err = context.Login(session, CKU_USER, pin); err != nil {
 		context.CloseSession(session)
 		return nil, err
 	}
 
-	privateKey, err := getPrivateKey(context, session, *privateKeyLabel)
+	privateKey, err := getPrivateKey(context, session, privateKeyLabel)
 	if err != nil {
 		context.CloseSession(session)
 		return nil, err
@@ -184,12 +184,12 @@ func (c *cache) sign(input []byte) ([]byte, error) {
 }
 
 func TestParallel(t *testing.T) {
-	if *module == "" || *tokenLabel == "" || *pin == "" || *privateKeyLabel == "" {
+	if module == "" || tokenLabel == "" || pin == "" || privateKeyLabel == "" {
 		t.Fatal("Must pass all flags: module, tokenLabel, pin, and privateKeyLabel")
 		return
 	}
 
-	context, err := initPKCS11Context(*module)
+	context, err := initPKCS11Context(module)
 	if err != nil {
 		t.Fatal(err)
 	}
