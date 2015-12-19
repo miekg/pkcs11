@@ -72,6 +72,7 @@ func TestInitialize(t *testing.T) {
 	if e := p.Initialize(); e != nil {
 		t.Fatalf("init error %s\n", e)
 	}
+	p.Finalize()
 	p.Destroy()
 }
 
