@@ -1,4 +1,4 @@
-package pkcs11test
+package pkcs11
 
 // A test of using several pkcs11 sessions in parallel for signing across
 // multiple goroutines. Access to the PKCS11 module is thread-safe because of
@@ -14,25 +14,39 @@ package pkcs11test
 // there are no signers available, the caller blocks until there is one
 // available.
 //
-// This test will fail if run with `go test ./test`. Instead you must pass it
-// appropriate flags, e.g.:
-// go test ./test/ -module /usr/lib/softhsm/libsofthsm.so \
-//   -tokenLabel "softhsm token" -privateKeyLabel "my key"  -pin 1234 -v
-import "fmt"
-import "flag"
-import "log"
-import "testing"
-import "sync"
+// Please set the appropiate env variables
+import (
+	"fmt"
+	"log"
+	"os"
+	"sync"
+	"testing"
+)
 
-import "github.com/miekg/pkcs11"
+var (
+	module       = "/usr/lib/softhsm/libsofthsm.so"
+	tokenLabel   = "softhsm token"
+	privkeyLabel = "my key"
+	pin          = "1234"
+)
 
-var module = flag.String("module", "", "Path to PKCS11 module")
-var tokenLabel = flag.String("tokenLabel", "", "Token label")
-var pin = flag.String("pin", "", "PIN")
-var privateKeyLabel = flag.String("privateKeyLabel", "", "Private key label")
+func init() {
+	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
+		module = x
+	}
+	if x := os.Getenv("SOFTHSM_TOKENLABEL"); x != "" {
+		tokenLabel = x
+	}
+	if x := os.Getenv("SOFTHSM_PRIVKEYLABEL"); x != "" {
+		privkeyLabel = x
+	}
+	if x := os.Getenv("SOFTHSM_PIN"); x != "" {
+		pin = x
+	}
+}
 
-func initPKCS11Context(modulePath string) (*pkcs11.Ctx, error) {
-	context := pkcs11.New(modulePath)
+func initPKCS11Context(modulePath string) (*Ctx, error) {
+	context := New(modulePath)
 
 	if context == nil {
 		return nil, fmt.Errorf("unable to load PKCS#11 module")
@@ -42,7 +56,7 @@ func initPKCS11Context(modulePath string) (*pkcs11.Ctx, error) {
 	return context, err
 }
 
-func getSlot(p *pkcs11.Ctx, label string) (uint, error) {
+func getSlot(p *Ctx, label string) (uint, error) {
 	slots, err := p.GetSlotList(true)
 	if err != nil {
 		return 0, err
@@ -63,11 +77,11 @@ func getSlot(p *pkcs11.Ctx, label string) (uint, error) {
 	return 0, fmt.Errorf("Slot not found: %s", label)
 }
 
-func getPrivateKey(context *pkcs11.Ctx, session pkcs11.SessionHandle, label string) (pkcs11.ObjectHandle, error) {
-	var noKey pkcs11.ObjectHandle
-	template := []*pkcs11.Attribute{
-		pkcs11.NewAttribute(pkcs11.CKA_CLASS, pkcs11.CKO_PRIVATE_KEY),
-		pkcs11.NewAttribute(pkcs11.CKA_LABEL, label),
+func getPrivateKey(context *Ctx, session SessionHandle, label string) (ObjectHandle, error) {
+	var noKey ObjectHandle
+	template := []*Attribute{
+		NewAttribute(CKA_CLASS, CKO_PRIVATE_KEY),
+		NewAttribute(CKA_LABEL, label),
 	}
 	if err := context.FindObjectsInit(session, template); err != nil {
 		return noKey, err
@@ -88,22 +102,22 @@ func getPrivateKey(context *pkcs11.Ctx, session pkcs11.SessionHandle, label stri
 }
 
 type signer struct {
-	context    *pkcs11.Ctx
-	session    pkcs11.SessionHandle
-	privateKey pkcs11.ObjectHandle
+	context    *Ctx
+	session    SessionHandle
+	privateKey ObjectHandle
 }
 
-func makeSigner(context *pkcs11.Ctx) (*signer, error) {
+func makeSigner(context *Ctx) (*signer, error) {
 	slot, err := getSlot(context, *tokenLabel)
 	if err != nil {
 		return nil, err
 	}
-	session, err := context.OpenSession(slot, pkcs11.CKF_SERIAL_SESSION)
+	session, err := context.OpenSession(slot, CKF_SERIAL_SESSION)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = context.Login(session, pkcs11.CKU_USER, *pin); err != nil {
+	if err = context.Login(session, CKU_USER, *pin); err != nil {
 		context.CloseSession(session)
 		return nil, err
 	}
@@ -117,7 +131,7 @@ func makeSigner(context *pkcs11.Ctx) (*signer, error) {
 }
 
 func (s *signer) sign(input []byte) ([]byte, error) {
-	mechanism := []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_RSA_PKCS, nil)}
+	mechanism := []*Mechanism{NewMechanism(CKM_RSA_PKCS, nil)}
 	if err := s.context.SignInit(s.session, mechanism, s.privateKey); err != nil {
 		log.Fatalf("SignInit: %s", err)
 	}
@@ -133,14 +147,14 @@ type cache struct {
 	signers []*signer
 	// this variable signals the condition that there are signers available to be
 	// used.
-	cond    *sync.Cond
+	cond *sync.Cond
 }
 
 func newCache(signers []*signer) cache {
 	var mutex sync.Mutex
 	return cache{
 		signers: signers,
-		cond: sync.NewCond(&mutex),
+		cond:    sync.NewCond(&mutex),
 	}
 }
 
@@ -185,7 +199,7 @@ func TestParallel(t *testing.T) {
 		context.Destroy()
 	}()
 
-  const nSigners = 100
+	const nSigners = 100
 	const nSignatures = 1000
 	signers := make([]*signer, nSigners)
 	for i := 0; i < nSigners; i++ {
@@ -209,7 +223,7 @@ func TestParallel(t *testing.T) {
 
 	for i := 0; i < nSignatures; i++ {
 		// Consume the output of the signers, but do nothing with it.
-		<- output
+		<-output
 	}
 
 	for i := 0; i < nSigners; i++ {

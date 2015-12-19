@@ -18,6 +18,9 @@ import (
 This test supports the following environment variables:
 
 * SOFTHSM_LIB: complete path to libsofthsm.so
+* SOFTHSM_TOKENLABEL
+* SOFTHSM_PRIVKEYLABEL
+* SOFTHSM_PIN
 */
 
 func setenv(t *testing.T) *Ctx {
@@ -61,7 +64,7 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 	if e != nil {
 		t.Fatalf("session %s\n", e)
 	}
-	if e := p.Login(session, CKU_USER, "1234"); e != nil {
+	if e := p.Login(session, CKU_USER, pin); e != nil {
 		t.Fatalf("user pin %s\n", e)
 	}
 	return session
