@@ -9,6 +9,7 @@ package pkcs11
 
 import (
 	"fmt"
+	"log"
 	"math/big"
 	"os"
 	"testing"
@@ -197,6 +198,52 @@ func TestDigestUpdate(t *testing.T) {
 	}
 }
 
+func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle) (ObjectHandle, ObjectHandle) {
+	publicKeyTemplate := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_VERIFY, true),
+		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
+		NewAttribute(CKA_MODULUS_BITS, 2048),
+		NewAttribute(CKA_LABEL, "TestPbk"),
+	}
+	privateKeyTemplate := []*Attribute{
+		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_SIGN, true),
+		NewAttribute(CKA_LABEL, "TestPvk"),
+		NewAttribute(CKA_SENSITIVE, true),
+		NewAttribute(CKA_EXTRACTABLE, true),
+	}
+	pbk, pvk, e := p.GenerateKeyPair(session,
+		[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
+		publicKeyTemplate, privateKeyTemplate)
+	if e != nil {
+		t.Fatalf("failed to generate keypair: %s\n", e)
+	}
+
+	return pbk, pvk
+}
+
+func TestGenerateKeyPair(t *testing.T) {
+	p := setenv(t)
+	session := getSession(p, t)
+	defer finishSession(p, session)
+	generateRSAKeyPair(t, p, session)
+}
+
+func TestSign(t *testing.T) {
+	p := setenv(t)
+	session := getSession(p, t)
+	defer finishSession(p, session)
+	_, pvk := generateRSAKeyPair(t, p, session)
+
+	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, pvk)
+	_, e := p.Sign(session, []byte("Sign me!"))
+	if e != nil {
+		t.Fatalf("failed to sign: %s\n", e)
+	}
+}
+
 func testDestroyObject(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
@@ -229,7 +276,15 @@ func testDestroyObject(t *testing.T) {
 // ExampleSign shows how to sign some data with a private key.
 // Note: error correction is not implemented in this example.
 func ExampleSign() {
-	p := setenv(nil)
+	lib := "/usr/lib/softhsm/libsofthsm.so"
+	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
+		lib = x
+	}
+	p := New(lib)
+	if p == nil {
+		log.Fatal("Failed to init lib")
+	}
+
 	p.Initialize()
 	defer p.Destroy()
 	defer p.Finalize()
@@ -240,7 +295,7 @@ func ExampleSign() {
 	defer p.Logout(session)
 	publicKeyTemplate := []*Attribute{
 		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
-		NewAttribute(CKA_TOKEN, true),
+		NewAttribute(CKA_TOKEN, false),
 		NewAttribute(CKA_ENCRYPT, true),
 		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{3}),
 		NewAttribute(CKA_MODULUS_BITS, 1024),
@@ -248,18 +303,26 @@ func ExampleSign() {
 	}
 	privateKeyTemplate := []*Attribute{
 		NewAttribute(CKA_KEY_TYPE, CKO_PRIVATE_KEY),
-		NewAttribute(CKA_TOKEN, true),
+		NewAttribute(CKA_TOKEN, false),
 		NewAttribute(CKA_PRIVATE, true),
 		NewAttribute(CKA_SIGN, true),
 		NewAttribute(CKA_LABEL, "MyFirstKey"),
 	}
-	pub, priv, _ := p.GenerateKeyPair(session,
+	_, priv, err := p.GenerateKeyPair(session,
 		[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
 		publicKeyTemplate, privateKeyTemplate)
+	if err != nil {
+		log.Fatal(err)
+	}
 	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, priv)
 	// Sign something with the private key.
 	data := []byte("Lets sign this data")
 
-	sig, _ := p.Sign(session, data)
-	fmt.Printf("%v validate with %v\n", sig, pub)
+	_, err = p.Sign(session, data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("It works!")
+	// Output: It works!
 }
