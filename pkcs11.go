@@ -17,9 +17,6 @@ package pkcs11
 #cgo darwin LDFLAGS: -lltdl -L/usr/local/lib/ -I/usr/local/share/libtool
 #cgo LDFLAGS: -lltdl
 #define CK_PTR *
-#ifndef NULL_PTR
-#define NULL_PTR 0
-#endif
 #define CK_DEFINE_FUNCTION(returnType, name) returnType name
 #define CK_DECLARE_FUNCTION(returnType, name) returnType name
 #define CK_DECLARE_FUNCTION_POINTER(returnType, name) returnType (* name)
