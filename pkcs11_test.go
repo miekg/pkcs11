@@ -200,7 +200,8 @@ func TestDigestUpdate(t *testing.T) {
 
 func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle) (ObjectHandle, ObjectHandle) {
 	publicKeyTemplate := []*Attribute{
-		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_CLASS, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_KEY_TYPE, CKK_RSA),
 		NewAttribute(CKA_TOKEN, false),
 		NewAttribute(CKA_VERIFY, true),
 		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
@@ -294,7 +295,8 @@ func ExampleSign() {
 	p.Login(session, CKU_USER, "1234")
 	defer p.Logout(session)
 	publicKeyTemplate := []*Attribute{
-		NewAttribute(CKA_KEY_TYPE, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_CLASS, CKO_PUBLIC_KEY),
+		NewAttribute(CKA_KEY_TYPE, CKK_RSA),
 		NewAttribute(CKA_TOKEN, false),
 		NewAttribute(CKA_ENCRYPT, true),
 		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{3}),
@@ -302,7 +304,8 @@ func ExampleSign() {
 		NewAttribute(CKA_LABEL, "MyFirstKey"),
 	}
 	privateKeyTemplate := []*Attribute{
-		NewAttribute(CKA_KEY_TYPE, CKO_PRIVATE_KEY),
+		NewAttribute(CKA_CLASS, CKO_PRIVATE_KEY),
+		NewAttribute(CKA_KEY_TYPE, CKK_RSA),
 		NewAttribute(CKA_TOKEN, false),
 		NewAttribute(CKA_PRIVATE, true),
 		NewAttribute(CKA_SIGN, true),
