@@ -61,7 +61,7 @@ func getSession(p *Ctx, t *testing.T) SessionHandle {
 	if e != nil {
 		t.Fatalf("slots %s\n", e)
 	}
-	session, e := p.OpenSession(slots[0], CKF_SERIAL_SESSION)
+	session, e := p.OpenSession(slots[0], CKF_SERIAL_SESSION|CKF_RW_SESSION)
 	if e != nil {
 		t.Fatalf("session %s\n", e)
 	}
@@ -105,8 +105,13 @@ func TestFindObject(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
+
+	token_label:= "TestFindObject"
+
 	// There are 2 keys in the db with this tag
-	template := []*Attribute{NewAttribute(CKA_LABEL, "MyFirstKey")}
+        generateRSAKeyPair(t, p, session, token_label, false)
+	
+	template := []*Attribute{NewAttribute(CKA_LABEL, token_label)}
 	if e := p.FindObjectsInit(session, template); e != nil {
 		t.Fatalf("failed to init: %s\n", e)
 	}
@@ -126,15 +131,16 @@ func TestGetAttributeValue(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
-	// There are at least two RSA keys in the hsm.db, objecthandle 1 and 2.
+
+	pbk, _ := generateRSAKeyPair(t, p, session, "GetAttributeValue", false)
+
 	template := []*Attribute{
 		NewAttribute(CKA_PUBLIC_EXPONENT, nil),
 		NewAttribute(CKA_MODULUS_BITS, nil),
 		NewAttribute(CKA_MODULUS, nil),
 		NewAttribute(CKA_LABEL, nil),
 	}
-	// ObjectHandle two is the public key
-	attr, err := p.GetAttributeValue(session, ObjectHandle(2), template)
+	attr, err := p.GetAttributeValue(session, ObjectHandle(pbk), template)
 	if err != nil {
 		t.Fatalf("err %s\n", err)
 	}
@@ -198,20 +204,45 @@ func TestDigestUpdate(t *testing.T) {
 	}
 }
 
-func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle) (ObjectHandle, ObjectHandle) {
+
+/*
+Purpose: Generate RSA keypair with a given name and persistence.
+Inputs: test object
+	context
+	session handle
+	token_label: string to set as the token labels
+	token_persistent: boolean. Whether or not the token should be
+			session based or persistent. If false, the
+			token will not be saved in the HSM and is
+			destroyed upon termination of the session.
+Outputs: creates persistent or ephemeral tokens within the HSM.
+Returns: object handles for public and private keys. Fatal on error.
+*/
+func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle, token_label string, token_persistent bool) (ObjectHandle, ObjectHandle) {
+	/*
+	inputs: test object, context, session handle
+		token_label: string to set as the token labels
+		token_persistent: boolean. Whether or not the token should be
+				session based or persistent. If false, the
+				token will not be saved in the HSM and is
+				destroyed upon termination of the session.
+	outputs: creates persistent or ephemeral tokens within the HSM.
+	returns: object handles for public and private keys.
+	*/
+			
 	publicKeyTemplate := []*Attribute{
 		NewAttribute(CKA_CLASS, CKO_PUBLIC_KEY),
 		NewAttribute(CKA_KEY_TYPE, CKK_RSA),
-		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_TOKEN, token_persistent),
 		NewAttribute(CKA_VERIFY, true),
 		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
 		NewAttribute(CKA_MODULUS_BITS, 2048),
-		NewAttribute(CKA_LABEL, "TestPbk"),
+		NewAttribute(CKA_LABEL, token_label),
 	}
 	privateKeyTemplate := []*Attribute{
-		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_TOKEN, token_persistent),
 		NewAttribute(CKA_SIGN, true),
-		NewAttribute(CKA_LABEL, "TestPvk"),
+		NewAttribute(CKA_LABEL, token_label),
 		NewAttribute(CKA_SENSITIVE, true),
 		NewAttribute(CKA_EXTRACTABLE, true),
 	}
@@ -229,14 +260,17 @@ func TestGenerateKeyPair(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
-	generateRSAKeyPair(t, p, session)
+	token_label := "TestGenerateKeyPair"
+	generateRSAKeyPair(t, p, session, token_label, false)
 }
 
 func TestSign(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
-	_, pvk := generateRSAKeyPair(t, p, session)
+
+	token_label := "TestSign"
+	_, pvk := generateRSAKeyPair(t, p, session, token_label, false)
 
 	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, pvk)
 	_, e := p.Sign(session, []byte("Sign me!"))
@@ -245,33 +279,51 @@ func TestSign(t *testing.T) {
 	}
 }
 
-func testDestroyObject(t *testing.T) {
-	p := setenv(t)
-	session := getSession(p, t)
-	defer finishSession(p, session)
-
-	p.Logout(session) // log out the normal user
-	if e := p.Login(session, CKU_SO, "1234"); e != nil {
-		t.Fatalf("security officer pin %s\n", e)
-	}
-
+/* destroyObject
+	Purpose: destroy and object from the HSM
+	Inputs: test handle
+		session handle
+		search_token: String containing the token label to search for.
+		class: Key type (CKO_PRIVATE_KEY or CKO_PUBLIC_KEY) to remove.
+	Outputs: removes object from HSM
+	Returns: Fatal error on failure.
+*/
+func destroyObject(t *testing.T, p *Ctx, session SessionHandle, search_token string, class uint) (err error){
 	template := []*Attribute{
-		NewAttribute(CKA_LABEL, "MyFirstKey")}
+		NewAttribute(CKA_LABEL, search_token),
+		NewAttribute(CKA_CLASS, class)}
 
 	if e := p.FindObjectsInit(session, template); e != nil {
 		t.Fatalf("failed to init: %s\n", e)
 	}
 	obj, _, e := p.FindObjects(session, 1)
 	if e != nil || len(obj) == 0 {
-		t.Fatalf("failed to find objects\n")
+		t.Fatalf("failed to find objects")
 	}
 	if e := p.FindObjectsFinal(session); e != nil {
 		t.Fatalf("failed to finalize: %s\n", e)
 	}
 
 	if e := p.DestroyObject(session, obj[0]); e != nil {
-		t.Fatal("DestroyObject failed: %s\n", e)
+		t.Fatalf("DestroyObject failed: %s\n", e)
 	}
+	return
+}
+
+// Create and destroy persistent keys
+func TestDestroyObject(t *testing.T) {
+	p := setenv(t)
+	session := getSession(p, t)
+	defer finishSession(p, session)
+
+	generateRSAKeyPair(t, p, session, "TestDestroyKey", true)
+	if e := destroyObject(t, p, session, "TestDestroyKey", CKO_PUBLIC_KEY); e != nil {
+		t.Fatalf("Failed to destroy object: %s\n", e) 
+	}
+	if e := destroyObject(t, p, session, "TestDestroyKey", CKO_PRIVATE_KEY); e != nil {
+		t.Fatalf("Failed to destroy object: %s\n", e) 
+	}
+
 }
 
 // ExampleSign shows how to sign some data with a private key.
@@ -301,7 +353,7 @@ func ExampleSign() {
 		NewAttribute(CKA_ENCRYPT, true),
 		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{3}),
 		NewAttribute(CKA_MODULUS_BITS, 1024),
-		NewAttribute(CKA_LABEL, "MyFirstKey"),
+		NewAttribute(CKA_LABEL, "ExampleSign"),
 	}
 	privateKeyTemplate := []*Attribute{
 		NewAttribute(CKA_CLASS, CKO_PRIVATE_KEY),
@@ -309,7 +361,7 @@ func ExampleSign() {
 		NewAttribute(CKA_TOKEN, false),
 		NewAttribute(CKA_PRIVATE, true),
 		NewAttribute(CKA_SIGN, true),
-		NewAttribute(CKA_LABEL, "MyFirstKey"),
+		NewAttribute(CKA_LABEL, "ExampleSign"),
 	}
 	_, priv, err := p.GenerateKeyPair(session,
 		[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
