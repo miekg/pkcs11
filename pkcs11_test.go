@@ -1,4 +1,3 @@
-// Copyright 2013 Miek Gieben. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -106,12 +105,12 @@ func TestFindObject(t *testing.T) {
 	session := getSession(p, t)
 	defer finishSession(p, session)
 
-	token_label:= "TestFindObject"
+	tokenLabel:= "TestFindObject"
 
 	// There are 2 keys in the db with this tag
-        generateRSAKeyPair(t, p, session, token_label, false)
+        generateRSAKeyPair(t, p, session, tokenLabel, false)
 	
-	template := []*Attribute{NewAttribute(CKA_LABEL, token_label)}
+	template := []*Attribute{NewAttribute(CKA_LABEL, tokenLabel)}
 	if e := p.FindObjectsInit(session, template); e != nil {
 		t.Fatalf("failed to init: %s\n", e)
 	}
@@ -210,19 +209,19 @@ Purpose: Generate RSA keypair with a given name and persistence.
 Inputs: test object
 	context
 	session handle
-	token_label: string to set as the token labels
-	token_persistent: boolean. Whether or not the token should be
+	tokenLabel: string to set as the token labels
+	tokenPersistent: boolean. Whether or not the token should be
 			session based or persistent. If false, the
 			token will not be saved in the HSM and is
 			destroyed upon termination of the session.
 Outputs: creates persistent or ephemeral tokens within the HSM.
 Returns: object handles for public and private keys. Fatal on error.
 */
-func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle, token_label string, token_persistent bool) (ObjectHandle, ObjectHandle) {
+func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle, tokenLabel string, tokenPersistent bool) (ObjectHandle, ObjectHandle) {
 	/*
 	inputs: test object, context, session handle
-		token_label: string to set as the token labels
-		token_persistent: boolean. Whether or not the token should be
+		tokenLabel: string to set as the token labels
+		tokenPersistent: boolean. Whether or not the token should be
 				session based or persistent. If false, the
 				token will not be saved in the HSM and is
 				destroyed upon termination of the session.
@@ -233,16 +232,16 @@ func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle, token_label
 	publicKeyTemplate := []*Attribute{
 		NewAttribute(CKA_CLASS, CKO_PUBLIC_KEY),
 		NewAttribute(CKA_KEY_TYPE, CKK_RSA),
-		NewAttribute(CKA_TOKEN, token_persistent),
+		NewAttribute(CKA_TOKEN, tokenPersistent),
 		NewAttribute(CKA_VERIFY, true),
 		NewAttribute(CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
 		NewAttribute(CKA_MODULUS_BITS, 2048),
-		NewAttribute(CKA_LABEL, token_label),
+		NewAttribute(CKA_LABEL, tokenLabel),
 	}
 	privateKeyTemplate := []*Attribute{
-		NewAttribute(CKA_TOKEN, token_persistent),
+		NewAttribute(CKA_TOKEN, tokenPersistent),
 		NewAttribute(CKA_SIGN, true),
-		NewAttribute(CKA_LABEL, token_label),
+		NewAttribute(CKA_LABEL, tokenLabel),
 		NewAttribute(CKA_SENSITIVE, true),
 		NewAttribute(CKA_EXTRACTABLE, true),
 	}
@@ -260,8 +259,8 @@ func TestGenerateKeyPair(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
-	token_label := "TestGenerateKeyPair"
-	generateRSAKeyPair(t, p, session, token_label, false)
+	tokenLabel := "TestGenerateKeyPair"
+	generateRSAKeyPair(t, p, session, tokenLabel, false)
 }
 
 func TestSign(t *testing.T) {
@@ -269,8 +268,8 @@ func TestSign(t *testing.T) {
 	session := getSession(p, t)
 	defer finishSession(p, session)
 
-	token_label := "TestSign"
-	_, pvk := generateRSAKeyPair(t, p, session, token_label, false)
+	tokenLabel := "TestSign"
+	_, pvk := generateRSAKeyPair(t, p, session, tokenLabel, false)
 
 	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, pvk)
 	_, e := p.Sign(session, []byte("Sign me!"))
@@ -283,14 +282,14 @@ func TestSign(t *testing.T) {
 	Purpose: destroy and object from the HSM
 	Inputs: test handle
 		session handle
-		search_token: String containing the token label to search for.
+		searchToken: String containing the token label to search for.
 		class: Key type (CKO_PRIVATE_KEY or CKO_PUBLIC_KEY) to remove.
 	Outputs: removes object from HSM
 	Returns: Fatal error on failure.
 */
-func destroyObject(t *testing.T, p *Ctx, session SessionHandle, search_token string, class uint) (err error){
+func destroyObject(t *testing.T, p *Ctx, session SessionHandle, searchToken string, class uint) (err error){
 	template := []*Attribute{
-		NewAttribute(CKA_LABEL, search_token),
+		NewAttribute(CKA_LABEL, searchToken),
 		NewAttribute(CKA_CLASS, class)}
 
 	if e := p.FindObjectsInit(session, template); e != nil {
@@ -381,3 +380,4 @@ func ExampleSign() {
 	fmt.Printf("It works!")
 	// Output: It works!
 }
+// Copyright 2013 Miek Gieben. All rights reserved.
