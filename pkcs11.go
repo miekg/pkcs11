@@ -115,6 +115,7 @@ CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 {
 	CK_RV e =
 	    c->sym->C_GetMechanismList((CK_SLOT_ID) slotID, NULL, mechlen);
+	// Gemaltos PKCS11 implementation returns CKR_BUFFER_TOO_SMALL on a NULL ptr instad of CKR_OK as the spec states.    
 	if (e != CKR_OK && e != CKR_BUFFER_TOO_SMALL) {
 		return e;
 	}
