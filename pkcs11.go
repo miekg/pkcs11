@@ -115,7 +115,7 @@ CK_RV GetMechanismList(struct ctx * c, CK_ULONG slotID,
 {
 	CK_RV e =
 	    c->sym->C_GetMechanismList((CK_SLOT_ID) slotID, NULL, mechlen);
-	if (e != CKR_OK) {
+	if (e != CKR_OK && e != CKR_BUFFER_TOO_SMALL) {
 		return e;
 	}
 	*mech = calloc(*mechlen, sizeof(CK_MECHANISM_TYPE));
