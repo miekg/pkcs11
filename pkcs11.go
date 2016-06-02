@@ -1531,7 +1531,7 @@ func (c *Ctx) UnwrapKey(sh SessionHandle, m []*Mechanism, unwrappingkey ObjectHa
 	return ObjectHandle(key), toError(e)
 }
 
-// DeriveKey derives a key from a base key, creating a new key object. */
+// DeriveKey derives a key from a base key, creating a new key object.
 func (c *Ctx) DeriveKey(sh SessionHandle, m []*Mechanism, basekey ObjectHandle, a []*Attribute) (ObjectHandle, error) {
 	var key C.CK_OBJECT_HANDLE
 	attrarena, ac, aclen := cAttributeList(a)
