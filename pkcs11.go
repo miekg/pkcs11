@@ -750,6 +750,11 @@ type Ctx struct {
 
 // New creates a new context and initializes the module/library for use.
 func New(module string) *Ctx {
+	// libtool-ltdl will return an assertion error if passed an empty string, so
+	// we check for it explicitly.
+	if module == "" {
+		return nil
+	}
 	c := new(Ctx)
 	mod := C.CString(module)
 	defer C.free(unsafe.Pointer(mod))
