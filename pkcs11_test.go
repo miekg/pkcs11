@@ -79,6 +79,15 @@ func TestInitialize(t *testing.T) {
 	p.Destroy()
 }
 
+func TestNew(t *testing.T) {
+	if p := New(""); p != nil {
+		t.Fatalf("init should have failed, got %s\n", p)
+	}
+	if p := New("/does/not/exist"); p != nil {
+		t.Fatalf("init should have failed, got %s\n", p)
+	}
+}
+
 func finishSession(p *Ctx, session SessionHandle) {
 	p.Logout(session)
 	p.CloseSession(session)
@@ -108,8 +117,8 @@ func TestFindObject(t *testing.T) {
 	tokenLabel:= "TestFindObject"
 
 	// There are 2 keys in the db with this tag
-        generateRSAKeyPair(t, p, session, tokenLabel, false)
-	
+	generateRSAKeyPair(t, p, session, tokenLabel, false)
+
 	template := []*Attribute{NewAttribute(CKA_LABEL, tokenLabel)}
 	if e := p.FindObjectsInit(session, template); e != nil {
 		t.Fatalf("failed to init: %s\n", e)
@@ -219,16 +228,16 @@ Returns: object handles for public and private keys. Fatal on error.
 */
 func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle, tokenLabel string, tokenPersistent bool) (ObjectHandle, ObjectHandle) {
 	/*
-	inputs: test object, context, session handle
-		tokenLabel: string to set as the token labels
-		tokenPersistent: boolean. Whether or not the token should be
-				session based or persistent. If false, the
-				token will not be saved in the HSM and is
-				destroyed upon termination of the session.
-	outputs: creates persistent or ephemeral tokens within the HSM.
-	returns: object handles for public and private keys.
+		inputs: test object, context, session handle
+			tokenLabel: string to set as the token labels
+			tokenPersistent: boolean. Whether or not the token should be
+					session based or persistent. If false, the
+					token will not be saved in the HSM and is
+					destroyed upon termination of the session.
+		outputs: creates persistent or ephemeral tokens within the HSM.
+		returns: object handles for public and private keys.
 	*/
-			
+
 	publicKeyTemplate := []*Attribute{
 		NewAttribute(CKA_CLASS, CKO_PUBLIC_KEY),
 		NewAttribute(CKA_KEY_TYPE, CKK_RSA),
@@ -317,10 +326,10 @@ func TestDestroyObject(t *testing.T) {
 
 	generateRSAKeyPair(t, p, session, "TestDestroyKey", true)
 	if e := destroyObject(t, p, session, "TestDestroyKey", CKO_PUBLIC_KEY); e != nil {
-		t.Fatalf("Failed to destroy object: %s\n", e) 
+		t.Fatalf("Failed to destroy object: %s\n", e)
 	}
 	if e := destroyObject(t, p, session, "TestDestroyKey", CKO_PRIVATE_KEY); e != nil {
-		t.Fatalf("Failed to destroy object: %s\n", e) 
+		t.Fatalf("Failed to destroy object: %s\n", e)
 	}
 
 }
