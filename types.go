@@ -204,6 +204,7 @@ func cAttributeList(a []*Attribute) (arena, C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	pa := make([]C.CK_ATTRIBUTE, len(a))
 	for i := 0; i < len(a); i++ {
 		pa[i]._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
+		//skip attribute if length is 0 to prevent panic in arena.Allocate
 		if a[i].Value == nil || len(a[i].Value) == 0 {
 			continue
 		}
@@ -252,6 +253,7 @@ func cMechanismList(m []*Mechanism) (arena, C.CK_MECHANISM_PTR, C.CK_ULONG) {
 	pm := make([]C.CK_MECHANISM, len(m))
 	for i := 0; i < len(m); i++ {
 		pm[i].mechanism = C.CK_MECHANISM_TYPE(m[i].Mechanism)
+		//skip parameter if length is 0 to prevent panic in arena.Allocate
 		if m[i].Parameter == nil || len(m[i].Parameter) == 0 {
 			continue
 		}
