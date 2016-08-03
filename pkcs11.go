@@ -15,6 +15,8 @@ package pkcs11
 #cgo linux LDFLAGS: -Wl,--no-as-needed -lltdl -ldl
 #cgo darwin CFLAGS: -I/usr/local/share/libtool
 #cgo darwin LDFLAGS: -lltdl -L/usr/local/lib/ -I/usr/local/share/libtool
+#cgo openbsd CFLAGS: -I/usr/local/include/
+#cgo openbsd LDFLAGS: -lltdl -L/usr/local/lib/
 #cgo LDFLAGS: -lltdl
 #define CK_PTR *
 #define CK_DEFINE_FUNCTION(returnType, name) returnType name
