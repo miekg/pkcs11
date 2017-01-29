@@ -778,7 +778,7 @@ func (c *Ctx) Destroy() {
 
 /* Initialize initializes the Cryptoki library. */
 func (c *Ctx) Initialize() error {
-	args := &C.CK_C_INITIALIZE_ARGS{nil, nil, nil, nil, C.CKF_OS_LOCKING_OK, nil}
+	args := &C.CK_C_INITIALIZE_ARGS{CreateMutex: nil, DestroyMutex: nil, LockMutex: nil, UnlockMutex: nil, flags: C.CKF_OS_LOCKING_OK, pReserved: nil}
 	e := C.Initialize(c.ctx, C.CK_VOID_PTR(args))
 	return toError(e)
 }
