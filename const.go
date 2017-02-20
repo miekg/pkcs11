@@ -23,6 +23,18 @@ const (
 	CKO_VENDOR_DEFINED    uint = 0x80000000
 )
 
+const (
+	CKG_MGF1_SHA1         uint = 0x00000001
+	CKG_MGF1_SHA224       uint = 0x00000005
+	CKG_MGF1_SHA256       uint = 0x00000002
+	CKG_MGF1_SHA384       uint = 0x00000003
+	CKG_MGF1_SHA512       uint = 0x00000004
+)
+
+const (
+	CKZ_DATA_SPECIFIED    uint = 0x00000001
+)
+
 // Generated with: awk '/#define CK[AFKMRC]/{ print $2 " = " $3 }' pkcs11t.h | sed -e 's/UL$//g' -e 's/UL)$/)/g'
 
 // All the flag (CKF_), attribute (CKA_), error code (CKR_), key type (CKK_), certificate type (CKC_) and
