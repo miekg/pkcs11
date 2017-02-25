@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -25,6 +26,9 @@ This test supports the following environment variables:
 
 func setenv(t *testing.T) *Ctx {
 	lib := "/usr/lib/softhsm/libsofthsm.so"
+	if runtime.GOOS == "openbsd" {
+		lib = "/usr/local/lib/softhsm/libsofthsm.so"
+	}
 	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
 		lib = x
 	}
@@ -41,6 +45,9 @@ func TestSetenv(t *testing.T) {
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
 
 	lib := "/usr/lib/softhsm/libsofthsm.so"
+	if runtime.GOOS == "openbsd" {
+		lib = "/usr/local/lib/softhsm/libsofthsm.so"
+	}
 	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
 		lib = x
 	}
@@ -338,6 +345,9 @@ func TestDestroyObject(t *testing.T) {
 // Note: error correction is not implemented in this example.
 func ExampleSign() {
 	lib := "/usr/lib/softhsm/libsofthsm.so"
+	if runtime.GOOS == "openbsd" {
+		lib = "/usr/local/lib/softhsm/libsofthsm.so"
+	}
 	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
 		lib = x
 	}
