@@ -1,3 +1,5 @@
+// +build !nopkcs11
+
 // Copyright 2013 Miek Gieben. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -748,6 +750,11 @@ import "unsafe"
 // Ctx contains the current pkcs11 context.
 type Ctx struct {
 	ctx *C.struct_ctx
+}
+
+// IsSupported returns true iff PKCS11 is supported (i.e. if built without the 'nopkcs11' tag)
+func IsSupported() bool {
+	return true
 }
 
 // New creates a new context and initializes the module/library for use.

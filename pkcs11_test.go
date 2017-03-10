@@ -53,27 +53,30 @@ func TestSetenv(t *testing.T) {
 }
 
 func getSession(p *Ctx, t *testing.T) SessionHandle {
-	if e := p.Initialize(); e != nil {
-		t.Fatalf("init error %s\n", e)
+	e := p.Initialize()
+	if !check("init", e, t) {
+		return 0
 	}
 	slots, e := p.GetSlotList(true)
-	if e != nil {
-		t.Fatalf("slots %s\n", e)
+	if !check("slots", e, t) {
+		return 0
 	}
 	session, e := p.OpenSession(slots[0], CKF_SERIAL_SESSION|CKF_RW_SESSION)
-	if e != nil {
-		t.Fatalf("session %s\n", e)
+	if !check("session", e, t) {
+		return 0
 	}
-	if e := p.Login(session, CKU_USER, pin); e != nil {
-		t.Fatalf("user pin %s\n", e)
+	e = p.Login(session, CKU_USER, pin)
+	if !check("user pin", e, t) {
+		return 0
 	}
 	return session
 }
 
 func TestInitialize(t *testing.T) {
 	p := setenv(t)
-	if e := p.Initialize(); e != nil {
-		t.Fatalf("init error %s\n", e)
+	e := p.Initialize()
+	if !check("init", e, t) {
+		return
 	}
 	p.Finalize()
 	p.Destroy()
@@ -84,7 +87,9 @@ func TestNew(t *testing.T) {
 		t.Fatalf("init should have failed, got %s\n", p)
 	}
 	if p := New("/does/not/exist"); p != nil {
-		t.Fatalf("init should have failed, got %s\n", p)
+		if IsSupported() {
+			t.Fatalf("init should have failed, got %s\n", p)
+		}
 	}
 }
 
@@ -100,8 +105,8 @@ func TestGetInfo(t *testing.T) {
 	session := getSession(p, t)
 	defer finishSession(p, session)
 	info, err := p.GetInfo()
-	if err != nil {
-		t.Fatalf("non zero error %s\n", err)
+	if !check("GetInfo", err, t) {
+		return
 	}
 	if info.ManufacturerID != "SoftHSM" {
 		t.Fatal("ID should be SoftHSM")
@@ -114,23 +119,19 @@ func TestFindObject(t *testing.T) {
 	session := getSession(p, t)
 	defer finishSession(p, session)
 
-	tokenLabel:= "TestFindObject"
+	tokenLabel := "TestFindObject"
 
 	// There are 2 keys in the db with this tag
 	generateRSAKeyPair(t, p, session, tokenLabel, false)
 
 	template := []*Attribute{NewAttribute(CKA_LABEL, tokenLabel)}
-	if e := p.FindObjectsInit(session, template); e != nil {
-		t.Fatalf("failed to init: %s\n", e)
-	}
-	obj, b, e := p.FindObjects(session, 2)
-	if e != nil {
-		t.Fatalf("failed to find: %s %v\n", e, b)
-	}
-	if e := p.FindObjectsFinal(session); e != nil {
-		t.Fatalf("failed to finalize: %s\n", e)
-	}
-	if len(obj) != 2 {
+	e := p.FindObjectsInit(session, template)
+	check("FindObjectsInit", e, t)
+	obj, _, e := p.FindObjects(session, 2)
+	check("FindObjects", e, t)
+	e = p.FindObjectsFinal(session)
+	check("FindObjectsFinal", e, t)
+	if IsSupported() && len(obj) != 2 {
 		t.Fatal("should have found two objects")
 	}
 }
@@ -149,9 +150,7 @@ func TestGetAttributeValue(t *testing.T) {
 		NewAttribute(CKA_LABEL, nil),
 	}
 	attr, err := p.GetAttributeValue(session, ObjectHandle(pbk), template)
-	if err != nil {
-		t.Fatalf("err %s\n", err)
-	}
+	check("GetAttributeValue", err, t)
 	for i, a := range attr {
 		t.Logf("attr %d, type %d, valuelen %d", i, a.Type, len(a.Value))
 		if a.Type == CKA_MODULUS {
@@ -167,20 +166,16 @@ func TestDigest(t *testing.T) {
 	session := getSession(p, t)
 	defer finishSession(p, session)
 	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
-	if e != nil {
-		t.Fatalf("DigestInit: %s\n", e)
-	}
+	check("DigestInit", e, t)
 
 	hash, e := p.Digest(session, []byte("this is a string"))
-	if e != nil {
-		t.Fatalf("digest: %s\n", e)
-	}
+	check("Digest", e, t)
 	hex := ""
 	for _, d := range hash {
 		hex += fmt.Sprintf("%x", d)
 	}
 	// Teststring create with: echo -n "this is a string" | sha1sum
-	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
+	if IsSupported() && hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
 		t.Fatalf("wrong digest: %s", hex)
 	}
 }
@@ -189,29 +184,23 @@ func TestDigestUpdate(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
-	if e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)}); e != nil {
-		t.Fatalf("DigestInit: %s\n", e)
-	}
-	if e := p.DigestUpdate(session, []byte("this is ")); e != nil {
-		t.Fatalf("DigestUpdate: %s\n", e)
-	}
-	if e := p.DigestUpdate(session, []byte("a string")); e != nil {
-		t.Fatalf("DigestUpdate: %s\n", e)
-	}
+	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
+	check("DigestInit", e, t)
+	e = p.DigestUpdate(session, []byte("this is "))
+	check("DigestUpdate", e, t)
+	e = p.DigestUpdate(session, []byte("a string"))
+	check("DigestUpdate", e, t)
 	hash, e := p.DigestFinal(session)
-	if e != nil {
-		t.Fatalf("DigestFinal: %s\n", e)
-	}
+	check("DigestFinal", e, t)
 	hex := ""
 	for _, d := range hash {
 		hex += fmt.Sprintf("%x", d)
 	}
 	// Teststring create with: echo -n "this is a string" | sha1sum
-	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
+	if IsSupported() && hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
 		t.Fatalf("wrong digest: %s", hex)
 	}
 }
-
 
 /*
 Purpose: Generate RSA keypair with a given name and persistence.
@@ -257,9 +246,7 @@ func generateRSAKeyPair(t *testing.T, p *Ctx, session SessionHandle, tokenLabel 
 	pbk, pvk, e := p.GenerateKeyPair(session,
 		[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
 		publicKeyTemplate, privateKeyTemplate)
-	if e != nil {
-		t.Fatalf("failed to generate keypair: %s\n", e)
-	}
+	check("GenerateKeyPair", e, t)
 
 	return pbk, pvk
 }
@@ -282,38 +269,37 @@ func TestSign(t *testing.T) {
 
 	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, pvk)
 	_, e := p.Sign(session, []byte("Sign me!"))
-	if e != nil {
-		t.Fatalf("failed to sign: %s\n", e)
-	}
+	check("SignInit", e, t)
 }
 
 /* destroyObject
-	Purpose: destroy and object from the HSM
-	Inputs: test handle
-		session handle
-		searchToken: String containing the token label to search for.
-		class: Key type (CKO_PRIVATE_KEY or CKO_PUBLIC_KEY) to remove.
-	Outputs: removes object from HSM
-	Returns: Fatal error on failure.
+Purpose: destroy and object from the HSM
+Inputs: test handle
+	session handle
+	searchToken: String containing the token label to search for.
+	class: Key type (CKO_PRIVATE_KEY or CKO_PUBLIC_KEY) to remove.
+Outputs: removes object from HSM
+Returns: Fatal error on failure.
 */
-func destroyObject(t *testing.T, p *Ctx, session SessionHandle, searchToken string, class uint) (err error){
+func destroyObject(t *testing.T, p *Ctx, session SessionHandle, searchToken string, class uint) (err error) {
 	template := []*Attribute{
 		NewAttribute(CKA_LABEL, searchToken),
 		NewAttribute(CKA_CLASS, class)}
 
-	if e := p.FindObjectsInit(session, template); e != nil {
-		t.Fatalf("failed to init: %s\n", e)
-	}
+	e := p.FindObjectsInit(session, template)
+	check("FindObjectsInit", e, t)
 	obj, _, e := p.FindObjects(session, 1)
-	if e != nil || len(obj) == 0 {
-		t.Fatalf("failed to find objects")
+	if check("FindObjects", e, t) {
+		if e != nil || len(obj) == 0 {
+			t.Fatalf("failed to find objects")
+		}
 	}
-	if e := p.FindObjectsFinal(session); e != nil {
-		t.Fatalf("failed to finalize: %s\n", e)
-	}
+	e = p.FindObjectsFinal(session)
+	check("FindObjectsFinal", e, t)
 
-	if e := p.DestroyObject(session, obj[0]); e != nil {
-		t.Fatalf("DestroyObject failed: %s\n", e)
+	if IsSupported() {
+		e = p.DestroyObject(session, obj[0])
+		check("DestroyObject", e, t)
 	}
 	return
 }
@@ -350,7 +336,11 @@ func ExampleSign() {
 	defer p.Destroy()
 	defer p.Finalize()
 	slots, _ := p.GetSlotList(true)
-	session, _ := p.OpenSession(slots[0], CKF_SERIAL_SESSION|CKF_RW_SESSION)
+	var slot uint
+	if IsSupported() {
+		slot = slots[0]
+	}
+	session, _ := p.OpenSession(slot, CKF_SERIAL_SESSION|CKF_RW_SESSION)
 	defer p.CloseSession(session)
 	p.Login(session, CKU_USER, "1234")
 	defer p.Logout(session)
@@ -375,7 +365,13 @@ func ExampleSign() {
 		[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
 		publicKeyTemplate, privateKeyTemplate)
 	if err != nil {
-		log.Fatal(err)
+		if IsSupported() {
+			log.Fatalf("ExampleSign.GenerateKeyPair: %s", err)
+		}
+	} else {
+		if !IsSupported() {
+			log.Fatal("ExampleSign.GenerateKeyPair should have failed")
+		}
 	}
 	p.SignInit(session, []*Mechanism{NewMechanism(CKM_SHA1_RSA_PKCS, nil)}, priv)
 	// Sign something with the private key.
@@ -383,10 +379,38 @@ func ExampleSign() {
 
 	_, err = p.Sign(session, data)
 	if err != nil {
-		log.Fatal(err)
+		if IsSupported() {
+			log.Fatalf("ExampleSign.Sign: %s", err)
+		}
+	} else {
+		if !IsSupported() {
+			log.Fatal("ExampleSign.Sign should have failed")
+		}
 	}
 
 	fmt.Printf("It works!")
 	// Output: It works!
 }
+
+func check(name string, err error, t *testing.T) bool {
+	if IsSupported() {
+		// Tests without the "-tags nopkcs11" should pass
+		if err != nil {
+			t.Fatalf("%s error: \n", err)
+			return false
+		}
+		return true
+	}
+	// Tests with "-tags nopkcs11" should fail with the build error
+	if err == nil {
+		t.Fatalf("%s should have failed but did not", name)
+	}
+	msg := err.Error()
+	emsg := BLD_ERR_MSG
+	if msg != emsg {
+		t.Fatalf("%s should have failed with '%s', but failed with '%s'", name, emsg, msg)
+	}
+	return false
+}
+
 // Copyright 2013 Miek Gieben. All rights reserved.
