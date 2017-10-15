@@ -8,13 +8,13 @@ type Slot struct {
 	id  uint
 }
 
-// GetInfo returns information about the Slot.
-func (s Slot) GetInfo() (pkcs11.SlotInfo, error) {
+// Info returns information about the Slot.
+func (s Slot) Info() (pkcs11.SlotInfo, error) {
 	return s.ctx.GetSlotInfo(s.id)
 }
 
-// GetTokenInfo returns information about the token in a Slot, if applicable.
-func (s Slot) GetTokenInfo() (pkcs11.TokenInfo, error) {
+// TokenInfo returns information about the token in a Slot, if applicable.
+func (s Slot) TokenInfo() (pkcs11.TokenInfo, error) {
 	return s.ctx.GetTokenInfo(s.id)
 }
 
@@ -58,9 +58,9 @@ func (s Slot) CloseAllSessions() error {
 	return s.ctx.CloseAllSessions(s.id)
 }
 
-// GetMechanismList returns a list of Mechanisms available on the token in this
+// Mechanisms returns a list of Mechanisms available on the token in this
 // slot.
-func (s Slot) GetMechanismList() ([]Mechanism, error) {
+func (s Slot) Mechanisms() ([]Mechanism, error) {
 	list, err := s.ctx.GetMechanismList(s.id)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ type Mechanism struct {
 	slot Slot
 }
 
-// GetInfo returns information about this mechanism.
-func (m *Mechanism) GetInfo() (pkcs11.MechanismInfo, error) {
+// Info returns information about this mechanism.
+func (m *Mechanism) Info() (pkcs11.MechanismInfo, error) {
 	return m.slot.ctx.GetMechanismInfo(m.slot.id, []*pkcs11.Mechanism{m.Mechanism})
 }

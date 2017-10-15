@@ -9,16 +9,16 @@ import (
 
 // Object represents a PKCS#11 object. It is attached to a given session. Once
 // that session is closed, operations on the Object will fail. Operations may
-// also depend on the logged-in state of the session.
+// also depend on the logged-in state of the application.
 type Object struct {
 	session      *Session
 	objectHandle pkcs11.ObjectHandle
 }
 
-// GetID gets the internal identifier of an object, as a hex string. If the
+// ID returns the internal identifier of an object as a hex string. If the
 // object has no identifier, returns the empty string.
-func (o Object) GetID() (string, error) {
-	idBytes, err := o.GetAttributeValue(pkcs11.CKA_ID)
+func (o Object) ID() (string, error) {
+	idBytes, err := o.Attribute(pkcs11.CKA_ID)
 	if err != nil {
 		// Some objects don't have ID; that's fine, just return the empty string.
 		if err, ok := err.(pkcs11.Error); ok && err == pkcs11.CKR_ATTRIBUTE_TYPE_INVALID {
@@ -29,9 +29,9 @@ func (o Object) GetID() (string, error) {
 	return fmt.Sprintf("%x", idBytes), nil
 }
 
-// GetLabel returns the label of an object.
-func (o Object) GetLabel() (string, error) {
-	labelBytes, err := o.GetAttributeValue(pkcs11.CKA_LABEL)
+// Label returns the label of an object.
+func (o Object) Label() (string, error) {
+	labelBytes, err := o.Attribute(pkcs11.CKA_LABEL)
 	if err != nil {
 		// Some objects don't have a label; that's fine, just return the empty string.
 		if err, ok := err.(pkcs11.Error); ok && err == pkcs11.CKR_ATTRIBUTE_TYPE_INVALID {
@@ -42,16 +42,16 @@ func (o Object) GetLabel() (string, error) {
 	return string(labelBytes), nil
 }
 
-// GetValue returns an object's CKA_VALUE attribute, as bytes.
-func (o Object) GetValue() ([]byte, error) {
-	return o.GetAttributeValue(pkcs11.CKA_VALUE)
+// Value returns an object's CKA_VALUE attribute, as bytes.
+func (o Object) Value() ([]byte, error) {
+	return o.Attribute(pkcs11.CKA_VALUE)
 }
 
-// GetAttributeValue gets exactly one attribute from a PKCS#11 object, returning
+// Attribute gets exactly one attribute from a PKCS#11 object, returning
 // an error if the attribute is not found, or if multiple attributes are
 // returned. On success, it will return the value of that attribute as a slice
 // of bytes.
-func (o Object) GetAttributeValue(attributeType uint) ([]byte, error) {
+func (o Object) Attribute(attributeType uint) ([]byte, error) {
 	o.session.Lock()
 	defer o.session.Unlock()
 
@@ -69,8 +69,8 @@ func (o Object) GetAttributeValue(attributeType uint) ([]byte, error) {
 	return attrs[0].Value, nil
 }
 
-// SetAttributeValue sets exactly one attribute on a PKCS#11 object.
-func (o Object) SetAttributeValue(attributeType uint, value []byte) error {
+// Set sets exactly one attribute on this object.
+func (o Object) Set(attributeType uint, value []byte) error {
 	o.session.Lock()
 	defer o.session.Unlock()
 

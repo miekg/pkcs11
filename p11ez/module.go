@@ -35,7 +35,7 @@
 // To summarize, a typical workflow (omitting error handling) might look like:
 //
 // module, _ := p11ez.OpenModule("/path/to/module.so")
-// slots, _ := module.GetSlots()
+// slots, _ := module.Slots()
 // session, _ := slots[0].OpenSession()
 // privateKey, _ := session.FindObject(...)
 // signature, _ := p11ez.PrivateKey(privateKey).Sign(..., []byte{"hello"})
@@ -59,13 +59,13 @@ type Module struct {
 	ctx *pkcs11.Ctx
 }
 
-// GetInfo returns general information about the module.
-func (m Module) GetInfo() (pkcs11.Info, error) {
+// Info returns general information about the module.
+func (m Module) Info() (pkcs11.Info, error) {
 	return m.ctx.GetInfo()
 }
 
-// GetSlotList returns all available Slots with a token present.
-func (m Module) GetSlotList() ([]Slot, error) {
+// Slots returns all available Slots with a token present.
+func (m Module) Slots() ([]Slot, error) {
 	ids, err := m.ctx.GetSlotList(true)
 	if err != nil {
 		return nil, err
