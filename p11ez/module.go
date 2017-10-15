@@ -34,11 +34,12 @@
 //
 // To summarize, a typical workflow (omitting error handling) might look like:
 //
-// module, _ := p11ez.OpenModule("/path/to/module.so")
-// slots, _ := module.Slots()
-// session, _ := slots[0].OpenSession()
-// privateKey, _ := session.FindObject(...)
-// signature, _ := p11ez.PrivateKey(privateKey).Sign(..., []byte{"hello"})
+//   module, _ := p11ez.OpenModule("/path/to/module.so")
+//   slots, _ := module.Slots()
+//   session, _ := slots[0].OpenSession()
+//   pk, _ := session.FindObject(...)
+//   privateKey := p11ez.PrivateKey(pk)
+//   signature, _ := privateKey.Sign(..., []byte{"hello"})
 package p11ez
 
 import "github.com/miekg/pkcs11"
