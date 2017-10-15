@@ -1,4 +1,4 @@
-package p11ez
+package p11
 
 import (
 	"errors"

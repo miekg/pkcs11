@@ -1,4 +1,4 @@
-// Package p11ez wraps `miekg/pkcs11` to make it easier to use and more idiomatic
+// Package p11 wraps `miekg/pkcs11` to make it easier to use and more idiomatic
 // to Go, as compared with the more straightforward C wrapper that
 // `miekg/pkcs11` presents. All types are safe to use concurrently.
 //
@@ -34,13 +34,13 @@
 //
 // To summarize, a typical workflow (omitting error handling) might look like:
 //
-//   module, _ := p11ez.OpenModule("/path/to/module.so")
+//   module, _ := p11.OpenModule("/path/to/module.so")
 //   slots, _ := module.Slots()
 //   session, _ := slots[0].OpenSession()
 //   pk, _ := session.FindObject(...)
-//   privateKey := p11ez.PrivateKey(pk)
+//   privateKey := p11.PrivateKey(pk)
 //   signature, _ := privateKey.Sign(..., []byte{"hello"})
-package p11ez
+package p11
 
 import "github.com/miekg/pkcs11"
 
