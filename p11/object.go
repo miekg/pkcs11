@@ -2,41 +2,23 @@ package p11
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/miekg/pkcs11"
 )
 
-// Object represents a PKCS#11 object. It is attached to a given session. Once
-// that session is closed, operations on the Object will fail. Operations may
-// also depend on the logged-in state of the application.
+// Object represents a handle to a PKCS#11 object. It is attached to the
+// session used to find it. Once that session is closed, operations on the
+// Object will fail. Operations may also depend on the logged-in state of
+// the application.
 type Object struct {
-	session      *Session
+	session      *sessionImpl
 	objectHandle pkcs11.ObjectHandle
-}
-
-// ID returns the internal identifier of an object as a hex string. If the
-// object has no identifier, returns the empty string.
-func (o Object) ID() (string, error) {
-	idBytes, err := o.Attribute(pkcs11.CKA_ID)
-	if err != nil {
-		// Some objects don't have ID; that's fine, just return the empty string.
-		if err, ok := err.(pkcs11.Error); ok && err == pkcs11.CKR_ATTRIBUTE_TYPE_INVALID {
-			return "", nil
-		}
-		return "", err
-	}
-	return fmt.Sprintf("%x", idBytes), nil
 }
 
 // Label returns the label of an object.
 func (o Object) Label() (string, error) {
 	labelBytes, err := o.Attribute(pkcs11.CKA_LABEL)
 	if err != nil {
-		// Some objects don't have a label; that's fine, just return the empty string.
-		if err, ok := err.(pkcs11.Error); ok && err == pkcs11.CKR_ATTRIBUTE_TYPE_INVALID {
-			return "", nil
-		}
 		return "", err
 	}
 	return string(labelBytes), nil
@@ -50,14 +32,21 @@ func (o Object) Value() ([]byte, error) {
 // Attribute gets exactly one attribute from a PKCS#11 object, returning
 // an error if the attribute is not found, or if multiple attributes are
 // returned. On success, it will return the value of that attribute as a slice
-// of bytes.
+// of bytes. For attributes not present (i.e. CKR_ATTRIBUTE_TYPE_INVALID),
+// Attribute returns a nil slice and nil error.
 func (o Object) Attribute(attributeType uint) ([]byte, error) {
 	o.session.Lock()
 	defer o.session.Unlock()
 
 	attrs, err := o.session.ctx.GetAttributeValue(o.session.handle, o.objectHandle,
 		[]*pkcs11.Attribute{pkcs11.NewAttribute(attributeType, nil)})
-	if err != nil {
+	// The PKCS#11 spec states that C_GetAttributeValue may return
+	// CKR_ATTRIBUTE_TYPE_INVALID if an object simply does not posses a given
+	// attribute. We don't consider that an error, we just consider that
+	// equivalent to an empty value.
+	if err != nil && err == pkcs11.Error(pkcs11.CKR_ATTRIBUTE_TYPE_INVALID) {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
 	if len(attrs) == 0 {

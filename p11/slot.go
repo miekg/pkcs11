@@ -18,36 +18,23 @@ func (s Slot) TokenInfo() (pkcs11.TokenInfo, error) {
 	return s.ctx.GetTokenInfo(s.id)
 }
 
-// InitToken initializes a token with the given tokenLabel, setting an initial
-// securityOfficerPIN.
-func (s Slot) InitToken(securityOfficerPIN string, tokenLabel string) error {
-	return s.ctx.InitToken(s.id, securityOfficerPIN, tokenLabel)
+// OpenSession opens a read-only session with the token in this slot.
+func (s Slot) OpenSession() (Session, error) {
+	return s.openSession(0)
 }
 
-// ID returns the slot's ID.
-func (s Slot) ID() uint {
-	return s.id
+// OpenWriteSession opens a read-write session with the token in this slot.
+func (s Slot) OpenWriteSession() (Session, error) {
+	return s.openSession(pkcs11.CKF_RW_SESSION)
 }
 
-// sessionType is a typed version of the session flags.
-type sessionType uint
-
-const (
-	// ReadWrite is the flag to pass to OpenSession to get a read/write session.
-	ReadWrite sessionType = pkcs11.CKF_RW_SESSION
-	// ReadOnly is the flag to pass to OpenSession to get a read-only session.
-	ReadOnly sessionType = 0
-)
-
-// OpenSession opens a session with the token in this slot, using the session
-// type provided (ReadWrite or ReadOnly).
-func (s Slot) OpenSession(sessType sessionType) (*Session, error) {
+func (s Slot) openSession(flags uint) (Session, error) {
 	// CKF_SERIAL_SESSION is always mandatory for legacy reasons, per PKCS#11.
-	handle, err := s.ctx.OpenSession(s.id, uint(sessType)|pkcs11.CKF_SERIAL_SESSION)
+	handle, err := s.ctx.OpenSession(s.id, flags|pkcs11.CKF_SERIAL_SESSION)
 	if err != nil {
 		return nil, err
 	}
-	return &Session{
+	return &sessionImpl{
 		ctx:    s.ctx,
 		handle: handle,
 	}, nil
@@ -68,21 +55,40 @@ func (s Slot) Mechanisms() ([]Mechanism, error) {
 	result := make([]Mechanism, len(list))
 	for i, mech := range list {
 		result[i] = Mechanism{
-			Mechanism: mech,
+			mechanism: mech,
 			slot:      s,
 		}
 	}
 	return result, nil
 }
 
-// Mechanism represents a mechanism (for instance a cipher, signature algorithm,
-// or hash function).
+// InitToken initializes the token in this slot, setting its label to
+// tokenLabel. If the token was not previously initialized, its security officer
+// PIN is set to the provided string. If the token is already initialized, the
+// provided PIN will be checked against the existing security officer PIN, and
+// the token will only be reinitialized if there is a match.
+//
+// According to PKCS#11: "When a token is initialized, all objects that can be
+// destroyed are destroyed (i.e., all except for "indestructible" objects such
+// as keys built into the token). Also, access by the normal user is disabled
+// until the SO sets the normal user’s PIN.
+func (s Slot) InitToken(securityOfficerPIN string, tokenLabel string) error {
+	return s.ctx.InitToken(s.id, securityOfficerPIN, tokenLabel)
+}
+
+// ID returns the slot's ID.
+func (s Slot) ID() uint {
+	return s.id
+}
+
+// Mechanism a cipher, signature algorithm, hash function, or other function
+// that a token can perform.
 type Mechanism struct {
-	*pkcs11.Mechanism
-	slot Slot
+	mechanism *pkcs11.Mechanism
+	slot      Slot
 }
 
 // Info returns information about this mechanism.
 func (m *Mechanism) Info() (pkcs11.MechanismInfo, error) {
-	return m.slot.ctx.GetMechanismInfo(m.slot.id, []*pkcs11.Mechanism{m.Mechanism})
+	return m.slot.ctx.GetMechanismInfo(m.slot.id, []*pkcs11.Mechanism{m.mechanism})
 }

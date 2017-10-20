@@ -42,17 +42,43 @@
 //   signature, _ := privateKey.Sign(..., []byte{"hello"})
 package p11
 
-import "github.com/miekg/pkcs11"
+import (
+	"fmt"
+	"sync"
 
-// OpenModule loads a PKCS#11 module (a .so file or dynamically loaded library),
-// and returns a Module.
+	"github.com/miekg/pkcs11"
+)
+
+var modules = make(map[string]Module)
+var modulesMu sync.Mutex
+
+// OpenModule loads a PKCS#11 module (a .so file or dynamically loaded library).
+// It's an error to load a PKCS#11 module multiple times, so this package
+// will return a previously loaded Module for the same path if possible.
+// Note that there is no facility to unload a module ("finalize" in PKCS#11
+// parlance). In general, modules will be unloaded at the end of the process.
+// The only place where you are likely to need to explicitly unload a module is
+// if you fork your process.
 func OpenModule(path string) (Module, error) {
-	m := pkcs11.New(path)
-	err := m.Initialize()
-	if err != nil {
-		return Module{}, err
+	modulesMu.Lock()
+	defer modulesMu.Unlock()
+	module, ok := modules[path]
+	if ok {
+		return module, nil
 	}
-	return Module{m}, nil
+
+	newCtx := pkcs11.New(path)
+	if newCtx == nil {
+		return Module{}, fmt.Errorf("failed to load module %q", path)
+	}
+
+	err := newCtx.Initialize()
+	if err != nil {
+		return Module{}, fmt.Errorf("failed to initialize module: %s", err)
+	}
+
+	modules[path] = Module{newCtx}
+	return modules[path], nil
 }
 
 // Module represents a PKCS#11 module, and can be used to create Sessions.
