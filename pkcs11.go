@@ -12,8 +12,8 @@ package pkcs11
 
 /*
 #cgo windows CFLAGS: -DREPACK_STRUCTURES
-#cgo windows LDFLAGS: -Wl,--no-as-needed -lltdl
-#cgo linux LDFLAGS: -Wl,--no-as-needed -lltdl -ldl
+#cgo windows LDFLAGS: -lltdl
+#cgo linux LDFLAGS: -lltdl -ldl
 #cgo darwin CFLAGS: -I/usr/local/share/libtool
 #cgo darwin LDFLAGS: -lltdl -L/usr/local/lib/
 #cgo openbsd CFLAGS: -I/usr/local/include/
