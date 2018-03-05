@@ -335,7 +335,7 @@ func TestDestroyObject(t *testing.T) {
 
 // ExampleSign shows how to sign some data with a private key.
 // Note: error correction is not implemented in this example.
-func ExampleSign() {
+func ExampleCtx_Sign() {
 	lib := "/usr/lib/softhsm/libsofthsm.so"
 	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
 		lib = x
