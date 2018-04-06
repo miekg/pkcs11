@@ -18,6 +18,8 @@ package pkcs11
 #cgo darwin LDFLAGS: -lltdl -L/usr/local/lib/
 #cgo openbsd CFLAGS: -I/usr/local/include/
 #cgo openbsd LDFLAGS: -lltdl -L/usr/local/lib/
+#cgo freebsd CFLAGS: -I/usr/local/include/
+#cgo freebsd LDFLAGS: -lltdl -L/usr/local/lib/
 #cgo LDFLAGS: -lltdl
 
 #include <stdlib.h>
