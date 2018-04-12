@@ -44,7 +44,7 @@ func (o Object) Attribute(attributeType uint) ([]byte, error) {
 	// CKR_ATTRIBUTE_TYPE_INVALID if an object simply does not posses a given
 	// attribute. We don't consider that an error, we just consider that
 	// equivalent to an empty value.
-	if err != nil && err == pkcs11.Error(pkcs11.CKR_ATTRIBUTE_TYPE_INVALID) {
+	if err == pkcs11.Error(pkcs11.CKR_ATTRIBUTE_TYPE_INVALID) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err

@@ -69,9 +69,9 @@ func (s Slot) Mechanisms() ([]Mechanism, error) {
 // the token will only be reinitialized if there is a match.
 //
 // According to PKCS#11: "When a token is initialized, all objects that can be
-// destroyed are destroyed (i.e., all except for "indestructible" objects such
+// destroyed are destroyed (i.e., all except for 'indestructible' objects such
 // as keys built into the token). Also, access by the normal user is disabled
-// until the SO sets the normal user’s PIN.
+// until the SO sets the normal user’s PIN."
 func (s Slot) InitToken(securityOfficerPIN string, tokenLabel string) error {
 	return s.ctx.InitToken(s.id, securityOfficerPIN, tokenLabel)
 }
@@ -81,8 +81,8 @@ func (s Slot) ID() uint {
 	return s.id
 }
 
-// Mechanism a cipher, signature algorithm, hash function, or other function
-// that a token can perform.
+// Mechanism represents a cipher, signature algorithm, hash function, or other
+// function that a token can perform.
 type Mechanism struct {
 	mechanism *pkcs11.Mechanism
 	slot      Slot

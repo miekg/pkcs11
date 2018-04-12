@@ -19,7 +19,7 @@
 // Session with that token using OpenSession. Almost all operations require
 // a session. Sessions use a sync.Mutex to ensure only one operation is active on
 // them at a given time, as required by PKCS#11. If you want to get full
-// performance out of your multi-core HSM, you will need to create multiple
+// performance out of a multi-core HSM, you will need to create multiple
 // sessions.
 //
 // Once you've got a session, you can login to it. This is not necessary if you
@@ -32,14 +32,30 @@
 // and decrypting; with public keys and certificates you can extract their
 // values.
 //
-// To summarize, a typical workflow (omitting error handling) might look like:
+// To summarize, a typical workflow might look like:
 //
-//   module, _ := p11.OpenModule("/path/to/module.so")
-//   slots, _ := module.Slots()
-//   session, _ := slots[0].OpenSession()
-//   pk, _ := session.FindObject(...)
-//   privateKey := p11.PrivateKey(pk)
-//   signature, _ := privateKey.Sign(..., []byte{"hello"})
+//   module, err := p11.OpenModule("/path/to/module.so")
+//   if err != nil {
+//     return err
+//   }
+//   slots, err := module.Slots()
+//   if err != nil {
+//     return err
+//   }
+//   // ... find the appropriate slot, then ...
+//   session, err := slots[0].OpenSession()
+//   if err != nil {
+//     return err
+//   }
+//   privateKeyObject, err := session.FindObject(...)
+//   if err != nil {
+//     return err
+//   }
+//   privateKey := p11.PrivateKey(privateKeyObject)
+//   signature, err := privateKey.Sign(..., []byte{"hello"})
+//   if err != nil {
+//     return err
+//   }
 package p11
 
 import (
@@ -58,7 +74,8 @@ var modulesMu sync.Mutex
 // Note that there is no facility to unload a module ("finalize" in PKCS#11
 // parlance). In general, modules will be unloaded at the end of the process.
 // The only place where you are likely to need to explicitly unload a module is
-// if you fork your process.
+// if you fork your process. If you need to fork, you may want to use the
+// lower-level `pkcs11` package.
 func OpenModule(path string) (Module, error) {
 	modulesMu.Lock()
 	defer modulesMu.Unlock()
@@ -91,7 +108,7 @@ func (m Module) Info() (pkcs11.Info, error) {
 	return m.ctx.GetInfo()
 }
 
-// Slots returns all available Slots with a token present.
+// Slots returns all available Slots that have a token present.
 func (m Module) Slots() ([]Slot, error) {
 	ids, err := m.ctx.GetSlotList(true)
 	if err != nil {

@@ -12,23 +12,28 @@ type Session interface {
 	// Login logs into the token as a regular user. Note: According to PKCS#11,
 	// logged-in state is a property of an application, rather than a session, but
 	// you can only log in via a session. Keep this in mind when using multiple
-	// sessions on the same token.
+	// sessions on the same token. Logging in to a token in any session will log
+	// in all sessions on that token, and logging out will do the same. This is
+	// particularly relevant for private keys with CKA_ALWAYS_AUTHENTICATE set
+	// (like Yubikeys in PIV mode). See
+	// https://github.com/letsencrypt/pkcs11key/blob/master/key.go for an example
+	// of managing login state with a mutex.
 	Login(pin string) error
 	// Login logs into the token as the security officer.
 	LoginSecurityOfficer(pin string) error
-	// Logout logs out of the token.
+	// Logout logs out all sessions from the token (see Login).
 	Logout() error
+	// Close closes the session.
+	Close() error
 
 	// CreateObject creates an object on the token with the given attributes.
 	CreateObject(template []*pkcs11.Attribute) (Object, error)
-	// FindObject finds a single object in the token that match the attributes in
+	// FindObject finds a single object in the token that matches the attributes in
 	// the template. It returns error if there is not exactly one result, or if
 	// there was an error during the find calls.
 	FindObject(template []*pkcs11.Attribute) (Object, error)
-	// FindObjects finds any objects in the token
+	// FindObjects finds any objects in the token matching the template.
 	FindObjects(template []*pkcs11.Attribute) ([]Object, error)
-	// GenerateKey generates a secret key, creating a new key object.
-	GenerateKey(mechanism pkcs11.Mechanism, template []*pkcs11.Attribute) (Object, error)
 	// GenerateKeyPair generates a public/private key pair. It takes
 	// GenerateKeyPairRequest instead of individual arguments so that attributes for
 	// public and private keys can't be accidentally switched around.
@@ -38,10 +43,9 @@ type Session interface {
 
 	// InitPIN initialize's the normal user's PIN.
 	InitPIN(pin string) error
-	// SetPIN modifies the PIN of the logged-in user.
+	// SetPIN modifies the PIN of the logged-in user. "old" should contain the
+	// current PIN, and "new" should contain the new PIN to be set.
 	SetPIN(old, new string) error
-	// Close closes the session.
-	Close() error
 }
 
 type sessionImpl struct {
@@ -145,19 +149,6 @@ func (s *sessionImpl) SetPIN(old, new string) error {
 	s.Lock()
 	defer s.Unlock()
 	return s.ctx.SetPIN(s.handle, old, new)
-}
-
-func (s *sessionImpl) GenerateKey(mechanism pkcs11.Mechanism, template []*pkcs11.Attribute) (Object, error) {
-	s.Lock()
-	defer s.Unlock()
-	oh, err := s.ctx.GenerateKey(s.handle, []*pkcs11.Mechanism{&mechanism}, template)
-	if err != nil {
-		return Object{}, err
-	}
-	return Object{
-		session:      s,
-		objectHandle: oh,
-	}, nil
 }
 
 // KeyPair contains two Objects: one for a public key and one for a private key.
