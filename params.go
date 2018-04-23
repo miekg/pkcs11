@@ -32,7 +32,7 @@ func NewGCMParams(iv, aad []byte, tagSize int) *GCMParams {
 
 func cGCMParams(p *GCMParams) (arena, []byte) {
 	params := C.CK_GCM_PARAMS{
-		ulTagBits: C.CK_ULONG(p.TagSize * 8),
+		ulTagBits: C.CK_ULONG(p.TagSize),
 	}
 	var arena arena
 	if len(p.IV) > 0 {
