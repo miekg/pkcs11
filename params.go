@@ -30,7 +30,14 @@ type GCMParams struct {
 // own. As a result, to support all libraries, memory is not freed
 // automatically, so that after the EncryptInit/Encrypt operation the HSM's IV
 // can be read back out. It is up to the caller to ensure that Free() is called
-// on the GCMParams object at an appropriate time.
+// on the GCMParams object at an appropriate time, which is after
+// Encrypt/Decrypt. As an example:
+//
+// gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
+// p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)}, aesObjHandle)
+// ct, _ := p.ctx.Encrypt(session, pt)
+// iv := gcmParams.IV()
+// gcmParams.Free()
 func NewGCMParams(iv, aad []byte, tagSize int) *GCMParams {
 	return &GCMParams{
 		iv:      iv,
@@ -74,4 +81,6 @@ func (p *GCMParams) Free() {
 		return
 	}
 	p.arena.Free()
+	p.params = nil
+	p.arena = nil
 }
