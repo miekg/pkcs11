@@ -221,6 +221,7 @@ func cDate(t time.Time) []byte {
 type Mechanism struct {
 	Mechanism uint
 	Parameter []byte
+	generator interface{}
 }
 
 // NewMechanism returns a pointer to an initialized Mechanism.
@@ -231,32 +232,39 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 		return m
 	}
 
-	switch x.(type) {
-	case *GCMParams:
-		m.Parameter = cGCMParams(x.(*GCMParams))
+	switch p := x.(type) {
+	case *GCMParams, *OAEPParams:
+		// contains pointers; defer serialization until cMechanismList
+		m.generator = p
+	case []byte:
+		m.Parameter = p
 	default:
-		m.Parameter = x.([]byte)
+		panic("parameter must be one of type: []byte, *GCMParams, *OAEPParams")
 	}
 
 	return m
 }
 
-func cMechanismList(m []*Mechanism) (arena, C.ckMechPtr, C.CK_ULONG) {
+func cMechanismList(mechList []*Mechanism) (arena, C.ckMechPtr, C.CK_ULONG) {
+	if len(mechList) != 1 {
+		panic("expected exactly one mechanism")
+	}
+	mech := mechList[0]
+	cmech := &C.ckMech{mechanism: C.CK_MECHANISM_TYPE(mech.Mechanism)}
+	// params that contain pointers are allocated here
+	param := mech.Parameter
 	var arena arena
-	if len(m) == 0 {
-		return nil, nil, 0
+	switch p := mech.generator.(type) {
+	case *GCMParams:
+		// uses its own arena because it has to outlive this function call (yuck)
+		param = cGCMParams(p)
+	case *OAEPParams:
+		param, arena = cOAEPParams(p, arena)
 	}
-	pm := make([]C.ckMech, len(m))
-	for i := 0; i < len(m); i++ {
-		pm[i].mechanism = C.CK_MECHANISM_TYPE(m[i].Mechanism)
-		//skip parameter if length is 0 to prevent panic in arena.Allocate
-		if m[i].Parameter == nil || len(m[i].Parameter) == 0 {
-			continue
-		}
-
-		pm[i].pParameter, pm[i].ulParameterLen = arena.Allocate(m[i].Parameter)
+	if len(param) != 0 {
+		cmech.pParameter, cmech.ulParameterLen = arena.Allocate(param)
 	}
-	return arena, C.ckMechPtr(&pm[0]), C.CK_ULONG(len(m))
+	return arena, C.ckMechPtr(cmech), 1
 }
 
 // MechanismInfo provides information about a particular mechanism.
