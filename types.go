@@ -13,6 +13,16 @@ CK_ULONG Index(CK_ULONG_PTR array, CK_ULONG i)
 {
 	return array[i];
 }
+
+static inline void putAttributePval(CK_ATTRIBUTE_PTR a, CK_VOID_PTR pValue)
+{
+	a->pValue = pValue;
+}
+
+static inline void putMechanismParam(CK_MECHANISM_PTR m, CK_VOID_PTR pParameter)
+{
+	m->pParameter = pParameter;
+}
 */
 import "C"
 
@@ -187,22 +197,22 @@ func NewAttribute(typ uint, x interface{}) *Attribute {
 }
 
 // cAttribute returns the start address and the length of an attribute list.
-func cAttributeList(a []*Attribute) (arena, C.ckAttrPtr, C.CK_ULONG) {
+func cAttributeList(a []*Attribute) (arena, C.CK_ATTRIBUTE_PTR, C.CK_ULONG) {
 	var arena arena
 	if len(a) == 0 {
 		return nil, nil, 0
 	}
-	pa := make([]C.ckAttr, len(a))
-	for i := 0; i < len(a); i++ {
-		pa[i]._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
-		//skip attribute if length is 0 to prevent panic in arena.Allocate
-		if a[i].Value == nil || len(a[i].Value) == 0 {
-			continue
+	pa := make([]C.CK_ATTRIBUTE, len(a))
+	for i, attr := range a {
+		pa[i]._type = C.CK_ATTRIBUTE_TYPE(attr.Type)
+		if len(attr.Value) != 0 {
+			buf, len := arena.Allocate(attr.Value)
+			// field is unaligned on windows so this has to call into C
+			C.putAttributePval(&pa[i], buf)
+			pa[i].ulValueLen = len
 		}
-
-		pa[i].pValue, pa[i].ulValueLen = arena.Allocate(a[i].Value)
 	}
-	return arena, C.ckAttrPtr(&pa[0]), C.CK_ULONG(len(a))
+	return arena, &pa[0], C.CK_ULONG(len(a))
 }
 
 func cDate(t time.Time) []byte {
@@ -234,7 +244,7 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 
 	switch p := x.(type) {
 	case *GCMParams, *OAEPParams:
-		// contains pointers; defer serialization until cMechanismList
+		// contains pointers; defer serialization until cMechanism
 		m.generator = p
 	case []byte:
 		m.Parameter = p
@@ -245,12 +255,12 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	return m
 }
 
-func cMechanismList(mechList []*Mechanism) (arena, C.ckMechPtr, C.CK_ULONG) {
+func cMechanism(mechList []*Mechanism) (arena, *C.CK_MECHANISM) {
 	if len(mechList) != 1 {
 		panic("expected exactly one mechanism")
 	}
 	mech := mechList[0]
-	cmech := &C.ckMech{mechanism: C.CK_MECHANISM_TYPE(mech.Mechanism)}
+	cmech := &C.CK_MECHANISM{mechanism: C.CK_MECHANISM_TYPE(mech.Mechanism)}
 	// params that contain pointers are allocated here
 	param := mech.Parameter
 	var arena arena
@@ -262,9 +272,12 @@ func cMechanismList(mechList []*Mechanism) (arena, C.ckMechPtr, C.CK_ULONG) {
 		param, arena = cOAEPParams(p, arena)
 	}
 	if len(param) != 0 {
-		cmech.pParameter, cmech.ulParameterLen = arena.Allocate(param)
+		buf, len := arena.Allocate(param)
+		// field is unaligned on windows so this has to call into C
+		C.putMechanismParam(cmech, buf)
+		cmech.ulParameterLen = len
 	}
-	return arena, C.ckMechPtr(cmech), 1
+	return arena, cmech
 }
 
 // MechanismInfo provides information about a particular mechanism.
