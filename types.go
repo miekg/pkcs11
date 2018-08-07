@@ -265,3 +265,16 @@ type MechanismInfo struct {
 	MaxKeySize uint
 	Flags      uint
 }
+
+// stubData is a persistent nonempty byte array used by cMessage.
+var stubData = []byte{0}
+
+// cMessage returns the pointer/length pair corresponding to data.
+func cMessage(data []byte) (dataPtr C.CK_BYTE_PTR) {
+	l := len(data)
+	if l == 0 {
+		// &data[0] is forbidden in this case, so use a nontrivial array instead.
+		data = stubData
+	}
+	return C.CK_BYTE_PTR(unsafe.Pointer(&data[0]))
+}

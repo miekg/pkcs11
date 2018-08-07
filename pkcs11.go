@@ -1207,7 +1207,7 @@ func (c *Ctx) Encrypt(sh SessionHandle, message []byte) ([]byte, error) {
 		enc    C.CK_BYTE_PTR
 		enclen C.CK_ULONG
 	)
-	e := C.Encrypt(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &enc, &enclen)
+	e := C.Encrypt(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(message), C.CK_ULONG(len(message)), &enc, &enclen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1222,7 +1222,7 @@ func (c *Ctx) EncryptUpdate(sh SessionHandle, plain []byte) ([]byte, error) {
 		part    C.CK_BYTE_PTR
 		partlen C.CK_ULONG
 	)
-	e := C.EncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&plain[0])), C.CK_ULONG(len(plain)), &part, &partlen)
+	e := C.EncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(plain), C.CK_ULONG(len(plain)), &part, &partlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1260,7 +1260,7 @@ func (c *Ctx) Decrypt(sh SessionHandle, cipher []byte) ([]byte, error) {
 		plain    C.CK_BYTE_PTR
 		plainlen C.CK_ULONG
 	)
-	e := C.Decrypt(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &plain, &plainlen)
+	e := C.Decrypt(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(cipher), C.CK_ULONG(len(cipher)), &plain, &plainlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1275,7 +1275,7 @@ func (c *Ctx) DecryptUpdate(sh SessionHandle, cipher []byte) ([]byte, error) {
 		part    C.CK_BYTE_PTR
 		partlen C.CK_ULONG
 	)
-	e := C.DecryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &part, &partlen)
+	e := C.DecryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(cipher), C.CK_ULONG(len(cipher)), &part, &partlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1313,7 +1313,7 @@ func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 		hash    C.CK_BYTE_PTR
 		hashlen C.CK_ULONG
 	)
-	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &hash, &hashlen)
+	e := C.Digest(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(message), C.CK_ULONG(len(message)), &hash, &hashlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1324,7 +1324,7 @@ func (c *Ctx) Digest(sh SessionHandle, message []byte) ([]byte, error) {
 
 // DigestUpdate continues a multiple-part message-digesting operation.
 func (c *Ctx) DigestUpdate(sh SessionHandle, message []byte) error {
-	e := C.DigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)))
+	e := C.DigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(message), C.CK_ULONG(len(message)))
 	if toError(e) != nil {
 		return toError(e)
 	}
@@ -1374,7 +1374,7 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 		sig    C.CK_BYTE_PTR
 		siglen C.CK_ULONG
 	)
-	e := C.Sign(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)), &sig, &siglen)
+	e := C.Sign(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(message), C.CK_ULONG(len(message)), &sig, &siglen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1387,7 +1387,7 @@ func (c *Ctx) Sign(sh SessionHandle, message []byte) ([]byte, error) {
 // where the signature is (will be) an appendix to the data,
 // and plaintext cannot be recovered from the signature.
 func (c *Ctx) SignUpdate(sh SessionHandle, message []byte) error {
-	e := C.SignUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&message[0])), C.CK_ULONG(len(message)))
+	e := C.SignUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(message), C.CK_ULONG(len(message)))
 	return toError(e)
 }
 
@@ -1420,7 +1420,7 @@ func (c *Ctx) SignRecover(sh SessionHandle, data []byte) ([]byte, error) {
 		sig    C.CK_BYTE_PTR
 		siglen C.CK_ULONG
 	)
-	e := C.SignRecover(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&data[0])), C.CK_ULONG(len(data)), &sig, &siglen)
+	e := C.SignRecover(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(data), C.CK_ULONG(len(data)), &sig, &siglen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1443,7 +1443,7 @@ func (c *Ctx) VerifyInit(sh SessionHandle, m []*Mechanism, key ObjectHandle) err
 // where the signature is an appendix to the data, and plaintext
 // cannot be recovered from the signature.
 func (c *Ctx) Verify(sh SessionHandle, data []byte, signature []byte) error {
-	e := C.Verify(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&data[0])), C.CK_ULONG(len(data)), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)))
+	e := C.Verify(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(data), C.CK_ULONG(len(data)), cMessage(signature), C.CK_ULONG(len(signature)))
 	return toError(e)
 }
 
@@ -1451,14 +1451,14 @@ func (c *Ctx) Verify(sh SessionHandle, data []byte, signature []byte) error {
 // operation, where the signature is an appendix to the data,
 // and plaintext cannot be recovered from the signature.
 func (c *Ctx) VerifyUpdate(sh SessionHandle, part []byte) error {
-	e := C.VerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&part[0])), C.CK_ULONG(len(part)))
+	e := C.VerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(part), C.CK_ULONG(len(part)))
 	return toError(e)
 }
 
 // VerifyFinal finishes a multiple-part verification
 // operation, checking the signature.
 func (c *Ctx) VerifyFinal(sh SessionHandle, signature []byte) error {
-	e := C.VerifyFinal(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)))
+	e := C.VerifyFinal(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(signature), C.CK_ULONG(len(signature)))
 	return toError(e)
 }
 
@@ -1478,7 +1478,7 @@ func (c *Ctx) VerifyRecover(sh SessionHandle, signature []byte) ([]byte, error) 
 		data    C.CK_BYTE_PTR
 		datalen C.CK_ULONG
 	)
-	e := C.DecryptVerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&signature[0])), C.CK_ULONG(len(signature)), &data, &datalen)
+	e := C.DecryptVerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(signature), C.CK_ULONG(len(signature)), &data, &datalen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1493,7 +1493,7 @@ func (c *Ctx) DigestEncryptUpdate(sh SessionHandle, part []byte) ([]byte, error)
 		enc    C.CK_BYTE_PTR
 		enclen C.CK_ULONG
 	)
-	e := C.DigestEncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&part[0])), C.CK_ULONG(len(part)), &enc, &enclen)
+	e := C.DigestEncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(part), C.CK_ULONG(len(part)), &enc, &enclen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1508,7 +1508,7 @@ func (c *Ctx) DecryptDigestUpdate(sh SessionHandle, cipher []byte) ([]byte, erro
 		part    C.CK_BYTE_PTR
 		partlen C.CK_ULONG
 	)
-	e := C.DecryptDigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &part, &partlen)
+	e := C.DecryptDigestUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(cipher), C.CK_ULONG(len(cipher)), &part, &partlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1523,7 +1523,7 @@ func (c *Ctx) SignEncryptUpdate(sh SessionHandle, part []byte) ([]byte, error) {
 		enc    C.CK_BYTE_PTR
 		enclen C.CK_ULONG
 	)
-	e := C.SignEncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&part[0])), C.CK_ULONG(len(part)), &enc, &enclen)
+	e := C.SignEncryptUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(part), C.CK_ULONG(len(part)), &enc, &enclen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -1538,7 +1538,7 @@ func (c *Ctx) DecryptVerifyUpdate(sh SessionHandle, cipher []byte) ([]byte, erro
 		part    C.CK_BYTE_PTR
 		partlen C.CK_ULONG
 	)
-	e := C.DecryptVerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_BYTE_PTR(unsafe.Pointer(&cipher[0])), C.CK_ULONG(len(cipher)), &part, &partlen)
+	e := C.DecryptVerifyUpdate(c.ctx, C.CK_SESSION_HANDLE(sh), cMessage(cipher), C.CK_ULONG(len(cipher)), &part, &partlen)
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
