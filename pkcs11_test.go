@@ -123,9 +123,9 @@ func TestFindObject(t *testing.T) {
 	if e := p.FindObjectsInit(session, template); e != nil {
 		t.Fatalf("failed to init: %s\n", e)
 	}
-	obj, b, e := p.FindObjects(session, 2)
+	obj, _, e := p.FindObjects(session, 2)
 	if e != nil {
-		t.Fatalf("failed to find: %s %v\n", e, b)
+		t.Fatalf("failed to find: %s\n", e)
 	}
 	if e := p.FindObjectsFinal(session); e != nil {
 		t.Fatalf("failed to finalize: %s\n", e)

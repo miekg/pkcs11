@@ -72,24 +72,28 @@ func (s *sessionImpl) FindObjects(template []*pkcs11.Attribute) ([]Object, error
 		return nil, err
 	}
 
-	objectHandles, moreAvailable, err := s.ctx.FindObjects(s.handle, 1000)
-	if err != nil {
-		return nil, err
-	}
-	if moreAvailable {
-		return nil, errors.New("too many objects returned from FindObjects")
-	}
-	if err = s.ctx.FindObjectsFinal(s.handle); err != nil {
-		return nil, err
-	} else if len(objectHandles) == 0 {
-		return nil, errors.New("no objects found")
-	}
-	results := make([]Object, len(objectHandles))
-	for i, oh := range objectHandles {
-		results[i] = Object{
-			session:      s,
-			objectHandle: oh,
+	var results []Object
+	for {
+		objectHandles, _, err := s.ctx.FindObjects(s.handle, 100)
+		if err != nil {
+			_ = s.ctx.FindObjectsFinal(s.handle)
+			return nil, err
+		} else if len(objectHandles) == 0 {
+			break
 		}
+		i := len(results)
+		results = append(results, make([]Object, len(objectHandles))...)
+		for j, objectHandle := range objectHandles {
+			results[i+j] = Object{
+				session:      s,
+				objectHandle: objectHandle,
+			}
+		}
+	}
+	if err := s.ctx.FindObjectsFinal(s.handle); err != nil {
+		return nil, err
+	} else if len(results) == 0 {
+		return nil, errors.New("no objects found")
 	}
 	return results, nil
 }

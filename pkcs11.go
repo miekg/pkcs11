@@ -1164,8 +1164,10 @@ func (c *Ctx) FindObjectsInit(sh SessionHandle, temp []*Attribute) error {
 
 // FindObjects continues a search for token and session
 // objects that match a template, obtaining additional object
-// handles. The returned boolean indicates if the list would
-// have been larger than max.
+// handles. Calling the function repeatedly may yield additional results until
+// an empty slice is returned.
+//
+// The returned boolean value is deprecated and should be ignored.
 func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, error) {
 	var (
 		objectList C.CK_OBJECT_HANDLE_PTR
