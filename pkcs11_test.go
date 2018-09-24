@@ -357,6 +357,12 @@ func TestSymmetricEncryption(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
+	if info, err := p.GetInfo(); err != nil {
+		t.Errorf("GetInfo: %v", err)
+		return
+	} else if info.ManufacturerID == "SoftHSM" && info.LibraryVersion.Major < 2 {
+		t.Skipf("AES not implemented on SoftHSM")
+	}
 	tokenLabel := "TestGenerateKey"
 	keyTemplate := []*Attribute{
 		NewAttribute(CKA_TOKEN, false),
