@@ -7,6 +7,7 @@ package pkcs11
 // in /usr/lib/softhsm/libsofthsm.so
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"math/big"
@@ -166,21 +167,31 @@ func TestDigest(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
+	t.Run("Simple", func(t *testing.T) {
+		// Teststring create with: echo -n "this is a string" | sha1sum
+		testDigest(t, p, session, []byte("this is a string"), "517592df8fec3ad146a79a9af153db2a4d784ec5")
+	})
+	t.Run("Empty", func(t *testing.T) {
+		// sha1sum < /dev/null
+		testDigest(t, p, session, []byte{}, "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+	})
+}
+
+func testDigest(t *testing.T, p *Ctx, session SessionHandle, input []byte, expected string) {
 	e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)})
 	if e != nil {
 		t.Fatalf("DigestInit: %s\n", e)
 	}
 
-	hash, e := p.Digest(session, []byte("this is a string"))
+	hash, e := p.Digest(session, input)
 	if e != nil {
 		t.Fatalf("digest: %s\n", e)
 	}
 	hex := ""
 	for _, d := range hash {
-		hex += fmt.Sprintf("%x", d)
+		hex += fmt.Sprintf("%02x", d)
 	}
-	// Teststring create with: echo -n "this is a string" | sha1sum
-	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
+	if hex != expected {
 		t.Fatalf("wrong digest: %s", hex)
 	}
 }
@@ -189,14 +200,24 @@ func TestDigestUpdate(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
 	defer finishSession(p, session)
+	t.Run("Simple", func(t *testing.T) {
+		// Teststring create with: echo -n "this is a string" | sha1sum
+		testDigestUpdate(t, p, session, [][]byte{[]byte("this is "), []byte("a string")}, "517592df8fec3ad146a79a9af153db2a4d784ec5")
+	})
+	t.Run("Empty", func(t *testing.T) {
+		// sha1sum < /dev/null
+		testDigestUpdate(t, p, session, [][]byte{[]byte{}}, "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+	})
+}
+
+func testDigestUpdate(t *testing.T, p *Ctx, session SessionHandle, inputs [][]byte, expected string) {
 	if e := p.DigestInit(session, []*Mechanism{NewMechanism(CKM_SHA_1, nil)}); e != nil {
 		t.Fatalf("DigestInit: %s\n", e)
 	}
-	if e := p.DigestUpdate(session, []byte("this is ")); e != nil {
-		t.Fatalf("DigestUpdate: %s\n", e)
-	}
-	if e := p.DigestUpdate(session, []byte("a string")); e != nil {
-		t.Fatalf("DigestUpdate: %s\n", e)
+	for _, input := range inputs {
+		if e := p.DigestUpdate(session, input); e != nil {
+			t.Fatalf("DigestUpdate: %s\n", e)
+		}
 	}
 	hash, e := p.DigestFinal(session)
 	if e != nil {
@@ -204,10 +225,9 @@ func TestDigestUpdate(t *testing.T) {
 	}
 	hex := ""
 	for _, d := range hash {
-		hex += fmt.Sprintf("%x", d)
+		hex += fmt.Sprintf("%02x", d)
 	}
-	// Teststring create with: echo -n "this is a string" | sha1sum
-	if hex != "517592df8fec3ad146a79a9af153db2a4d784ec5" {
+	if hex != expected {
 		t.Fatalf("wrong digest: %s", hex)
 	}
 }
@@ -331,6 +351,127 @@ func TestDestroyObject(t *testing.T) {
 		t.Fatalf("Failed to destroy object: %s\n", e)
 	}
 
+}
+
+func TestSymmetricEncryption(t *testing.T) {
+	p := setenv(t)
+	session := getSession(p, t)
+	defer finishSession(p, session)
+	if info, err := p.GetInfo(); err != nil {
+		t.Errorf("GetInfo: %v", err)
+		return
+	} else if info.ManufacturerID == "SoftHSM" && info.LibraryVersion.Major < 2 {
+		t.Skipf("AES not implemented on SoftHSM")
+	}
+	tokenLabel := "TestGenerateKey"
+	keyTemplate := []*Attribute{
+		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_LABEL, tokenLabel),
+		NewAttribute(CKA_SENSITIVE, true),
+		NewAttribute(CKA_EXTRACTABLE, true),
+		NewAttribute(CKA_VALUE_LEN, 16),
+	}
+	key, err := p.GenerateKey(session,
+		[]*Mechanism{NewMechanism(CKM_AES_KEY_GEN, nil)},
+		keyTemplate)
+	if err != nil {
+		t.Fatalf("failed to generate keypair: %s\n", err)
+	}
+	t.Run("Encrypt", func(t *testing.T) {
+		t.Run("ECB", func(t *testing.T) {
+			testEncrypt(t, p, session, key, CKM_AES_ECB, make([]byte, 32), nil)
+		})
+		t.Run("CBC", func(t *testing.T) {
+			testEncrypt(t, p, session, key, CKM_AES_CBC, make([]byte, 32), make([]byte, 16))
+		})
+		t.Run("CBC-PAD", func(t *testing.T) {
+			testEncrypt(t, p, session, key, CKM_AES_CBC_PAD, make([]byte, 31), make([]byte, 16))
+		})
+		/* Broken in SoftHSMv2
+		t.Run("Empty", func(t *testing.T) {
+			testEncrypt(t, p, session, key, CKM_AES_CBC, []byte{}, make([]byte, 16))
+		})
+		*/
+	})
+	t.Run("EncryptUpdate", func(t *testing.T) {
+		t.Run("ECB", func(t *testing.T) {
+			testEncryptUpdate(t, p, session, key, CKM_AES_ECB, [][]byte{make([]byte, 32), make([]byte, 16)}, nil)
+		})
+		t.Run("CBC", func(t *testing.T) {
+			testEncryptUpdate(t, p, session, key, CKM_AES_CBC, [][]byte{make([]byte, 32), make([]byte, 16)}, make([]byte, 16))
+		})
+		t.Run("CBC-PAD", func(t *testing.T) {
+			testEncryptUpdate(t, p, session, key, CKM_AES_CBC_PAD, [][]byte{make([]byte, 11), make([]byte, 20)}, make([]byte, 16))
+		})
+		/* Broken in SoftHSMv2
+		t.Run("Empty", func(t *testing.T) {
+			testEncryptUpdate(t, p, session, key, CKM_AES_CBC, [][]byte{make([]byte, 31), []byte{}}, make([]byte, 16))
+		})
+		*/
+	})
+}
+
+func testEncrypt(t *testing.T, p *Ctx, session SessionHandle, key ObjectHandle, mech uint, plaintext []byte, iv []byte) {
+	var err error
+	if err = p.EncryptInit(session, []*Mechanism{NewMechanism(mech, iv)}, key); err != nil {
+		t.Fatalf("EncryptInit: %s\n", err)
+	}
+	var ciphertext []byte
+	if ciphertext, err = p.Encrypt(session, plaintext); err != nil {
+		t.Fatalf("Encrypt: %s\n", err)
+	}
+	if err = p.DecryptInit(session, []*Mechanism{NewMechanism(mech, iv)}, key); err != nil {
+		t.Fatalf("DecryptInit: %s\n", err)
+	}
+	var decrypted []byte
+	if decrypted, err = p.Decrypt(session, ciphertext); err != nil {
+		t.Fatalf("Decrypt: %s\n", err)
+	}
+	if bytes.Compare(plaintext, decrypted) != 0 {
+		t.Fatalf("Plaintext mismatch")
+	}
+}
+
+func testEncryptUpdate(t *testing.T, p *Ctx, session SessionHandle, key ObjectHandle, mech uint, plaintexts [][]byte, iv []byte) {
+	var err error
+	if err = p.EncryptInit(session, []*Mechanism{NewMechanism(mech, iv)}, key); err != nil {
+		t.Fatalf("EncryptInit: %s\n", err)
+	}
+	var ciphertexts [][]byte
+	var output, plaintext []byte
+	for _, input := range plaintexts {
+		plaintext = append(plaintext, input...)
+		if output, err = p.EncryptUpdate(session, input); err != nil {
+			t.Fatalf("EncryptUpdate: %s\n", err)
+		}
+		ciphertexts = append(ciphertexts, output)
+	}
+	if output, err = p.EncryptFinal(session); err != nil {
+		t.Fatalf("EncryptFinal: %s\n", err)
+	}
+	ciphertexts = append(ciphertexts, output)
+	if err = p.DecryptInit(session, []*Mechanism{NewMechanism(mech, iv)}, key); err != nil {
+		t.Fatalf("DecryptInit: %s\n", err)
+	}
+	var decrypted []byte
+	for _, input := range ciphertexts {
+		if len(input) == 0 { // Broken in SoftHSMv2
+			continue
+		}
+		if output, err = p.DecryptUpdate(session, input); err != nil {
+			t.Fatalf("DecryptUpdate: %s\n", err)
+		}
+		decrypted = append(decrypted, output...)
+	}
+	if output, err = p.DecryptFinal(session); err != nil {
+		t.Fatalf("DecryptFinal: %s\n", err)
+	}
+	decrypted = append(decrypted, output...)
+	if bytes.Compare(plaintext, decrypted) != 0 {
+		t.Fatalf("Plaintext mismatch")
+	}
 }
 
 // ExampleSign shows how to sign some data with a private key.
