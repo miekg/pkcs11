@@ -54,6 +54,37 @@ type sessionImpl struct {
 	handle pkcs11.SessionHandle
 }
 
+func (s *sessionImpl) FindPrivateKey(label string) (PrivateKey, error) {
+	obj, err := s.findObjectWithClassAndLabel(pkcs11.CKO_PRIVATE_KEY, label)
+	if err != nil {
+		return PrivateKey(obj), err
+	}
+	return PrivateKey(obj), nil
+}
+
+func (s *sessionImpl) FindPublicKey(label string) (PublicKey, error) {
+	obj, err := s.findObjectWithClassAndLabel(pkcs11.CKO_PUBLIC_KEY, label)
+	if err != nil {
+		return PublicKey(obj), err
+	}
+	return PublicKey(obj), nil
+}
+
+func (s *sessionImpl) FindSecretKey(label string) (SecretKey, error) {
+	obj, err := s.findObjectWithClassAndLabel(pkcs11.CKO_SECRET_KEY, label)
+	if err != nil {
+		return SecretKey(obj), err
+	}
+	return SecretKey(obj), nil
+}
+
+func (s *sessionImpl) findObjectWithClassAndLabel(class uint, label string) (Object, error) {
+	return s.FindObject([]*pkcs11.Attribute{
+		pkcs11.NewAttribute(pkcs11.CKA_CLASS, class),
+		pkcs11.NewAttribute(pkcs11.CKA_LABEL, label),
+	})
+}
+
 func (s *sessionImpl) FindObject(template []*pkcs11.Attribute) (Object, error) {
 	objects, err := s.FindObjects(template)
 	if err != nil {
