@@ -57,7 +57,7 @@ type sessionImpl struct {
 func (s *sessionImpl) FindObject(template []*pkcs11.Attribute) (Object, error) {
 	objects, err := s.FindObjects(template)
 	if err != nil {
-		return Object{}, nil
+		return Object{}, err
 	}
 	if len(objects) > 1 {
 		return Object{}, errors.New("too many objects matching template")
