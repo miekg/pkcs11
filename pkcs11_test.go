@@ -206,7 +206,7 @@ func TestDigestUpdate(t *testing.T) {
 	})
 	t.Run("Empty", func(t *testing.T) {
 		// sha1sum < /dev/null
-		testDigestUpdate(t, p, session, [][]byte{[]byte{}}, "da39a3ee5e6b4b0d3255bfef95601890afd80709")
+		testDigestUpdate(t, p, session, [][]byte{{}}, "da39a3ee5e6b4b0d3255bfef95601890afd80709")
 	})
 }
 
