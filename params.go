@@ -14,6 +14,18 @@ static inline void putOAEPParams(CK_RSA_PKCS_OAEP_PARAMS_PTR params, CK_VOID_PTR
 	params->pSourceData = pSourceData;
 	params->ulSourceDataLen = ulSourceDataLen;
 }
+
+static inline void putECDH1SharedParams(CK_ECDH1_DERIVE_PARAMS_PTR params, CK_VOID_PTR pSharedData, CK_ULONG ulSharedDataLen)
+{
+	params->pSharedData = pSharedData;
+	params->ulSharedDataLen = ulSharedDataLen;
+}
+
+static inline void putECDH1PublicParams(CK_ECDH1_DERIVE_PARAMS_PTR params, CK_VOID_PTR pPublicData, CK_ULONG ulPublicDataLen)
+{
+	params->pPublicData = pPublicData;
+	params->ulPublicDataLen = ulPublicDataLen;
+}
 */
 import "C"
 import "unsafe"
@@ -139,5 +151,38 @@ func cOAEPParams(p *OAEPParams, arena arena) ([]byte, arena) {
 		// field is unaligned on windows so this has to call into C
 		C.putOAEPParams(&params, buf, len)
 	}
+	return C.GoBytes(unsafe.Pointer(&params), C.int(unsafe.Sizeof(params))), arena
+}
+
+// ECDH1DeriveParams can be passed to NewMechanism to implement CK_ECDH1_DERIVE_PARAMS
+type ECDH1DeriveParams struct {
+	KDF           uint
+	SharedData    []byte
+	PublicKeyData []byte
+}
+
+// NewECDH1DeriveParams creates a CK_ECDH1_DERIVE_PARAMS structure suitable for use with the CKM_ECDH1_DERIVE mechanism
+func NewECDH1DeriveParams(kdf uint, sharedData []byte, publicKeyData []byte) *ECDH1DeriveParams {
+	return &ECDH1DeriveParams{
+		KDF:           kdf,
+		SharedData:    sharedData,
+		PublicKeyData: publicKeyData,
+	}
+}
+
+func cECDH1DeriveParams(p *ECDH1DeriveParams, arena arena) ([]byte, arena) {
+	params := C.CK_ECDH1_DERIVE_PARAMS{
+		kdf: C.CK_EC_KDF_TYPE(p.KDF),
+	}
+
+	// SharedData MUST be null if key derivation function (KDF) is CKD_NULL
+	if len(p.SharedData) != 0 {
+		sharedData, sharedDataLen := arena.Allocate(p.SharedData)
+		C.putECDH1SharedParams(&params, sharedData, sharedDataLen)
+	}
+
+	publicKeyData, publicKeyDataLen := arena.Allocate(p.PublicKeyData)
+	C.putECDH1PublicParams(&params, publicKeyData, publicKeyDataLen)
+
 	return C.GoBytes(unsafe.Pointer(&params), C.int(unsafe.Sizeof(params))), arena
 }

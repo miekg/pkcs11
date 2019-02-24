@@ -720,4 +720,6 @@ const (
 	CKF_EXCLUDE_CHALLENGE                = 0x00000008
 	CKF_EXCLUDE_PIN                      = 0x00000010
 	CKF_USER_FRIENDLY_OTP                = 0x00000020
+	CKD_NULL                             = 0x00000001
+	CKD_SHA1_KDF                         = 0x00000002
 )
