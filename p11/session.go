@@ -19,8 +19,10 @@ type Session interface {
 	// https://github.com/letsencrypt/pkcs11key/blob/master/key.go for an example
 	// of managing login state with a mutex.
 	Login(pin string) error
-	// Login logs into the token as the security officer.
+	// LoginSecurityOfficer logs into the token as the security officer.
 	LoginSecurityOfficer(pin string) error
+	// LoginAs logs into the token with the given user type.
+	LoginAs(userType uint, pin string) error
 	// Logout logs out all sessions from the token (see Login).
 	Logout() error
 	// Close closes the session.
@@ -105,14 +107,14 @@ func (s *sessionImpl) Close() error {
 }
 
 func (s *sessionImpl) Login(pin string) error {
-	return s.login(pkcs11.CKU_USER, pin)
+	return s.LoginAs(pkcs11.CKU_USER, pin)
 }
 
 func (s *sessionImpl) LoginSecurityOfficer(pin string) error {
-	return s.login(pkcs11.CKU_SO, pin)
+	return s.LoginAs(pkcs11.CKU_SO, pin)
 }
 
-func (s *sessionImpl) login(userType uint, pin string) error {
+func (s *sessionImpl) LoginAs(userType uint, pin string) error {
 	s.Lock()
 	defer s.Unlock()
 	return s.ctx.Login(s.handle, userType, pin)
