@@ -836,6 +836,7 @@ func (c *Ctx) GetSlotList(tokenPresent bool) ([]uint, error) {
 		ulCount  C.CK_ULONG
 	)
 	e := C.GetSlotList(c.ctx, cBBool(tokenPresent), &slotList, &ulCount)
+	defer C.free(unsafe.Pointer(slotList))
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -892,6 +893,7 @@ func (c *Ctx) GetMechanismList(slotID uint) ([]*Mechanism, error) {
 		mechlen C.CK_ULONG
 	)
 	e := C.GetMechanismList(c.ctx, C.CK_ULONG(slotID), &mech, &mechlen)
+	defer C.free(unsafe.Pointer(mech))
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
@@ -997,11 +999,11 @@ func (c *Ctx) GetOperationState(sh SessionHandle) ([]byte, error) {
 		statelen C.CK_ULONG
 	)
 	e := C.GetOperationState(c.ctx, C.CK_SESSION_HANDLE(sh), &state, &statelen)
+	defer C.free(unsafe.Pointer(state))
 	if toError(e) != nil {
 		return nil, toError(e)
 	}
 	b := C.GoBytes(unsafe.Pointer(state), C.int(statelen))
-	C.free(unsafe.Pointer(state))
 	return b, nil
 }
 
@@ -1124,6 +1126,7 @@ func (c *Ctx) FindObjects(sh SessionHandle, max int) ([]ObjectHandle, bool, erro
 		ulCount    C.CK_ULONG
 	)
 	e := C.FindObjects(c.ctx, C.CK_SESSION_HANDLE(sh), &objectList, C.CK_ULONG(max), &ulCount)
+	defer C.free(unsafe.Pointer(objectList))
 	if toError(e) != nil {
 		return nil, false, toError(e)
 	}
