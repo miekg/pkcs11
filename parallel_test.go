@@ -45,6 +45,7 @@ func init() {
 	}
 	wd, _ := os.Getwd()
 	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
+	os.Setenv("SOFTHSM2_CONF", wd+"/softhsm2.conf")
 }
 
 func initPKCS11Context(modulePath string) (*Ctx, error) {
