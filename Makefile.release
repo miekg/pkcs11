@@ -31,23 +31,23 @@ VERSION:=$(shell go run -tags release version_release.go)
 TAG="v$(VERSION)"
 
 all:
-	@echo Use the \'release\' target to start a release $(VERSION)
 	rm -f version_release.go
+	@echo Use the \'release\' target to start a release $(VERSION)
 
 .PHONY: run
 run:
-	@echo $(VERSION)
 	rm -f version_release.go
+	@echo $(VERSION)
 
 .PHONY: release
 release: commit push
-	@echo Released $(VERSION)
 	rm -f version_release.go
+	@echo Released $(VERSION)
 
 .PHONY: commit
 commit:
 	@echo Committing release $(VERSION)
-	git commit -am"Release $(VERSION)"
+	git commit -m"Release $(VERSION)"
 	git tag $(TAG)
 
 .PHONY: push
