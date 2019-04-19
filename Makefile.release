@@ -41,11 +41,11 @@ run:
 
 .PHONY: release
 release: commit push
-	rm -f version_release.go
 	@echo Released $(VERSION)
 
 .PHONY: commit
 commit:
+	rm -f version_release.go
 	@echo Committing release $(VERSION)
 	git commit -m"Release $(VERSION)"
 	git tag $(TAG)
