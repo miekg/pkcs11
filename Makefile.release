@@ -47,7 +47,7 @@ release: commit push
 commit:
 	rm -f version_release.go
 	@echo Committing release $(VERSION)
-	git commit -m"Release $(VERSION)"
+	git commit -am"Release $(VERSION)"
 	git tag $(TAG)
 
 .PHONY: push
