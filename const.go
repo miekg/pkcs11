@@ -723,3 +723,8 @@ const (
 	CKD_NULL                             = 0x00000001
 	CKD_SHA1_KDF                         = 0x00000002
 )
+
+const (
+	CK_EFFECTIVELY_INFINITE = 0
+	CK_UNAVAILABLE_INFORMATION = ^uint(0)
+)
