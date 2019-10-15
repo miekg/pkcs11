@@ -58,6 +58,50 @@ func getRSA(t *testing.T, p *Ctx, sh SessionHandle) (pub, priv ObjectHandle) {
 	return
 }
 
+// derveECBKey derives DES3_ECB
+func deriveECBKey(p *Ctx, session SessionHandle, bdk ObjectHandle, ksn []byte) ObjectHandle {
+	template := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKK_DES2),
+		NewAttribute(CKA_CLASS, CKO_SECRET_KEY),
+		NewAttribute(CKA_PRIVATE, false),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_SENSITIVE, false),
+		NewAttribute(CKA_EXTRACTABLE, true),
+	}
+	params := NewKeyDerivationStringData(ksn)
+	mech := []*Mechanism{NewMechanism(CKM_DES3_ECB_ENCRYPT_DATA, params)}
+	sessionKey, err := p.DeriveKey(session, mech, bdk, template)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return sessionKey
+}
+
+// derveKey derives DES3_CBC
+func deriveKey(p *Ctx, session SessionHandle, bdk ObjectHandle, ksn []byte) ObjectHandle {
+	template := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKK_DES2),
+		NewAttribute(CKA_CLASS, CKO_SECRET_KEY),
+		NewAttribute(CKA_PRIVATE, false),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_SENSITIVE, false),
+		NewAttribute(CKA_EXTRACTABLE, true),
+	}
+	params := NewDesCBCEncryptDataParams([]byte{0, 0, 0, 0, 0, 0, 0, 0}, ksn)
+	mech := []*Mechanism{NewMechanism(CKM_DES3_CBC_ENCRYPT_DATA, params)}
+	sessionKey, err := p.DeriveKey(session, mech, bdk, template)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return sessionKey
+}
+
 func TestPSSParams(t *testing.T) {
 	p := setenv(t)
 	sh := getSession(p, t)
@@ -155,4 +199,97 @@ func TestGCMParams(t *testing.T) {
 		t.Errorf("plaintext does not match: expected %x != actual %x", msg, msg2)
 	}
 	params.Free()
+}
+
+func TestDesCBCEncryptDataParams(t *testing.T) {
+	p := setenv(t)
+	sh := getSession(p, t)
+	defer finishSession(p, sh)
+	needMech(t, p, sh, CKM_DES3_CBC_ENCRYPT_DATA)
+
+	key, err := p.GenerateKey(sh, []*Mechanism{NewMechanism(CKM_DES2_KEY_GEN, nil)}, []*Attribute{
+		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DERIVE, true),
+	})
+	if err != nil {
+		t.Fatal("GenerateKey:", err)
+	}
+
+	ksn := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x30, 0x31, 0x32}
+
+	dKey := deriveKey(p, sh, key, ksn)
+	encryptMech := []*Mechanism{NewMechanism(CKM_DES3_ECB, nil)}
+	if err := p.EncryptInit(sh, encryptMech, dKey); err != nil {
+		t.Fatal("EncryptInit:", err)
+	}
+	cipherText, err := p.Encrypt(sh, data)
+	if err != nil {
+		t.Fatal("Encrypt:", err)
+	}
+
+	err = p.DecryptInit(sh, encryptMech, dKey)
+	if err != nil {
+		t.Fatalf("Could not initiate Decrypt operation: %v", err)
+	}
+	decryptedText, err := p.Decrypt(sh, cipherText)
+	if err != nil {
+		t.Fatalf("Could not perform decryption: %v", err)
+	}
+	if len(decryptedText) != len(data) {
+		t.Logf("decrypted string %v, original data string %v does not match", string(decryptedText), string(data))
+		t.Fatalf("decrypted string %v, original data string %v does not match", string(decryptedText), string(data))
+	}
+	if string(decryptedText) != string(data) {
+		t.Fatalf("decrypted string %v, original data string %v does not match", string(decryptedText), string(data))
+	}
+
+}
+
+func TestKeyDerivationStringData(t *testing.T) {
+	p := setenv(t)
+	sh := getSession(p, t)
+	defer finishSession(p, sh)
+	needMech(t, p, sh, CKM_DES3_ECB_ENCRYPT_DATA)
+
+	key, err := p.GenerateKey(sh, []*Mechanism{NewMechanism(CKM_DES2_KEY_GEN, nil)}, []*Attribute{
+		NewAttribute(CKA_TOKEN, false),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DERIVE, true),
+	})
+	if err != nil {
+		t.Fatal("GenerateKey:", err)
+	}
+
+	ksn := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16}
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x30, 0x31, 0x32}
+
+	dKey := deriveECBKey(p, sh, key, ksn)
+	encryptMech := []*Mechanism{NewMechanism(CKM_DES3_ECB, nil)}
+	if err := p.EncryptInit(sh, encryptMech, dKey); err != nil {
+		t.Fatal("EncryptInit:", err)
+	}
+	cipherText, err := p.Encrypt(sh, data)
+	if err != nil {
+		t.Fatal("Encrypt:", err)
+	}
+
+	err = p.DecryptInit(sh, encryptMech, dKey)
+	if err != nil {
+		t.Fatalf("Could not initiate Decrypt operation: %v", err)
+	}
+	decryptedText, err := p.Decrypt(sh, cipherText)
+	if err != nil {
+		t.Fatalf("Could not perform decryption: %v", err)
+	}
+	if len(decryptedText) != len(data) {
+		t.Logf("decrypted string %v, original data string %v does not match", string(decryptedText), string(data))
+		t.Fatalf("decrypted string %v, original data string %v does not match", string(decryptedText), string(data))
+	}
+	if string(decryptedText) != string(data) {
+		t.Fatalf("decrypted string %v, original data string %v does not match", string(decryptedText), string(data))
+	}
 }
