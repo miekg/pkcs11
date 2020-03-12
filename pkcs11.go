@@ -30,6 +30,7 @@ package pkcs11
 struct ctx {
 	HMODULE handle;
 	CK_FUNCTION_LIST_PTR sym;
+	CK_SFNT_CA_FUNCTION_LIST_PTR syme;
 };
 
 // New initializes a ctx and fills the symbol table.
@@ -48,6 +49,13 @@ struct ctx *New(const char *module)
 		return NULL;
 	}
 	list(&c->sym);
+	CK_CA_GetFunctionList sfntList;
+	sfntList = (CK_CA_GetFunctionList) GetProcAddress(c->handle, "CA_GetFunctionList");
+	if (sfntlist == NULL) {
+		free(c);
+		return NULL;
+	}
+	sfntList(&c->syme);
 	return c;
 }
 
@@ -65,6 +73,7 @@ void Destroy(struct ctx *c)
 struct ctx {
 	void *handle;
 	CK_FUNCTION_LIST_PTR sym;
+        CK_SFNT_CA_FUNCTION_LIST_PTR syme;
 };
 
 // New initializes a ctx and fills the symbol table.
@@ -83,6 +92,14 @@ struct ctx *New(const char *module)
 		return NULL;
 	}
 	list(&c->sym);
+        
+	CK_CA_GetFunctionList sfntList;
+        sfntList = (CK_CA_GetFunctionList) dlsym(c->handle, "CA_GetFunctionList");
+        if (sfntList == NULL) {
+                free(c);
+                return NULL;
+        }
+        sfntList(&c->syme);
 	return c;
 }
 
@@ -727,6 +744,22 @@ CK_RV DeriveKey(struct ctx * c, CK_SESSION_HANDLE session,
 		CK_ATTRIBUTE_PTR a, CK_ULONG alen, CK_OBJECT_HANDLE_PTR key)
 {
 	return c->sym->C_DeriveKey(session, mechanism, basekey, a, alen, key);
+}
+
+CK_RV DeriveKeyAndWrap(struct ctx * c, CK_SESSION_HANDLE Session, 
+		CK_MECHANISM_PTR  MechanismDerive, CK_OBJECT_HANDLE  BaseKey,
+		CK_ATTRIBUTE_PTR  Template, CK_ULONG AttributeCount,
+		CK_MECHANISM_PTR  MechanismWrap, CK_OBJECT_HANDLE  WrappingKey,
+		CK_BYTE_PTR * WrappedKey, CK_ULONG_PTR WrappedKeyLen)
+{
+	*WrappedKey = calloc(2048, sizeof(CK_BYTE));
+	if (*WrappedKey == NULL) {
+		return CKR_HOST_MEMORY;
+	}
+	CK_RV rv = c->syme->CA_DeriveKeyAndWrap(Session, MechanismDerive, BaseKey,
+        	Template, AttributeCount, MechanismWrap, WrappingKey,
+               *WrappedKey, WrappedKeyLen);
+	return rv;
 }
 
 CK_RV UnwrapKey(struct ctx * c, CK_SESSION_HANDLE session,
@@ -1570,6 +1603,31 @@ func (c *Ctx) DeriveKey(sh SessionHandle, m []*Mechanism, basekey ObjectHandle, 
 	e := C.DeriveKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(basekey), ac, aclen, &key)
 	return ObjectHandle(key), toError(e)
 }
+
+// DeriveKeyAndWrap derives a key from a base key, wrapped out with wrapping key.
+func (c *Ctx) DeriveKeyAndWrap(sh SessionHandle, m []*Mechanism, basekey ObjectHandle, a []*Attribute, mw []*Mechanism, wrappingkey ObjectHandle, wrappedlen int) ([]byte, error) {
+        attrarena, ac, aclen := cAttributeList(a)
+        defer attrarena.Free()
+        mecharena, mech := cMechanism(m)
+        defer mecharena.Free()
+        var (
+                wrappedkey    C.CK_BYTE_PTR
+                wrappedkeylen C.CK_ULONG
+        )
+	wrappedkeylen = C.CK_ULONG(wrappedlen)
+        arena, mechw := cMechanism(mw)
+		defer arena.Free()
+
+	e := C.DeriveKeyAndWrap(c.ctx, C.CK_SESSION_HANDLE(sh), mech, C.CK_OBJECT_HANDLE(basekey), ac, aclen, mechw, C.CK_OBJECT_HANDLE(wrappingkey), &wrappedkey, &wrappedkeylen)
+        if toError(e) != nil {
+                return nil, toError(e)
+        }
+        h := C.GoBytes(unsafe.Pointer(wrappedkey), C.int(wrappedkeylen))
+        C.free(unsafe.Pointer(wrappedkey))
+        return h, nil
+
+}
+
 
 // SeedRandom mixes additional seed material into the token's
 // random number generator.
