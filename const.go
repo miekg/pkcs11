@@ -722,6 +722,11 @@ const (
 	CKF_USER_FRIENDLY_OTP                = 0x00000020
 	CKD_NULL                             = 0x00000001
 	CKD_SHA1_KDF                         = 0x00000002
+	CKS_RO_PUBLIC_SESSION                = 0x00000000
+	CKS_RO_USER_FUNCTIONS                = 0x00000001
+	CKS_RW_PUBLIC_SESSION                = 0x00000002
+	CKS_RW_USER_FUNCTIONS                = 0x00000003
+	CKS_RW_SO_FUNCTIONS                  = 0x00000004
 )
 
 // Special return values defined in PKCS#11 v2.40 section 3.2.
