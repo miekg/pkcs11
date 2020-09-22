@@ -30,8 +30,9 @@ func (s Slot) OpenWriteSession() (Session, error) {
 
 // OpenSessionWithFlags opens a serial session using the given flags with the
 // token in this slot.
+// CKF_SERIAL_SESSION is always mandatory (per PKCS#11) for legacy reasons and
+// is internally added before opening a session.
 func (s Slot) OpenSessionWithFlags(flags uint) (Session, error) {
-	// CKF_SERIAL_SESSION is always mandatory for legacy reasons, per PKCS#11.
 	handle, err := s.ctx.OpenSession(s.id, flags|pkcs11.CKF_SERIAL_SESSION)
 	if err != nil {
 		return nil, err
