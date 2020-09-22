@@ -28,6 +28,12 @@ func (s Slot) OpenWriteSession() (Session, error) {
 	return s.openSession(pkcs11.CKF_RW_SESSION)
 }
 
+// OpenExclusiveWriteSession opens an exclusive read-write session with the
+// token in this slot.
+func (s Slot) OpenExclusiveWriteSession() (Session, error) {
+	return s.openSession(pkcs11.CKF_RW_SESSION | pkcs11.CKF_EXCLUSIVE_SESSION)
+}
+
 func (s Slot) openSession(flags uint) (Session, error) {
 	// CKF_SERIAL_SESSION is always mandatory for legacy reasons, per PKCS#11.
 	handle, err := s.ctx.OpenSession(s.id, flags|pkcs11.CKF_SERIAL_SESSION)
