@@ -20,21 +20,17 @@ func (s Slot) TokenInfo() (pkcs11.TokenInfo, error) {
 
 // OpenSession opens a read-only session with the token in this slot.
 func (s Slot) OpenSession() (Session, error) {
-	return s.openSession(0)
+	return s.OpenSessionWithFlags(0)
 }
 
 // OpenWriteSession opens a read-write session with the token in this slot.
 func (s Slot) OpenWriteSession() (Session, error) {
-	return s.openSession(pkcs11.CKF_RW_SESSION)
+	return s.OpenSessionWithFlags(pkcs11.CKF_RW_SESSION)
 }
 
-// OpenExclusiveWriteSession opens an exclusive read-write session with the
+// OpenSessionWithFlags opens a serial session using the given flags with the
 // token in this slot.
-func (s Slot) OpenExclusiveWriteSession() (Session, error) {
-	return s.openSession(pkcs11.CKF_RW_SESSION | pkcs11.CKF_EXCLUSIVE_SESSION)
-}
-
-func (s Slot) openSession(flags uint) (Session, error) {
+func (s Slot) OpenSessionWithFlags(flags uint) (Session, error) {
 	// CKF_SERIAL_SESSION is always mandatory for legacy reasons, per PKCS#11.
 	handle, err := s.ctx.OpenSession(s.id, flags|pkcs11.CKF_SERIAL_SESSION)
 	if err != nil {
