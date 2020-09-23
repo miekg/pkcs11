@@ -7,6 +7,12 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
+// ErrNoObjectsFound is returned by FindObject() and FindObjects() if no objects are found.
+var ErrNoObjectsFound = errors.New("no objects found")
+
+// ErrTooManyObjectsFound is returned by FindObject() if multiple objects are found.
+var ErrTooManyObjectsFound = errors.New("too many objects matching template")
+
 // Session represents a PKCS#11 session.
 type Session interface {
 	// Login logs into the token as a regular user. Note: According to PKCS#11,
@@ -93,7 +99,7 @@ func (s *sessionImpl) FindObject(template []*pkcs11.Attribute) (Object, error) {
 		return Object{}, err
 	}
 	if len(objects) > 1 {
-		return Object{}, errors.New("too many objects matching template")
+		return Object{}, ErrTooManyObjectsFound
 	}
 	return objects[0], nil
 }
@@ -126,7 +132,7 @@ func (s *sessionImpl) FindObjects(template []*pkcs11.Attribute) ([]Object, error
 	if err := s.ctx.FindObjectsFinal(s.handle); err != nil {
 		return nil, err
 	} else if len(results) == 0 {
-		return nil, errors.New("no objects found")
+		return nil, ErrNoObjectsFound
 	}
 	return results, nil
 }
