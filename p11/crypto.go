@@ -46,6 +46,37 @@ func (priv PrivateKey) Sign(mechanism pkcs11.Mechanism, message []byte) ([]byte,
 	return out, nil
 }
 
+func (priv PrivateKey) deriveInner(mechanism pkcs11.Mechanism, attributes []*pkcs11.Attribute) (*Object, error) {
+	s := priv.session
+	s.Lock()
+	defer s.Unlock()
+	objectHandle, err := s.ctx.DeriveKey(s.handle, []*pkcs11.Mechanism{&mechanism}, priv.objectHandle, attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	obj := Object{
+		session:      s,
+		objectHandle: objectHandle,
+	}
+	return &obj, nil
+}
+
+// Derive derives a shared secret with a given mechanism.
+func (priv PrivateKey) Derive(mechanism pkcs11.Mechanism, attributes []*pkcs11.Attribute) ([]byte, error) {
+	sharedObj, err := priv.deriveInner(mechanism, attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	sharedSecret, err := sharedObj.Value()
+	if err != nil {
+		return nil, err
+	}
+
+	return sharedSecret, nil
+}
+
 // Verify verifies a signature over a message with a given mechanism.
 func (pub PublicKey) Verify(mechanism pkcs11.Mechanism, message, signature []byte) error {
 	s := pub.session
