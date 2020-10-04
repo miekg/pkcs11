@@ -243,7 +243,7 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	}
 
 	switch p := x.(type) {
-	case *GCMParams, *OAEPParams, *ECDH1DeriveParams:
+	case *GCMParams, *OAEPParams, *ECDH1DeriveParams, *DesCBCEncryptDataParams, *KeyDerivationStringData:
 		// contains pointers; defer serialization until cMechanism
 		m.generator = p
 	case []byte:
@@ -272,6 +272,10 @@ func cMechanism(mechList []*Mechanism) (arena, *C.CK_MECHANISM) {
 		param, arena = cOAEPParams(p, arena)
 	case *ECDH1DeriveParams:
 		param, arena = cECDH1DeriveParams(p, arena)
+	case *DesCBCEncryptDataParams:
+		param, arena = cDesCBCEncryptDataParams(p, p.iv, arena)
+	case *KeyDerivationStringData:
+		param, arena = cKeyDerivationStringData(p, arena)
 	}
 	if len(param) != 0 {
 		buf, len := arena.Allocate(param)
