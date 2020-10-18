@@ -123,3 +123,8 @@ func (m Module) Slots() ([]Slot, error) {
 	}
 	return result, nil
 }
+
+// Destroy unloads the module/library.
+func (m Module) Destroy() {
+	m.ctx.Destroy()
+}
