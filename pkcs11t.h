@@ -57,7 +57,7 @@ typedef CK_ULONG          CK_FLAGS;
 
 /* some special values for certain CK_ULONG variables */
 #define CK_UNAVAILABLE_INFORMATION      (~0UL)
-#define CK_EFFECTIVELY_INFINITE         0UL
+// #define CK_EFFECTIVELY_INFINITE         0UL
 
 
 typedef CK_BYTE     CK_PTR   CK_BYTE_PTR;
@@ -378,7 +378,7 @@ typedef CK_ULONG          CK_KEY_TYPE;
 #define CKK_SHA512_HMAC         0x0000002DUL
 #define CKK_SHA224_HMAC         0x0000002EUL
 
-#define CKK_SEED                0x0000002FUL
+// #define CKK_SEED                0x0000002FUL
 #define CKK_GOSTR3410           0x00000030UL
 #define CKK_GOSTR3411           0x00000031UL
 #define CKK_GOST28147           0x00000032UL
@@ -611,8 +611,8 @@ typedef CK_ULONG          CK_MECHANISM_TYPE;
 #define CKM_DSA_KEY_PAIR_GEN           0x00000010UL
 #define CKM_DSA                        0x00000011UL
 #define CKM_DSA_SHA1                   0x00000012UL
-#define CKM_DSA_SHA224                 0x00000013UL
-#define CKM_DSA_SHA256                 0x00000014UL
+// #define CKM_DSA_SHA224                 0x00000013UL
+// #define CKM_DSA_SHA256                 0x00000014UL
 #define CKM_DSA_SHA384                 0x00000015UL
 #define CKM_DSA_SHA512                 0x00000016UL
 #define CKM_DSA_SHA3_224               0x00000018UL
@@ -895,12 +895,12 @@ typedef CK_ULONG          CK_MECHANISM_TYPE;
 #define CKM_ARIA_ECB_ENCRYPT_DATA      0x00000566UL
 #define CKM_ARIA_CBC_ENCRYPT_DATA      0x00000567UL
 
-#define CKM_SEED_KEY_GEN               0x00000650UL
-#define CKM_SEED_ECB                   0x00000651UL
-#define CKM_SEED_CBC                   0x00000652UL
-#define CKM_SEED_MAC                   0x00000653UL
-#define CKM_SEED_MAC_GENERAL           0x00000654UL
-#define CKM_SEED_CBC_PAD               0x00000655UL
+// #define CKM_SEED_KEY_GEN               0x00000650UL
+// #define CKM_SEED_ECB                   0x00000651UL
+// #define CKM_SEED_CBC                   0x00000652UL
+// #define CKM_SEED_MAC                   0x00000653UL
+// #define CKM_SEED_MAC_GENERAL           0x00000654UL
+// #define CKM_SEED_CBC_PAD               0x00000655UL
 #define CKM_SEED_ECB_ENCRYPT_DATA      0x00000656UL
 #define CKM_SEED_CBC_ENCRYPT_DATA      0x00000657UL
 
@@ -932,10 +932,10 @@ typedef CK_ULONG          CK_MECHANISM_TYPE;
 
 #define CKM_ECDSA                      0x00001041UL
 #define CKM_ECDSA_SHA1                 0x00001042UL
-#define CKM_ECDSA_SHA224               0x00001043UL
-#define CKM_ECDSA_SHA256               0x00001044UL
-#define CKM_ECDSA_SHA384               0x00001045UL
-#define CKM_ECDSA_SHA512               0x00001046UL
+//#define CKM_ECDSA_SHA224               0x00001043UL
+//#define CKM_ECDSA_SHA256               0x00001044UL
+//#define CKM_ECDSA_SHA384               0x00001045UL
+//#define CKM_ECDSA_SHA512               0x00001046UL
 
 #define CKM_ECDH1_DERIVE               0x00001050UL
 #define CKM_ECDH1_COFACTOR_DERIVE      0x00001051UL
@@ -967,7 +967,7 @@ typedef CK_ULONG          CK_MECHANISM_TYPE;
 
 #define CKM_AES_XCBC_MAC               0x0000108CUL
 #define CKM_AES_XCBC_MAC_96            0x0000108DUL
-#define CKM_AES_GMAC                   0x0000108EUL
+// #define CKM_AES_GMAC                   0x0000108EUL
 
 #define CKM_BLOWFISH_KEY_GEN           0x00001090UL
 #define CKM_BLOWFISH_CBC               0x00001091UL
@@ -1002,10 +1002,10 @@ typedef CK_ULONG          CK_MECHANISM_TYPE;
 #define CKM_DSA_PROBABLISTIC_PARAMETER_GEN    0x00002003UL
 #define CKM_DSA_SHAWE_TAYLOR_PARAMETER_GEN    0x00002004UL
 
-#define CKM_AES_OFB                    0x00002104UL
+//#define CKM_AES_OFB                    0x00002104UL
 #define CKM_AES_CFB64                  0x00002105UL
-#define CKM_AES_CFB8                   0x00002106UL
-#define CKM_AES_CFB128                 0x00002107UL
+//#define CKM_AES_CFB8                   0x00002106UL
+//#define CKM_AES_CFB128                 0x00002107UL
 
 #define CKM_AES_CFB1                   0x00002108UL
 #define CKM_AES_KEY_WRAP               0x00002109UL     /* WAS: 0x00001090 */
@@ -1333,12 +1333,12 @@ typedef CK_ULONG CK_EC_KDF_TYPE;
 #define CKD_SHA1_KDF             0x00000002UL
 
 /* The following X9.42 DH key derivation functions are defined */
-#define CKD_SHA1_KDF_ASN1        0x00000003UL
-#define CKD_SHA1_KDF_CONCATENATE 0x00000004UL
-#define CKD_SHA224_KDF           0x00000005UL
-#define CKD_SHA256_KDF           0x00000006UL
-#define CKD_SHA384_KDF           0x00000007UL
-#define CKD_SHA512_KDF           0x00000008UL
+// #define CKD_SHA1_KDF_ASN1        0x00000003UL
+// #define CKD_SHA1_KDF_CONCATENATE 0x00000004UL
+// #define CKD_SHA224_KDF           0x00000005UL
+// #define CKD_SHA256_KDF           0x00000006UL
+// #define CKD_SHA384_KDF           0x00000007UL
+// #define CKD_SHA512_KDF           0x00000008UL
 #define CKD_CPDIVERSIFY_KDF      0x00000009UL
 #define CKD_SHA3_224_KDF         0x0000000AUL
 #define CKD_SHA3_256_KDF         0x0000000BUL
@@ -1897,6 +1897,7 @@ typedef struct CK_CCM_PARAMS {
 typedef CK_CCM_PARAMS CK_PTR CK_CCM_PARAMS_PTR;
 
 /* Deprecated. Use CK_GCM_PARAMS */
+/*
 typedef struct CK_AES_GCM_PARAMS {
   CK_BYTE_PTR pIv;
   CK_ULONG ulIvLen;
@@ -1907,7 +1908,7 @@ typedef struct CK_AES_GCM_PARAMS {
 } CK_AES_GCM_PARAMS;
 
 typedef CK_AES_GCM_PARAMS CK_PTR CK_AES_GCM_PARAMS_PTR;
-
+*/
 /* Deprecated. Use CK_CCM_PARAMS */
 typedef struct CK_AES_CCM_PARAMS {
     CK_ULONG          ulDataLen;

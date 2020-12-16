@@ -26,6 +26,11 @@ static inline void putECDH1PublicParams(CK_ECDH1_DERIVE_PARAMS_PTR params, CK_VO
 	params->pPublicData = pPublicData;
 	params->ulPublicDataLen = ulPublicDataLen;
 }
+
+static inline int getECDH1ParamsSize(CK_ECDH1_DERIVE_PARAMS_PTR params)
+{
+	return sizeof(*params);
+}
 */
 import "C"
 import "unsafe"
@@ -186,5 +191,9 @@ func cECDH1DeriveParams(p *ECDH1DeriveParams, arena arena) ([]byte, arena) {
 	publicKeyData, publicKeyDataLen := arena.Allocate(p.PublicKeyData)
 	C.putECDH1PublicParams(&params, publicKeyData, publicKeyDataLen)
 
-	return C.GoBytes(unsafe.Pointer(&params), C.int(unsafe.Sizeof(params))), arena
+	// Due to golang's beheave wrong about windows's packed struct, we have to get right struct size from C
+	// CK_ECDH1_DERIVE_PARAMS.pPublicData will be replaced by a default element with wrong size in windows
+	// cause unsafe.Sizeof return wrong size. But the content was correct as it was set in C part.
+	paramSize := C.getECDH1ParamsSize(&params)
+	return C.GoBytes(unsafe.Pointer(&params), C.int(paramSize)), arena
 }
