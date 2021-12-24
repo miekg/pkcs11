@@ -388,7 +388,7 @@ typedef CK_ULONG          CK_KEY_TYPE;
 #define CKK_SHA3_384_HMAC       0x00000035UL
 #define CKK_SHA3_512_HMAC       0x00000036UL
 
-
+#define CKK_EC_EDWARDS          0x00000040UL
 
 #define CKK_VENDOR_DEFINED      0x80000000UL
 
@@ -943,6 +943,9 @@ typedef CK_ULONG          CK_MECHANISM_TYPE;
 
 #define CKM_ECDH_AES_KEY_WRAP          0x00001053UL
 #define CKM_RSA_AES_KEY_WRAP           0x00001054UL
+
+#define CKM_EC_EDWARDS_KEY_PAIR_GEN    0x00001055UL
+#define CKM_EDDSA                      0x00001057UL
 
 #define CKM_JUNIPER_KEY_GEN            0x00001060UL
 #define CKM_JUNIPER_ECB128             0x00001061UL
