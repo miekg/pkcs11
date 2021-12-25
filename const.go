@@ -536,6 +536,7 @@ const (
 	CKM_ECMQV_DERIVE                     = 0x00001052
 	CKM_ECDH_AES_KEY_WRAP                = 0x00001053
 	CKM_RSA_AES_KEY_WRAP                 = 0x00001054
+	CKM_EDDSA                            = 0x00001057
 	CKM_JUNIPER_KEY_GEN                  = 0x00001060
 	CKM_JUNIPER_ECB128                   = 0x00001061
 	CKM_JUNIPER_CBC128                   = 0x00001062
