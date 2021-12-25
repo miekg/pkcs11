@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/miekg/pkcs11"
+	"github.com/venafi-iw/pkcs11"
 )
 
 // Session represents a PKCS#11 session.
