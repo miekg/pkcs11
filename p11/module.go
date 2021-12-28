@@ -62,7 +62,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/venafi-iw/pkcs11"
+	"github.com/miekg/pkcs11"
 )
 
 var modules = make(map[string]Module)

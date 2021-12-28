@@ -3,7 +3,7 @@ package p11
 import (
 	"errors"
 
-	"github.com/venafi-iw/pkcs11"
+	"github.com/miekg/pkcs11"
 )
 
 // Object represents a handle to a PKCS#11 object. It is attached to the
