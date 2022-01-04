@@ -21,11 +21,11 @@ jobs:
     - name: Build
       run: |
         sudo apt-get update
-        sudo apt-get -y install libsofthsm
+        sudo apt-get -y install libsofthsm2
         go build -v ./...
 
     - name: Test
       run: |
         sudo apt-get update
-        sudo apt-get -y install libsofthsm
+        sudo apt-get -y install libsofthsm2
         go test -v ./...
