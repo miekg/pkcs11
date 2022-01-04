@@ -6,6 +6,12 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
+// ErrAttributeNotFound is returned by Attrbibute() if the searched attribute isn't found.
+var ErrAttributeNotFound = errors.New("attribute not found")
+
+// ErrTooManyAttributesFound is returned by Attrbibute() if the search returned multiple attributes.
+var ErrTooManyAttributesFound = errors.New("too many attributes found")
+
 // Object represents a handle to a PKCS#11 object. It is attached to the
 // session used to find it. Once that session is closed, operations on the
 // Object will fail. Operations may also depend on the logged-in state of
@@ -50,10 +56,10 @@ func (o Object) Attribute(attributeType uint) ([]byte, error) {
 		return nil, err
 	}
 	if len(attrs) == 0 {
-		return nil, errors.New("attribute not found")
+		return nil, ErrAttributeNotFound
 	}
 	if len(attrs) > 1 {
-		return nil, errors.New("too many attributes found")
+		return nil, ErrTooManyAttributesFound
 	}
 	return attrs[0].Value, nil
 }
