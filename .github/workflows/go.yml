@@ -1,0 +1,31 @@
+name: Go
+on: [push, pull_request]
+jobs:
+
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ 1.16.x, 1.17.x ]
+    steps:
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install libsofthsm2
+        go build -v ./...
+
+    - name: Test
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install libsofthsm2
+        go test -v ./...
