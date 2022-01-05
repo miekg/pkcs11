@@ -10,12 +10,12 @@ const (
 
 // Vendor specific mechanisms for HMAC on Ncipher HSMs where Ncipher does not allow use of generic_secret keys.
 const (
-	CKM_NC_SHA_1_HMAC_KEY_GEN  = CKM_NCIPHER + 0x3  /* no params */
-	CKM_NC_MD5_HMAC_KEY_GEN    = CKM_NCIPHER + 0x6  /* no params */
-	CKM_NC_SHA224_HMAC_KEY_GEN = CKM_NCIPHER + 0x24 /* no params */
-	CKM_NC_SHA256_HMAC_KEY_GEN = CKM_NCIPHER + 0x25 /* no params */
-	CKM_NC_SHA384_HMAC_KEY_GEN = CKM_NCIPHER + 0x26 /* no params */
-	CKM_NC_SHA512_HMAC_KEY_GEN = CKM_NCIPHER + 0x27 /* no params */
+	CKM_NC_SHA_1_HMAC_KEY_GEN  = CKM_NCIPHER + 0x3  // no params
+	CKM_NC_MD5_HMAC_KEY_GEN    = CKM_NCIPHER + 0x6  // no params
+	CKM_NC_SHA224_HMAC_KEY_GEN = CKM_NCIPHER + 0x24 // no params
+	CKM_NC_SHA256_HMAC_KEY_GEN = CKM_NCIPHER + 0x25 // no params
+	CKM_NC_SHA384_HMAC_KEY_GEN = CKM_NCIPHER + 0x26 // no params
+	CKM_NC_SHA512_HMAC_KEY_GEN = CKM_NCIPHER + 0x27 // no params
 )
 
 // Vendor specific range for Mozilla NSS.
