@@ -38,9 +38,6 @@ func main() {
 		if fields[0] != "#define" {
 			continue
 		}
-		if strings.HasPrefix(fields[1], "CK_") {
-			continue
-		}
 		// fields[1] (const name) needs to be 3 chars, starting with CK
 		if !strings.HasPrefix(fields[1], "CK") {
 			continue
@@ -50,6 +47,12 @@ func main() {
 		if strings.HasSuffix(value, "UL)") {
 			value = strings.Replace(value, "UL)", ")", 1)
 		}
+		// CK_UNAVAILABLE_INFORMATION is encoded as (~0) (with UL) removed, this needs to be ^uint(0) in Go.
+		// Special case that here.
+		if value == "(~0)" {
+			value = "^uint(0)"
+		}
+
 		// check for /* deprecated */ comment
 		if len(fields) == 6 && fields[4] == "Deprecated" {
 			fmt.Fprintln(out, fields[1], " = ", value, "// Deprecated")
