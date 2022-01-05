@@ -5,6 +5,8 @@
 //go:generate go run const_generate.go
 
 // Package pkcs11 is a wrapper around the PKCS#11 cryptographic library.
+// Latest version of the specification:
+// http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/pkcs11-base-v2.40.html
 package pkcs11
 
 // It is *assumed*, that:
