@@ -33,7 +33,9 @@ func main() {
 	count := 0
 	for scanner.Scan() {
 		// Fairly simple parsing, any line starting with '#define' will output
-		// $2 = $3 and drop any UL (unsigned long) suffixes
+		// $2 = $3 and drop any UL (unsigned long) suffixes.
+		// Some care is taken to add any comments and make the outputted file
+		// have some decent godoc.
 		fields := strings.Fields(scanner.Text())
 		if len(fields) < 1 {
 			continue
