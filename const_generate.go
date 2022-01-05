@@ -80,6 +80,7 @@ func main() {
 		}
 
 		if comment != "" {
+			fmt.Fprintln(out) // newline before comment
 			fmt.Fprint(out, comment)
 			comment = ""
 		}

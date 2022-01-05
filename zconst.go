@@ -9,9 +9,11 @@ package pkcs11
 const (
 	CK_TRUE  = 1
 	CK_FALSE = 0
+
 	// some special values for certain CK_ULONG variables
 	CK_UNAVAILABLE_INFORMATION = ^uint(0)
 	CK_EFFECTIVELY_INFINITE    = 0
+
 	// The following value is always invalid if used as a session
 	// handle or object handle
 	CK_INVALID_HANDLE = 0
@@ -24,67 +26,82 @@ const (
 	CKF_TOKEN_PRESENT    = 0x00000001 // a token is there
 	CKF_REMOVABLE_DEVICE = 0x00000002 // removable devices
 	CKF_HW_SLOT          = 0x00000004 // hardware slot
+
 	// The flags parameter is defined as follows:
 	//      Bit Flag                    Mask        Meaning
 	CKF_RNG                  = 0x00000001 // has random # generator
 	CKF_WRITE_PROTECTED      = 0x00000002 // token is write-protected
 	CKF_LOGIN_REQUIRED       = 0x00000004 // user must login
 	CKF_USER_PIN_INITIALIZED = 0x00000008 // normal user's PIN is set
+
 	// CKF_RESTORE_KEY_NOT_NEEDED.  If it is set,
 	// that means that *every* time the state of cryptographic
 	// operations of a session is successfully saved, all keys
 	// needed to continue those operations are stored in the state
 	CKF_RESTORE_KEY_NOT_NEEDED = 0x00000020
+
 	// CKF_CLOCK_ON_TOKEN.  If it is set, that means
 	// that the token has some sort of clock.  The time on that
 	// clock is returned in the token info structure
 	CKF_CLOCK_ON_TOKEN = 0x00000040
+
 	// CKF_PROTECTED_AUTHENTICATION_PATH.  If it is
 	// set, that means that there is some way for the user to login
 	// without sending a PIN through the Cryptoki library itself
 	CKF_PROTECTED_AUTHENTICATION_PATH = 0x00000100
+
 	// CKF_DUAL_CRYPTO_OPERATIONS.  If it is true,
 	// that means that a single session with the token can perform
 	// dual simultaneous cryptographic operations (digest and
 	// encrypt; decrypt and digest; sign and encrypt; and decrypt
 	// and sign)
 	CKF_DUAL_CRYPTO_OPERATIONS = 0x00000200
+
 	// CKF_TOKEN_INITIALIZED. If it is true, the
 	// token has been initialized using C_InitializeToken or an
 	// equivalent mechanism outside the scope of PKCS #11.
 	// Calling C_InitializeToken when this flag is set will cause
 	// the token to be reinitialized.
 	CKF_TOKEN_INITIALIZED = 0x00000400
+
 	// CKF_SECONDARY_AUTHENTICATION. If it is
 	// true, the token supports secondary authentication for
 	// private key objects.
 	CKF_SECONDARY_AUTHENTICATION = 0x00000800
+
 	// CKF_USER_PIN_COUNT_LOW. If it is true, an
 	// incorrect user login PIN has been entered at least once
 	// since the last successful authentication.
 	CKF_USER_PIN_COUNT_LOW = 0x00010000
+
 	// CKF_USER_PIN_FINAL_TRY. If it is true,
 	// supplying an incorrect user PIN will it to become locked.
 	CKF_USER_PIN_FINAL_TRY = 0x00020000
+
 	// CKF_USER_PIN_LOCKED. If it is true, the
 	// user PIN has been locked. User login to the token is not
 	// possible.
 	CKF_USER_PIN_LOCKED = 0x00040000
+
 	// CKF_USER_PIN_TO_BE_CHANGED. If it is true,
 	// the user PIN value is the default value set by token
 	// initialization or manufacturing, or the PIN has been
 	// expired by the card.
 	CKF_USER_PIN_TO_BE_CHANGED = 0x00080000
+
 	// CKF_SO_PIN_COUNT_LOW. If it is true, an
 	// incorrect SO login PIN has been entered at least once since
 	// the last successful authentication.
 	CKF_SO_PIN_COUNT_LOW = 0x00100000
+
 	// CKF_SO_PIN_FINAL_TRY. If it is true,
 	// supplying an incorrect SO PIN will it to become locked.
 	CKF_SO_PIN_FINAL_TRY = 0x00200000
+
 	// CKF_SO_PIN_LOCKED. If it is true, the SO
 	// PIN has been locked. SO login to the token is not possible.
 	CKF_SO_PIN_LOCKED = 0x00400000
+
 	// CKF_SO_PIN_TO_BE_CHANGED. If it is true,
 	// the SO PIN value is the default value set by token
 	// initialization or manufacturing, or the PIN has been
@@ -94,8 +111,10 @@ const (
 
 	// Security Officer
 	CKU_SO = 0
+
 	// Normal user
 	CKU_USER = 1
+
 	// Context specific
 	CKU_CONTEXT_SPECIFIC = 2
 
@@ -202,6 +221,7 @@ const (
 	CK_OTP_FORMAT_HEXADECIMAL  = 1
 	CK_OTP_FORMAT_ALPHANUMERIC = 2
 	CK_OTP_FORMAT_BINARY       = 3
+
 	// The following OTP-related defines relate to the CKA_OTP_..._REQUIREMENT
 	// attributes
 	CK_OTP_PARAM_IGNORED   = 0
@@ -473,6 +493,7 @@ const (
 	CKM_CAST3_MAC                 = 0x00000313
 	CKM_CAST3_MAC_GENERAL         = 0x00000314
 	CKM_CAST3_CBC_PAD             = 0x00000315
+
 	// Note that CAST128 and CAST5 are the same algorithm
 	CKM_CAST5_KEY_GEN                  = 0x00000320
 	CKM_CAST128_KEY_GEN                = 0x00000320
@@ -691,6 +712,7 @@ const (
 	// The flags are defined as follows:
 	//      Bit Flag               Mask          Meaning
 	CKF_HW = 0x00000001 // performed by HW
+
 	// Specify whether or not a mechanism can be used for a particular task
 	CKF_ENCRYPT           = 0x00000100
 	CKF_DECRYPT           = 0x00000200
@@ -704,6 +726,7 @@ const (
 	CKF_WRAP              = 0x00020000
 	CKF_UNWRAP            = 0x00040000
 	CKF_DERIVE            = 0x00080000
+
 	// Describe a token's EC capabilities not available in mechanism
 	// information.
 	CKF_EC_F_P          = 0x00100000
@@ -814,6 +837,7 @@ const (
 	//      Bit Flag                           Mask       Meaning
 	CKF_LIBRARY_CANT_CREATE_OS_THREADS = 0x00000001
 	CKF_OS_LOCKING_OK                  = 0x00000002
+
 	// additional flags for parameters to functions
 	// CKF_DONT_BLOCK is for the function C_WaitForSlotEvent
 	CKF_DONT_BLOCK = 1
@@ -831,6 +855,7 @@ const (
 	// The following EC Key Derivation Functions are defined
 	CKD_NULL     = 0x00000001
 	CKD_SHA1_KDF = 0x00000002
+
 	// The following X9.42 DH key derivation functions are defined
 	CKD_SHA1_KDF_ASN1        = 0x00000003
 	CKD_SHA1_KDF_CONCATENATE = 0x00000004
