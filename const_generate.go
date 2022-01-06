@@ -122,7 +122,7 @@ func main() {
 	// % grep '^#define CK' pkcs11t.h |wc
 	//     756    2362   38807
 	//
-	// TODO(miekg): could potentially be put in a test.
+	// Also see const_test.go where we test this.
 	log.Printf("Wrote %d constants to zconst.go", count)
 
 }
