@@ -53,7 +53,7 @@ func toList(clist C.CK_ULONG_PTR, size C.CK_ULONG) []uint {
 	for i := 0; i < len(l); i++ {
 		l[i] = uint(C.Index(clist, C.CK_ULONG(i)))
 	}
-	defer C.free(unsafe.Pointer(clist))
+	C.free(unsafe.Pointer(clist))
 	return l
 }
 
