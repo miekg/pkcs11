@@ -91,6 +91,16 @@ type Mechanism struct {
 	slot      Slot
 }
 
+// Type returns the type of mechanism.
+func (m *Mechanism) Type() uint {
+	return m.mechanism.Mechanism
+}
+
+// Parameter returns any parameters required by the mechanism.
+func (m *Mechanism) Parameter() []byte {
+	return m.mechanism.Parameter
+}
+
 // Info returns information about this mechanism.
 func (m *Mechanism) Info() (pkcs11.MechanismInfo, error) {
 	return m.slot.ctx.GetMechanismInfo(m.slot.id, []*pkcs11.Mechanism{m.mechanism})
