@@ -127,7 +127,7 @@ func (m Module) Slots() ([]Slot, error) {
 // Destroy unloads the module/library.
 //
 // Once called, any code which uses this module might crash the application.
-func (m Module) Destroy() error {
+func (m Module) Destroy() {
 	modulesMu.Lock()
 	defer modulesMu.Unlock()
 
@@ -139,12 +139,10 @@ func (m Module) Destroy() error {
 			break
 		}
 	}
-	if path == "" {
-		return fmt.Errorf("failed to find initialized module")
+	if path != "" {
+		delete(modules, path)
 	}
 
-	err := m.ctx.Finalize()
+	_ = m.ctx.Finalize()
 	m.ctx.Destroy()
-	delete(modules, path)
-	return err
 }
