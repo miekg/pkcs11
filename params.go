@@ -26,6 +26,12 @@ static inline void putECDH1PublicParams(CK_ECDH1_DERIVE_PARAMS_PTR params, CK_VO
 	params->pPublicData = pPublicData;
 	params->ulPublicDataLen = ulPublicDataLen;
 }
+
+static inline void putKeyDerivationStringDataParams(CK_KEY_DERIVATION_STRING_DATA_PTR params, CK_BYTE_PTR pData, CK_ULONG ulLen)
+{
+	params->pData = pData;
+	params->ulLen = ulLen;
+}
 */
 import "C"
 import "unsafe"
@@ -185,6 +191,25 @@ func cECDH1DeriveParams(p *ECDH1DeriveParams, arena arena) ([]byte, arena) {
 
 	publicKeyData, publicKeyDataLen := arena.Allocate(p.PublicKeyData)
 	C.putECDH1PublicParams(&params, publicKeyData, publicKeyDataLen)
+
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
+type KeyDerivationStringDataParams struct {
+	pData []byte
+}
+
+func NewKeyDerivationStringDataParams(data []byte) *KeyDerivationStringDataParams {
+	return &KeyDerivationStringDataParams{
+		pData: data,
+	}
+}
+
+func cKeyDerivationStringDataParams(p *KeyDerivationStringDataParams, arena arena) ([]byte, arena) {
+	params := C.CK_KEY_DERIVATION_STRING_DATA{}
+
+	pData, ulLen := arena.Allocate(p.pData)
+	C.putKeyDerivationStringDataParams(&params, C.CK_BYTE_PTR(pData), ulLen)
 
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
