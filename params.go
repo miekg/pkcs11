@@ -26,6 +26,18 @@ static inline void putECDH1PublicParams(CK_ECDH1_DERIVE_PARAMS_PTR params, CK_VO
 	params->pPublicData = pPublicData;
 	params->ulPublicDataLen = ulPublicDataLen;
 }
+
+static inline void putDesCBCEncryptDataParams(CK_DES_CBC_ENCRYPT_DATA_PARAMS_PTR params, CK_VOID_PTR pData, CK_ULONG length)
+{
+	params->pData = pData;
+	params->length = length;
+}
+
+static inline void putKeyDerivationStringData(CK_KEY_DERIVATION_STRING_DATA_PTR params, CK_VOID_PTR pData, CK_ULONG ulLen)
+{
+	params->pData = pData;
+	params->ulLen = ulLen;
+}
 */
 import "C"
 import "unsafe"
@@ -187,4 +199,55 @@ func cECDH1DeriveParams(p *ECDH1DeriveParams, arena arena) ([]byte, arena) {
 	C.putECDH1PublicParams(&params, publicKeyData, publicKeyDataLen)
 
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
+type KeyDerivationStringData struct {
+	params *C.CK_KEY_DERIVATION_STRING_DATA
+	ksn    []byte
+}
+
+func NewKeyDerivationStringData(ksn []byte) *KeyDerivationStringData {
+	return &KeyDerivationStringData{
+		ksn: ksn,
+	}
+}
+
+func cKeyDerivationStringData(p *KeyDerivationStringData, arena arena) ([]byte, arena) {
+	params := C.CK_KEY_DERIVATION_STRING_DATA{}
+	ksn, ksnLen := arena.Allocate(p.ksn)
+	params.pData = C.CK_BYTE_PTR(ksn)
+	params.ulLen = C.CK_ULONG(ksnLen)
+
+	p.params = &params
+
+	return C.GoBytes(unsafe.Pointer(&params), C.int(unsafe.Sizeof(params))), arena
+}
+
+// DesCBCEncryptDataParams can be passed with CKM_DES3_CBC_ENCRYPT_DATA
+type DesCBCEncryptDataParams struct {
+	params *C.CK_DES_CBC_ENCRYPT_DATA_PARAMS
+	iv     []byte
+	ksn    []byte
+}
+
+func NewDesCBCEncryptDataParams(iv, ksn []byte) *DesCBCEncryptDataParams {
+	return &DesCBCEncryptDataParams{
+		iv:  iv,
+		ksn: ksn,
+	}
+}
+
+func cDesCBCEncryptDataParams(p *DesCBCEncryptDataParams, ivd []byte, arena arena) ([]byte, arena) {
+	params := C.CK_DES_CBC_ENCRYPT_DATA_PARAMS{}
+
+	pIV := C.CBytes(ivd)
+	C.memcpy(unsafe.Pointer(&params.iv), pIV, 8)
+
+	ksn, ksnLen := arena.Allocate(p.ksn)
+
+	C.putDesCBCEncryptDataParams(&params, ksn, ksnLen)
+
+	p.params = &params
+	return C.GoBytes(unsafe.Pointer(&params), C.int(unsafe.Sizeof(params))), arena
+
 }
