@@ -26,6 +26,11 @@ static inline void putECDH1PublicParams(CK_ECDH1_DERIVE_PARAMS_PTR params, CK_VO
 	params->pPublicData = pPublicData;
 	params->ulPublicDataLen = ulPublicDataLen;
 }
+
+static inline void putRSAAESKeyWrapParams(CK_RSA_AES_KEY_WRAP_PARAMS_PTR params, CK_VOID_PTR pOAEPParams)
+{
+	params->pOAEPParams = pOAEPParams;
+}
 */
 import "C"
 import "unsafe"
@@ -188,3 +193,23 @@ func cECDH1DeriveParams(p *ECDH1DeriveParams, arena arena) ([]byte, arena) {
 
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
+
+type RSAAESKeyWrapParams struct {
+	AESKeyBits uint
+	OAEPParams OAEPParams
+}
+
+func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
+	var param []byte
+	params := C.CK_RSA_AES_KEY_WRAP_PARAMS {
+		ulAESKeyBits: C.CK_MECHANISM_TYPE(p.AESKeyBits),
+	}
+
+	param, arena = cOAEPParams(&p.OAEPParams, arena)
+	if len(param) != 0 {
+		buf, _ := arena.Allocate(param)
+		C.putRSAAESKeyWrapParams(&params, buf)
+	}
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
