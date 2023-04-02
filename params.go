@@ -32,6 +32,11 @@ static inline void putKeyDerivationStringDataParams(CK_KEY_DERIVATION_STRING_DAT
 	params->pData = pData;
 	params->ulLen = ulLen;
 }
+
+static inline void putRSAAESKeyWrapParams(CK_RSA_AES_KEY_WRAP_PARAMS_PTR params, CK_VOID_PTR pOAEPParams)
+{
+	params->pOAEPParams = pOAEPParams;
+}
 */
 import "C"
 import "unsafe"
@@ -56,13 +61,12 @@ type GCMParams struct {
 //
 // Encrypt/Decrypt. As an example:
 //
-//    gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
-//    p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)},
-//			aesObjHandle)
-//    ct, _ := p.ctx.Encrypt(session, pt)
-//    iv := gcmParams.IV()
-//    gcmParams.Free()
-//
+//	   gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
+//	   p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)},
+//				aesObjHandle)
+//	   ct, _ := p.ctx.Encrypt(session, pt)
+//	   iv := gcmParams.IV()
+//	   gcmParams.Free()
 func NewGCMParams(iv, aad []byte, tagSize int) *GCMParams {
 	return &GCMParams{
 		iv:      iv,
@@ -211,5 +215,24 @@ func cKeyDerivationStringDataParams(p *KeyDerivationStringDataParams, arena aren
 	pData, ulLen := arena.Allocate(p.pData)
 	C.putKeyDerivationStringDataParams(&params, C.CK_BYTE_PTR(pData), ulLen)
 
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
+type RSAAESKeyWrapParams struct {
+	AESKeyBits uint
+	OAEPParams OAEPParams
+}
+
+func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
+	var param []byte
+	params := C.CK_RSA_AES_KEY_WRAP_PARAMS{
+		ulAESKeyBits: C.CK_MECHANISM_TYPE(p.AESKeyBits),
+	}
+
+	param, arena = cOAEPParams(&p.OAEPParams, arena)
+	if len(param) != 0 {
+		buf, _ := arena.Allocate(param)
+		C.putRSAAESKeyWrapParams(&params, buf)
+	}
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
