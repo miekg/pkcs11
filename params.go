@@ -55,13 +55,12 @@ type GCMParams struct {
 //
 // Encrypt/Decrypt. As an example:
 //
-//    gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
-//    p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)},
-//			aesObjHandle)
-//    ct, _ := p.ctx.Encrypt(session, pt)
-//    iv := gcmParams.IV()
-//    gcmParams.Free()
-//
+//	   gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
+//	   p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)},
+//				aesObjHandle)
+//	   ct, _ := p.ctx.Encrypt(session, pt)
+//	   iv := gcmParams.IV()
+//	   gcmParams.Free()
 func NewGCMParams(iv, aad []byte, tagSize int) *GCMParams {
 	return &GCMParams{
 		iv:      iv,
@@ -201,7 +200,7 @@ type RSAAESKeyWrapParams struct {
 
 func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
 	var param []byte
-	params := C.CK_RSA_AES_KEY_WRAP_PARAMS {
+	params := C.CK_RSA_AES_KEY_WRAP_PARAMS{
 		ulAESKeyBits: C.CK_MECHANISM_TYPE(p.AESKeyBits),
 	}
 
@@ -213,3 +212,32 @@ func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
 
+// ECDH1DeriveParams can be passed to NewMechanism to implement CK_ECDH1_DERIVE_PARAMS.
+type BIP32DeriveParams struct { //CK_BIP32_MASTER_DERIVE_PARAMS
+	PublicKeyTemplate        []*Attribute // CK_ATTRIBUTE_PTR
+	PublicKeyAttributeCount  uint64       //CK_ULONG
+	PrivateKeyTemplate       []*Attribute //CK_ATTRIBUTE_PTR
+	PrivateKeyAttributeCount uint64       //CK_ULONG
+	PublicKey                uint64       //CK_OBJECT_HANDLE
+	PrivateKey               uint64       //CK_OBJECT_HANDLE
+}
+type CK_BIP32_MASTER_DERIVE_PARAMS struct {
+	pPublicKeyTemplate         C.CK_ATTRIBUTE_PTR
+	ulPublicKeyAttributeCount  C.CK_ULONG
+	pPrivateKeyTemplate        C.CK_ATTRIBUTE_PTR
+	ulPrivateKeyAttributeCount C.CK_ULONG
+	hPublicKey                 C.CK_OBJECT_HANDLE
+	hPrivateKey                C.CK_OBJECT_HANDLE
+}
+
+func ParseBIP32DeriveParams(p *BIP32DeriveParams) []byte {
+	params := CK_BIP32_MASTER_DERIVE_PARAMS{
+		pPublicKeyTemplate:         nil, // C.CK_ATTRIBUTE_PTR,
+		ulPublicKeyAttributeCount:  C.CK_ULONG(p.PublicKeyAttributeCount),
+		pPrivateKeyTemplate:        nil, //C.CK_ATTRIBUTE_PTR,
+		ulPrivateKeyAttributeCount: C.CK_ULONG(p.PrivateKeyAttributeCount),
+		hPublicKey:                 C.CK_OBJECT_HANDLE(p.PublicKey),
+		hPrivateKey:                C.CK_OBJECT_HANDLE(p.PrivateKey),
+	}
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params))
+}
