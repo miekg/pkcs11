@@ -3,7 +3,7 @@ package p11
 import (
 	"errors"
 
-	"github.com/miekg/pkcs11"
+	"github.com/lcmmhcc/pkcs11"
 )
 
 // ErrAttributeNotFound is returned by Attrbibute() if the searched attribute isn't found.

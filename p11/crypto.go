@@ -1,6 +1,6 @@
 package p11
 
-import "github.com/miekg/pkcs11"
+import "github.com/lcmmhcc/pkcs11"
 
 // PublicKey is an Object representing a public key. Since any object can be cast to a
 // PublicKey, it is the user's responsibility to ensure that the object is

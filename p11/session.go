@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/miekg/pkcs11"
+	"github.com/lcmmhcc/pkcs11"
 )
 
 // ErrNoObjectsFound is returned by FindObject() and FindObjects() if no objects are found.

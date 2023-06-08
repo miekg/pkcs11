@@ -1,6 +1,6 @@
 package p11
 
-import "github.com/miekg/pkcs11"
+import "github.com/lcmmhcc/pkcs11"
 
 // Slot represents a slot that may hold a token.
 type Slot struct {

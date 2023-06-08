@@ -1,6 +1,6 @@
 package p11
 
-import "github.com/miekg/pkcs11"
+import "github.com/lcmmhcc/pkcs11"
 
 // SecretKey is an Object representing a secret (symmetric) key. Since any object can be cast to a
 // SecretKey, it is the user's responsibility to ensure that the object is
