@@ -267,8 +267,8 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	case []byte:
 		m.Parameter = p
 	default:
-		panic("parameter must be one of type: []byte, *GCMParams, *OAEPParams, *ECDH1DeriveParams, " +
-			  "*KeyDerivationStringDataParams, *RSAAESKeyWrapParams")
+		panic("parameter must be one of type: []byte, *GCMParams, *OAEPParams, *ECDH1DeriveParams," +
+			" *KeyDerivationStringDataParams, *RSAAESKeyWrapParams")
 	}
 
 	return m
