@@ -70,15 +70,23 @@ func main() {
 			prevpre = x
 		}
 
-		value := strings.TrimSuffix(fields[2], "UL")
-		// special case for things like: (CKF_ARRAY_ATTRIBUTE|0x00000211UL)
-		if strings.HasSuffix(value, "UL)") {
-			value = strings.Replace(value, "UL)", ")", 1)
-		}
-		// CK_UNAVAILABLE_INFORMATION is encoded as (~0) (with UL) removed, this needs to be ^uint(0) in Go.
-		// Special case that here.
-		if value == "(~0)" {
-			value = "^uint(0)"
+		var value string
+		switch fields[1] {
+		case "CK_TRUE":
+			value = "true"
+		case "CK_FALSE":
+			value = "false"
+		default:
+			value = strings.TrimSuffix(fields[2], "UL")
+			// special case for things like: (CKF_ARRAY_ATTRIBUTE|0x00000211UL)
+			if strings.HasSuffix(value, "UL)") {
+				value = strings.Replace(value, "UL)", ")", 1)
+			}
+			// CK_UNAVAILABLE_INFORMATION is encoded as (~0) (with UL) removed, this needs to be ^uint(0) in Go.
+			// Special case that here.
+			if value == "(~0)" {
+				value = "^uint(0)"
+			}
 		}
 
 		if comment != "" {
