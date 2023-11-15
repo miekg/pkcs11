@@ -7,8 +7,8 @@
 package pkcs11
 
 const (
-	CK_TRUE  = 1
-	CK_FALSE = 0
+	CK_TRUE  = true
+	CK_FALSE = false
 
 	// some special values for certain CK_ULONG variables
 	CK_UNAVAILABLE_INFORMATION = ^uint(0)
@@ -22,13 +22,15 @@ const (
 	CKN_OTP_CHANGED = 1
 
 	// flags: bit flags that provide capabilities of the slot
-	//      Bit Flag              Mask        Meaning
+	//
+	//	Bit Flag              Mask        Meaning
 	CKF_TOKEN_PRESENT    = 0x00000001 // a token is there
 	CKF_REMOVABLE_DEVICE = 0x00000002 // removable devices
 	CKF_HW_SLOT          = 0x00000004 // hardware slot
 
 	// The flags parameter is defined as follows:
-	//      Bit Flag                    Mask        Meaning
+	//
+	//	Bit Flag                    Mask        Meaning
 	CKF_RNG                  = 0x00000001 // has random # generator
 	CKF_WRITE_PROTECTED      = 0x00000002 // token is write-protected
 	CKF_LOGIN_REQUIRED       = 0x00000004 // user must login
@@ -125,7 +127,8 @@ const (
 	CKS_RW_SO_FUNCTIONS   = 4
 
 	// The flags are defined in the following table:
-	//      Bit Flag                Mask        Meaning
+	//
+	//	Bit Flag                Mask        Meaning
 	CKF_RW_SESSION     = 0x00000002 // session is r/w
 	CKF_SERIAL_SESSION = 0x00000004 // no parallel
 
@@ -710,7 +713,8 @@ const (
 	CKM_VENDOR_DEFINED                 = 0x80000000
 
 	// The flags are defined as follows:
-	//      Bit Flag               Mask          Meaning
+	//
+	//	Bit Flag               Mask          Meaning
 	CKF_HW = 0x00000001 // performed by HW
 
 	// Specify whether or not a mechanism can be used for a particular task
@@ -834,7 +838,8 @@ const (
 	CKR_VENDOR_DEFINED                   = 0x80000000
 
 	// flags: bit flags that provide capabilities of the slot
-	//      Bit Flag                           Mask       Meaning
+	//
+	//	Bit Flag                           Mask       Meaning
 	CKF_LIBRARY_CANT_CREATE_OS_THREADS = 0x00000001
 	CKF_OS_LOCKING_OK                  = 0x00000002
 
