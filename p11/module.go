@@ -71,11 +71,11 @@ var modulesMu sync.Mutex
 // OpenModule loads a PKCS#11 module (a .so file or dynamically loaded library).
 // It's an error to load a PKCS#11 module multiple times, so this package
 // will return a previously loaded Module for the same path if possible.
-// Note that there is no facility to unload a module ("finalize" in PKCS#11
-// parlance). In general, modules will be unloaded at the end of the process.
-// The only place where you are likely to need to explicitly unload a module is
-// if you fork your process. If you need to fork, you may want to use the
-// lower-level `pkcs11` package.
+//
+// In general, modules will be unloaded at the end of the process. The only
+// place where you are likely to need to explicitly unload a module is if you
+// fork your process. If you need to fork, you may want to use the lower-level
+// `pkcs11` package.
 func OpenModule(path string) (Module, error) {
 	modulesMu.Lock()
 	defer modulesMu.Unlock()
@@ -125,6 +125,24 @@ func (m Module) Slots() ([]Slot, error) {
 }
 
 // Destroy unloads the module/library.
+//
+// Once called, any code which uses this module might crash the application.
 func (m Module) Destroy() {
+	modulesMu.Lock()
+	defer modulesMu.Unlock()
+
+	// Find initialized module based on ctx
+	var path string
+	for k, v := range modules {
+		if v.ctx == m.ctx {
+			path = k
+			break
+		}
+	}
+	if path != "" {
+		delete(modules, path)
+	}
+
+	_ = m.ctx.Finalize()
 	m.ctx.Destroy()
 }
