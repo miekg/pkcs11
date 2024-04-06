@@ -1,12 +1,12 @@
 # PKCS#11
 
-This is a Go implementation of the PKCS#11 API. It wraps the library closely, but uses Go idiom where
-it makes sense. It has been tested with SoftHSM.
+This is a Go implementation of the PKCS#11 API. It wraps the library closely, but uses Go idioms where
+they make sense. It has been tested with SoftHSM.
 
 The version used is "PKCS #11 Cryptographic Token Interface Base Specification Version 3.0", see
 <http://docs.oasis-open.org/pkcs11/pkcs11-base/v3.0/pkcs11-base-v3.0.html>. Note that the header
-files listed there are *broken*, the fixed ones live in a [github repo](https://github.com/oasis-tcs/pkcs11/tree/master/working/headers).
-From that repo commit 188b0b1024403f1907b6cf5fedc0bc148c2221a2 was pulled into this repository.
+files listed there are *broken*, the fixed ones live in a [github repo](https://github.com/oasis-tcs/pkcs11/tree/pkcs11-3.00/published/3-00).
+From that repo commit d8d3a0b7c47d7cc129063004f1fce6553bc70839 was pulled into this repository.
 
 ## SoftHSM
 
@@ -15,7 +15,7 @@ From that repo commit 188b0b1024403f1907b6cf5fedc0bc148c2221a2 was pulled into t
  *  Then use `softhsm` to init it
 
     ~~~
-    softhsm --init-token --slot 0 --label test --pin 1234
+    softhsm2-util --init-token --slot 0 --label test --pin 1234
     ~~~
 
  *  Then use `libsofthsm2.so` as the pkcs11 module:
@@ -23,6 +23,16 @@ From that repo commit 188b0b1024403f1907b6cf5fedc0bc148c2221a2 was pulled into t
     ~~~ go
     p := pkcs11.New("/usr/lib/softhsm/libsofthsm2.so")
     ~~~
+
+### Mac OS X
+
+ *  If installing `softhsm` via `homebrew`, set the environment variable
+    `SOFTHSM_LIB` to the location of the homebrew installation:
+
+  ~~~
+  export SOFTHSM_LIB=/opt/homebrew/Cellar/softhsm/2.6.1/lib/softhsm/libsofthsm2.so
+  ~~~
+
 
 ## Examples
 
