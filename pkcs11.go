@@ -48,6 +48,7 @@ struct ctx *New(const char *module)
 	}
 	list = (CK_C_GetFunctionList) GetProcAddress(c->handle, "C_GetFunctionList");
 	if (list == NULL) {
+		FreeLibrary(c->handle);
 		free(c);
 		return NULL;
 	}
@@ -59,6 +60,12 @@ struct ctx *New(const char *module)
 void Destroy(struct ctx *c)
 {
 	if (!c) {
+		return;
+	}
+	if (c->handle == NULL) {
+		return;
+	}
+	if (!FreeLibrary(c->handle)) {
 		return;
 	}
 	free(c);
@@ -83,6 +90,7 @@ struct ctx *New(const char *module)
 	}
 	list = (CK_C_GetFunctionList) dlsym(c->handle, "C_GetFunctionList");
 	if (list == NULL) {
+		dlclose(c->handle);
 		free(c);
 		return NULL;
 	}
