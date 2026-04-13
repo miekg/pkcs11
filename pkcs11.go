@@ -435,6 +435,8 @@ CK_RV DecryptUpdate(struct ctx * c, CK_SESSION_HANDLE session,
 	if (rv != CKR_OK) {
 		return rv;
 	}
+	if (*partlen == 0)
+		return CKR_OK;
 	*part = calloc(*partlen, sizeof(CK_BYTE));
 	if (*part == NULL) {
 		return CKR_HOST_MEMORY;
