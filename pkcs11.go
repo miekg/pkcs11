@@ -379,6 +379,8 @@ CK_RV EncryptUpdate(struct ctx * c, CK_SESSION_HANDLE session,
 	if (rv != CKR_OK) {
 		return rv;
 	}
+	if (*cipherlen == 0)
+		return CKR_OK;
 	*cipher = calloc(*cipherlen, sizeof(CK_BYTE));
 	if (*cipher == NULL) {
 		return CKR_HOST_MEMORY;
