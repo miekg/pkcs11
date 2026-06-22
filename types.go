@@ -263,14 +263,14 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	}
 
 	switch p := x.(type) {
-	case *GCMParams, *OAEPParams, *ECDH1DeriveParams, *RSAAESKeyWrapParams:
+	case *GCMParams, *OAEPParams, *ECDH1DeriveParams, *RSAAESKeyWrapParams, *MLDSAParams, *HashMLDSAParams:
 		// contains pointers; defer serialization until cMechanism
 		m.generator = p
 	case []byte:
 		m.Parameter = p
 	default:
 		panic("parameter must be one of type: []byte, *GCMParams, *OAEPParams, *ECDH1DeriveParams," +
-			  " *RSAAESKeyWrapParams")
+			  " *RSAAESKeyWrapParams, *MLDSAParams, *HashMLDSAParams")
 	}
 
 	return m
@@ -295,6 +295,10 @@ func cMechanism(mechList []*Mechanism) (arena, *C.CK_MECHANISM) {
 		param, arena = cECDH1DeriveParams(p, arena)
 	case *RSAAESKeyWrapParams:
 		param, arena = cRSAAESKeyWrapParams(p, arena)
+	case *MLDSAParams:
+		param, arena = cMLDSAParams(p, arena)
+	case *HashMLDSAParams:
+		param, arena = cHashMLDSAParams(p, arena)
 	}
 	if len(param) != 0 {
 		buf, len := arena.Allocate(param)

@@ -33,6 +33,18 @@ static inline void putRSAAESKeyWrapParams(CK_RSA_AES_KEY_WRAP_PARAMS_PTR params,
 {
 	params->pOAEPParams = pOAEPParams;
 }
+
+static inline void putMLDSAContext(CK_SIGN_ADDITIONAL_CONTEXT *params, CK_BYTE_PTR pContext, CK_ULONG ulContextLen)
+{
+	params->pContext = pContext;
+	params->ulContextLen = ulContextLen;
+}
+
+static inline void putHashMLDSAContext(CK_HASH_SIGN_ADDITIONAL_CONTEXT *params, CK_BYTE_PTR pContext, CK_ULONG ulContextLen)
+{
+	params->pContext = pContext;
+	params->ulContextLen = ulContextLen;
+}
 */
 import "C"
 import "unsafe"
@@ -224,6 +236,52 @@ func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
 	if len(param) != 0 {
 		buf, _ := arena.Allocate(param)
 		C.putRSAAESKeyWrapParams(&params, buf)
+	}
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
+// MLDSAParams holds parameters for the CKM_ML_DSA mechanism (CK_SIGN_ADDITIONAL_CONTEXT).
+type MLDSAParams struct {
+	HedgeVariant uint
+	Context      []byte
+}
+
+// NewMLDSAParams creates a CK_SIGN_ADDITIONAL_CONTEXT suitable for use with CKM_ML_DSA.
+func NewMLDSAParams(hedgeVariant uint, context []byte) *MLDSAParams {
+	return &MLDSAParams{HedgeVariant: hedgeVariant, Context: context}
+}
+
+func cMLDSAParams(p *MLDSAParams, arena arena) ([]byte, arena) {
+	params := C.CK_SIGN_ADDITIONAL_CONTEXT{
+		hedgeVariant: C.CK_HEDGE_TYPE(p.HedgeVariant),
+	}
+	if len(p.Context) != 0 {
+		buf, bufLen := arena.Allocate(p.Context)
+		C.putMLDSAContext(&params, C.CK_BYTE_PTR(buf), bufLen)
+	}
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
+// HashMLDSAParams holds parameters for the CKM_HASH_ML_DSA mechanism (CK_HASH_SIGN_ADDITIONAL_CONTEXT).
+type HashMLDSAParams struct {
+	HedgeVariant uint
+	Context      []byte
+	Hash         uint
+}
+
+// NewHashMLDSAParams creates a CK_HASH_SIGN_ADDITIONAL_CONTEXT suitable for use with CKM_HASH_ML_DSA.
+func NewHashMLDSAParams(hedgeVariant uint, context []byte, hash uint) *HashMLDSAParams {
+	return &HashMLDSAParams{HedgeVariant: hedgeVariant, Context: context, Hash: hash}
+}
+
+func cHashMLDSAParams(p *HashMLDSAParams, arena arena) ([]byte, arena) {
+	params := C.CK_HASH_SIGN_ADDITIONAL_CONTEXT{
+		hedgeVariant: C.CK_HEDGE_TYPE(p.HedgeVariant),
+		hash:         C.CK_MECHANISM_TYPE(p.Hash),
+	}
+	if len(p.Context) != 0 {
+		buf, bufLen := arena.Allocate(p.Context)
+		C.putHashMLDSAContext(&params, C.CK_BYTE_PTR(buf), bufLen)
 	}
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
