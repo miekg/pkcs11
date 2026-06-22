@@ -1,12 +1,12 @@
-/* Copyright (c) OASIS Open 2016. All Rights Reserved./
+/* Copyright (c) OASIS Open 2016, 2019, 2024. All Rights Reserved./
  * /Distributed under the terms of the OASIS IPR Policy,
  * [http://www.oasis-open.org/policies-guidelines/ipr], AS-IS, WITHOUT ANY
  * IMPLIED OR EXPRESS WARRANTY; there is no warranty of MERCHANTABILITY, FITNESS FOR A
  * PARTICULAR PURPOSE or NONINFRINGEMENT of the rights of others.
  */
-        
+
 /* Latest version of the specification:
- * http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/pkcs11-base-v2.40.html
+ * http://docs.oasis-open.org/pkcs11/pkcs11-spec/v3.2/pkcs11-spec-v3.2.html
  */
 
 /* This header file contains pretty much everything about all the
@@ -937,3 +937,394 @@ CK_PKCS11_FUNCTION_INFO(C_WaitForSlotEvent)
 );
 #endif
 
+#ifndef CK_PKCS11_2_0_ONLY
+/* C_GetInterfaceList returns all the interfaces supported by the module*/
+CK_PKCS11_FUNCTION_INFO(C_GetInterfaceList)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_INTERFACE_PTR  pInterfacesList,  /* returned interfaces */
+  CK_ULONG_PTR      pulCount          /* number of interfaces returned */
+);
+#endif
+
+/* C_GetInterface returns a specific interface from the module. */
+CK_PKCS11_FUNCTION_INFO(C_GetInterface)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_UTF8CHAR_PTR       pInterfaceName, /* name of the interface */
+  CK_VERSION_PTR        pVersion,       /* version of the interface */
+  CK_INTERFACE_PTR_PTR  ppInterface,    /* returned interface */
+  CK_FLAGS 		flags           /* flags controlling the semantics
+                                         * of the interface */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_LoginUser)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,  /* the session's handle */
+  CK_USER_TYPE      userType,  /* the user type */
+  CK_UTF8CHAR_PTR   pPin,      /* the user's PIN */
+  CK_ULONG          ulPinLen,  /* the length of the PIN */
+  CK_UTF8CHAR_PTR   pUsername, /* the user's name */
+  CK_ULONG          ulUsernameLen /*the length of the user's name */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_SessionCancel)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,  /* the session's handle */
+  CK_FLAGS          flags      /* flags control which sessions are cancelled */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageEncryptInit)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR  pMechanism,  /* the encryption mechanism */
+  CK_OBJECT_HANDLE  hKey         /* handle of encryption key */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_EncryptMessage)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pAssociatedData,  /* AEAD Associated data */
+  CK_ULONG ulAssociatedDataLen, /* AEAD Associated data length */
+  CK_BYTE_PTR pPlaintext,       /* plain text  */
+  CK_ULONG ulPlaintextLen,      /* plain text length */
+  CK_BYTE_PTR pCiphertext,      /* gets cipher text */
+  CK_ULONG_PTR pulCiphertextLen /* gets cipher text length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_EncryptMessageBegin)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pAssociatedData,  /* AEAD Associated data */
+  CK_ULONG ulAssociatedDataLen  /* AEAD Associated data length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_EncryptMessageNext)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,        /* the session's handle */
+  CK_VOID_PTR pParameter,            /* message specific parameter */
+  CK_ULONG ulParameterLen,           /* length of message specific parameter */
+  CK_BYTE_PTR pPlaintextPart,        /* plain text */
+  CK_ULONG ulPlaintextPartLen,       /* plain text length */
+  CK_BYTE_PTR pCiphertextPart,       /* gets cipher text */
+  CK_ULONG_PTR pulCiphertextPartLen, /* gets cipher text length */
+  CK_FLAGS flags                     /* multi mode flag */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageEncryptFinal)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession        /* the session's handle */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageDecryptInit)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR  pMechanism,  /* the decryption mechanism */
+  CK_OBJECT_HANDLE  hKey         /* handle of decryption key */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_DecryptMessage)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pAssociatedData,  /* AEAD Associated data */
+  CK_ULONG ulAssociatedDataLen, /* AEAD Associated data length */
+  CK_BYTE_PTR pCiphertext,      /* cipher text */
+  CK_ULONG ulCiphertextLen,     /* cipher text length */
+  CK_BYTE_PTR pPlaintext,       /* gets plain text */
+  CK_ULONG_PTR pulPlaintextLen  /* gets plain text length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_DecryptMessageBegin)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pAssociatedData,  /* AEAD Associated data */
+  CK_ULONG ulAssociatedDataLen  /* AEAD Associated data length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_DecryptMessageNext)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,        /* the session's handle */
+  CK_VOID_PTR pParameter,            /* message specific parameter */
+  CK_ULONG ulParameterLen,           /* length of message specific parameter */
+  CK_BYTE_PTR pCiphertextPart,       /* cipher text */
+  CK_ULONG ulCiphertextPartLen,      /* cipher text length */
+  CK_BYTE_PTR pPlaintextPart,        /* gets plain text */
+  CK_ULONG_PTR pulPlaintextPartLen,  /* gets plain text length */
+  CK_FLAGS flags                     /* multi mode flag */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageDecryptFinal)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession        /* the session's handle */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageSignInit)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR  pMechanism,  /* the signing mechanism */
+  CK_OBJECT_HANDLE  hKey         /* handle of signing key */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_SignMessage)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pData,            /* data to sign */
+  CK_ULONG ulDataLen,           /* data to sign length */
+  CK_BYTE_PTR pSignature,       /* gets signature */
+  CK_ULONG_PTR pulSignatureLen  /* gets signature length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_SignMessageBegin)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen      /* length of message specific parameter */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_SignMessageNext)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pData,            /* data to sign */
+  CK_ULONG ulDataLen,           /* data to sign length */
+  CK_BYTE_PTR pSignature,       /* gets signature */
+  CK_ULONG_PTR pulSignatureLen  /* gets signature length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageSignFinal)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession        /* the session's handle */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageVerifyInit)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR  pMechanism,  /* the signing mechanism */
+  CK_OBJECT_HANDLE  hKey         /* handle of signing key */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifyMessage)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pData,            /* data to sign */
+  CK_ULONG ulDataLen,           /* data to sign length */
+  CK_BYTE_PTR pSignature,       /* signature */
+  CK_ULONG ulSignatureLen       /* signature length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifyMessageBegin)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen      /* length of message specific parameter */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifyMessageNext)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,   /* the session's handle */
+  CK_VOID_PTR pParameter,       /* message specific parameter */
+  CK_ULONG ulParameterLen,      /* length of message specific parameter */
+  CK_BYTE_PTR pData,            /* data to sign */
+  CK_ULONG ulDataLen,           /* data to sign length */
+  CK_BYTE_PTR pSignature,       /* signature */
+  CK_ULONG ulSignatureLen       /* signature length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_MessageVerifyFinal)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession        /* the session's handle */
+);
+#endif
+
+#ifndef CK_PKCS11_3_0_ONLY
+CK_PKCS11_FUNCTION_INFO(C_EncapsulateKey)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR pMechanism,   /* the encapsulation mechanism */
+  CK_OBJECT_HANDLE hPublicKey,   /* the encapsulating key */
+  CK_ATTRIBUTE_PTR pTemplate,    /* new key template */
+  CK_ULONG ulAttributeCount,     /* template length */
+  CK_BYTE_PTR pCiphertext,       /* the wrapped key */
+  CK_ULONG_PTR pulCiphertextLen, /* the wrapped key size */
+  CK_OBJECT_HANDLE_PTR phKey     /* the encapsulated key */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_DecapsulateKey)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR pMechanism,   /* the decapsulation mechanism */
+  CK_OBJECT_HANDLE hPrivateKey,  /* the decapsulating key */
+  CK_ATTRIBUTE_PTR pTemplate,    /* new key template */
+  CK_ULONG ulAttributeCount,     /* template length */
+  CK_BYTE_PTR pCiphertext,       /* the wrapped key */
+  CK_ULONG ulCiphertextLen,      /* the wrapped key size */
+  CK_OBJECT_HANDLE_PTR phKey     /* the decapsulated key */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifySignatureInit)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_MECHANISM_PTR pMechanism,   /* the verification mechanism */
+  CK_OBJECT_HANDLE hKey,         /* verification key */
+  CK_BYTE_PTR pSignature,        /* signature */
+  CK_ULONG ulSignatureLen        /* signature length */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifySignature)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_BYTE_PTR pData,             /* signed data */
+  CK_ULONG ulDataLen             /* length of signed data */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifySignatureUpdate)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_BYTE_PTR pPart,             /* signed data */
+  CK_ULONG ulPartLen             /* length of signed data */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_VerifySignatureFinal)
+#ifdef CK_NEED_ARG_LIST
+(
+   CK_SESSION_HANDLE hSession    /* the session's handle */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_GetSessionValidationFlags)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,             /* the session's handle */
+  CK_SESSION_VALIDATION_FLAGS_TYPE type,  /* which state of flags */
+  CK_FLAGS_PTR pFlags                     /* validation flags */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_AsyncComplete)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,      /* the session's handle */
+  CK_UTF8CHAR_PTR pFunctionName,   /* pkcs11 function name */
+  CK_ASYNC_DATA_PTR pResult        /* operation result */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_AsyncGetID)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_UTF8CHAR_PTR pFunctionName, /* pkcs11 function name */
+  CK_ULONG_PTR pulID             /* persistent operation id */
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_AsyncJoin)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,    /* the session's handle */
+  CK_UTF8CHAR_PTR pFunctionName, /* pkcs11 function name */
+  CK_ULONG ulID,                 /* persistent operation id */
+  CK_BYTE_PTR pData,             /* location for the data */
+  CK_ULONG ulData
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_WrapKeyAuthenticated)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,
+  CK_MECHANISM_PTR pMechanism,
+  CK_OBJECT_HANDLE hWrappingKey,
+  CK_OBJECT_HANDLE hKey,
+  CK_BYTE_PTR pAssociatedData,
+  CK_ULONG ulAssociatedDataLen,
+  CK_BYTE_PTR pWrappedKey,
+  CK_ULONG_PTR pulWrappedKeyLen
+);
+#endif
+
+CK_PKCS11_FUNCTION_INFO(C_UnwrapKeyAuthenticated)
+#ifdef CK_NEED_ARG_LIST
+(
+  CK_SESSION_HANDLE hSession,
+  CK_MECHANISM_PTR pMechanism,
+  CK_OBJECT_HANDLE hUnwrappingKey,
+  CK_BYTE_PTR pWrappedKey,
+  CK_ULONG ulWrappedKeyLen,
+  CK_ATTRIBUTE_PTR pTemplate,
+  CK_ULONG ulAttributeCount,
+  CK_BYTE_PTR pAssociatedData,
+  CK_ULONG ulAssociatedDataLen,
+  CK_OBJECT_HANDLE_PTR phKey
+);
+#endif
+
+#endif /* CK_PKCS11_3_0_ONLY */
+#endif /* CK_PKCS11_2_0_ONLY */

@@ -6,7 +6,7 @@ package pkcs11
 import "fmt"
 
 // Release is current version of the pkcs11 library.
-var Release = R{1, 1, 2}
+var Release = R{1, 2, 0} // TODO: update the version number and tag as the reviewer see fit
 
 // R holds the version of this library.
 type R struct {

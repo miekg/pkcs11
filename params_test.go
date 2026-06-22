@@ -1,5 +1,8 @@
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
 
 package pkcs11
 
@@ -12,17 +15,19 @@ const notFound = 0xffffffff
 
 // test whether mech is available; skip the test if it isn't
 func needMech(t *testing.T, p *Ctx, sh SessionHandle, mech uint) {
+	t.Helper()
 	slots, err := p.GetSlotList(true)
 	if err != nil {
 		t.Fatal("GetSlotList:", err)
 	}
-	_, err = p.GetMechanismInfo(slots[0], []*Mechanism{NewMechanism(mech, nil)})
-	if err == nil {
-		return
+	mechs, err := p.GetMechanismList(slots[0])
+	if err != nil {
+		t.Fatal("GetMechanismList:", err)
 	}
-	e, ok := err.(Error)
-	if !ok || e != CKR_MECHANISM_INVALID {
-		t.Fatal("GetMechanismInfo:", err)
+	for _, m := range mechs {
+		if m.Mechanism == mech {
+			return
+		}
 	}
 	t.Skipf("skipping test; mech 0x%X not supported by softhsm", mech)
 }
@@ -51,9 +56,33 @@ func findObject(t *testing.T, p *Ctx, sh SessionHandle, class uint, label string
 // generate a rsa key if it doesn't exist
 func getRSA(t *testing.T, p *Ctx, sh SessionHandle) (pub, priv ObjectHandle) {
 	pub = findObject(t, p, sh, CKO_PUBLIC_KEY, "paramstest")
-	priv = findObject(t, p, sh, CKO_PUBLIC_KEY, "paramstest")
+	priv = findObject(t, p, sh, CKO_PRIVATE_KEY, "paramstest")
 	if pub == notFound || priv == notFound {
-		pub, priv = generateRSAKeyPair(t, p, sh, "paramstest", false)
+		pubTmpl := []*Attribute{
+			NewAttribute(CKA_CLASS, CKO_PUBLIC_KEY),
+			NewAttribute(CKA_KEY_TYPE, CKK_RSA),
+			NewAttribute(CKA_TOKEN, false),
+			NewAttribute(CKA_VERIFY, true),
+			NewAttribute(CKA_ENCRYPT, true),
+			NewAttribute(CKA_PUBLIC_EXPONENT, []byte{1, 0, 1}),
+			NewAttribute(CKA_MODULUS_BITS, 2048),
+			NewAttribute(CKA_LABEL, "paramstest"),
+		}
+		privTmpl := []*Attribute{
+			NewAttribute(CKA_TOKEN, false),
+			NewAttribute(CKA_SIGN, true),
+			NewAttribute(CKA_DECRYPT, true),
+			NewAttribute(CKA_LABEL, "paramstest"),
+			NewAttribute(CKA_SENSITIVE, true),
+			NewAttribute(CKA_EXTRACTABLE, true),
+		}
+		var err error
+		pub, priv, err = p.GenerateKeyPair(sh,
+			[]*Mechanism{NewMechanism(CKM_RSA_PKCS_KEY_PAIR_GEN, nil)},
+			pubTmpl, privTmpl)
+		if err != nil {
+			t.Fatalf("GenerateKeyPair: %v", err)
+		}
 	}
 	return
 }
@@ -62,23 +91,23 @@ func TestPSSParams(t *testing.T) {
 	p := setenv(t)
 	sh := getSession(p, t)
 	defer finishSession(p, sh)
-	needMech(t, p, sh, CKM_RSA_PKCS_PSS)
+	needMech(t, p, sh, CKM_SHA256_RSA_PKCS_PSS)
 	pub, priv := getRSA(t, p, sh)
 
-	sum := []byte("1234567890abcdef1234567890abcdef")
+	msg := []byte("1234567890abcdef1234567890abcdef")
 	params := NewPSSParams(CKM_SHA256, CKG_MGF1_SHA256, 32)
-	mech := []*Mechanism{NewMechanism(CKM_RSA_PKCS_PSS, params)}
+	mech := []*Mechanism{NewMechanism(CKM_SHA256_RSA_PKCS_PSS, params)}
 	if err := p.SignInit(sh, mech, priv); err != nil {
 		t.Fatal("SignInit:", err)
 	}
-	sig, err := p.Sign(sh, sum)
+	sig, err := p.Sign(sh, msg)
 	if err != nil {
 		t.Fatal("Sign:", err)
 	}
 	if err := p.VerifyInit(sh, mech, pub); err != nil {
 		t.Fatal("VerifyInit:")
 	}
-	if err := p.Verify(sh, sum, sig); err != nil {
+	if err := p.Verify(sh, msg, sig); err != nil {
 		t.Fatal("Verify:")
 	}
 }

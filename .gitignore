@@ -1,3 +1,6 @@
 tags
 test_db/*/generation
 test_db/*/*.lock
+.env
+.go-version
+.vscode/

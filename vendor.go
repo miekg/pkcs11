@@ -1,3 +1,9 @@
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
+
 package pkcs11
 
 // Vendor specific range for Ncipher network HSM.
@@ -33,6 +39,13 @@ const (
 )
 
 // Vendor specific values for Mozilla NSS.
+// NOTE: CKA_TRUST_SERVER_AUTH, CKA_TRUST_CLIENT_AUTH, CKA_TRUST_CODE_SIGNING,
+// CKA_TRUST_EMAIL_PROTECTION, CKA_TRUST_TIME_STAMPING, and CKA_TRUST_OCSP_SIGNING
+// are now defined as standard PKCS#11 v3.2 attributes in pkcs11t.h/zconst.go.
+// The v3.2 values (0x0000062c–0x00000632) are NOT the same as the historical
+// NSS values (CKA_NSS + 0x2000 + N). Code using these against an NSS token
+// must use the NSS-specific values; code targeting a v3.2-compliant token must
+// use the standard values from zconst.go.
 const (
 	CKO_NSS_CRL                               = CKO_NSS + 1
 	CKO_NSS_SMIME                             = CKO_NSS + 2
@@ -67,8 +80,11 @@ const (
 	CKA_NSS_JPAKE_X2                          = CKA_NSS + 32
 	CKA_NSS_JPAKE_X2S                         = CKA_NSS + 33
 	CKA_NSS_MOZILLA_CA_POLICY                 = CKA_NSS + 34
-	CKA_NSS_SERVER_DISTRUST_AFTER             = CKA_NSS + 35
-	CKA_NSS_EMAIL_DISTRUST_AFTER              = CKA_NSS + 36
+	CKA_NSS_TRUST_SERVER_AUTH                 = CKA_NSS + 0x2008 // was CKA_TRUST + 8
+	CKA_NSS_TRUST_CLIENT_AUTH                 = CKA_NSS + 0x2009 // was CKA_TRUST + 9
+	CKA_NSS_TRUST_CODE_SIGNING                = CKA_NSS + 0x200A // was CKA_TRUST + 10
+	CKA_NSS_TRUST_EMAIL_PROTECTION            = CKA_NSS + 0x200B // was CKA_TRUST + 11
+	CKA_NSS_TRUST_TIME_STAMPING               = CKA_NSS + 0x200F // was CKA_TRUST + 15
 	CKA_TRUST_DIGITAL_SIGNATURE               = CKA_TRUST + 1
 	CKA_TRUST_NON_REPUDIATION                 = CKA_TRUST + 2
 	CKA_TRUST_KEY_ENCIPHERMENT                = CKA_TRUST + 3
@@ -76,14 +92,9 @@ const (
 	CKA_TRUST_KEY_AGREEMENT                   = CKA_TRUST + 5
 	CKA_TRUST_KEY_CERT_SIGN                   = CKA_TRUST + 6
 	CKA_TRUST_CRL_SIGN                        = CKA_TRUST + 7
-	CKA_TRUST_SERVER_AUTH                     = CKA_TRUST + 8
-	CKA_TRUST_CLIENT_AUTH                     = CKA_TRUST + 9
-	CKA_TRUST_CODE_SIGNING                    = CKA_TRUST + 10
-	CKA_TRUST_EMAIL_PROTECTION                = CKA_TRUST + 11
 	CKA_TRUST_IPSEC_END_SYSTEM                = CKA_TRUST + 12
 	CKA_TRUST_IPSEC_TUNNEL                    = CKA_TRUST + 13
 	CKA_TRUST_IPSEC_USER                      = CKA_TRUST + 14
-	CKA_TRUST_TIME_STAMPING                   = CKA_TRUST + 15
 	CKA_TRUST_STEP_UP_APPROVED                = CKA_TRUST + 16
 	CKA_CERT_SHA1_HASH                        = CKA_TRUST + 100
 	CKA_CERT_MD5_HASH                         = CKA_TRUST + 101

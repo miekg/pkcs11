@@ -1,23 +1,45 @@
 # PKCS#11
 
 This is a Go implementation of the PKCS#11 API. It wraps the library closely, but uses Go idiom where
-it makes sense. It has been tested with SoftHSM.
+it makes sense. It has been tested with [SoftHSMv3 by PQCToday](https://github.com/pqctoday/pqctoday-hsm).
 
-## SoftHSM
+The specification followed is [PKCS #11 Cryptographic Token Interface Version 3.2](https://docs.oasis-open.org/pkcs11/pkcs11-spec/v3.2/pkcs11-spec-v3.2.html).
+The C headers are fetched from the [OASIS pkcs11 repository](https://github.com/oasis-tcs/pkcs11/tree/pkcs11-3.20/published/3-02)
+at tag `pkcs11-3.20` (commit [`858bfc8b93ded02a40886e2321240b5978e1aa42`](https://github.com/oasis-tcs/pkcs11/tree/858bfc8b93ded02a40886e2321240b5978e1aa42/published/3-02)) via `make headers`.
 
- *  Make it use a custom configuration file `export SOFTHSM_CONF=$PWD/softhsm.conf`
+## Overview & Architecture
 
- *  Then use `softhsm` to init it
+The folowing diagrams help understand the architecture of this library.
 
-    ~~~
-    softhsm --init-token --slot 0 --label test --pin 1234
-    ~~~
+* [architecture diagrams](./docs/architecture-diagrams.md)
+* [component diagrams](./docs/component-diagrams.md)
+* [flow diagrams](./docs/flow-diagrams.md)
+* [sequence diagrams](./docs/sequence-diagrams.md)
 
- *  Then use `libsofthsm2.so` as the pkcs11 module:
+## PKCS#11 v3.2 support
 
-    ~~~ go
-    p := pkcs11.New("/usr/lib/softhsm/libsofthsm2.so")
-    ~~~
+Project `miekg/pkcs11` supports [PKCS#11 v3.2](https://docs.oasis-open.org/pkcs11/pkcs11-spec/v3.2/pkcs11-spec-v3.2.html), including:
+
+- `C_EncapsulateKey` / `C_DecapsulateKey` — KEM operations (§5.18.8 & §5.18.9)
+- ML-KEM key generation, encapsulation and decapsulation (`CKM_ML_KEM_KEY_PAIR_GEN`, `CKM_ML_KEM`)
+- New constants: `CKK_ML_KEM`, `CKP_ML_KEM_512/768/1024`, `CKA_ENCAPSULATE`, `CKA_DECAPSULATE`, `CKA_PARAMETER_SET`, `CKF_ENCAPSULATE`, `CKF_DECAPSULATE`
+
+## SoftHSMv3 - A Software HSM that implements PKCS#11 v3.2
+
+Integration tests require HSM compliant with PKCS#11 v3.2.
+[SoftHSMv3 by PQCToday](https://github.com/pqctoday/pqctoday-hsm) is a software
+HSM compliant with PKCS#11 v3.2.
+
+> Note: As of april 2026, https://github.com/softhsm/SoftHSMv2 is not compatible with PKCS#11 v3.2.
+
+No manual token setup is needed — `TestMain` creates an ephemeral token via the PKCS#11 API
+(`C_InitToken` / `C_InitPIN`) in a temporary directory and cleans it up after the run.
+
+Pass the path to the SoftHSMv3 shared library via `PKCS11_MODULE`:
+
+~~~ bash
+make integration PKCS11_MODULE=/path/to/libsofthsm3.so
+~~~
 
 ## Examples
 
@@ -65,4 +87,4 @@ fmt.Println()
 Further examples are included in the tests.
 
 To expose PKCS#11 keys using the [crypto.Signer interface](https://golang.org/pkg/crypto/#Signer),
-please see [github.com/thalesignite/crypto11](https://github.com/thalesignite/crypto11).
+please see [github.com/ThalesGroup/crypto11](https://github.com/ThalesGroup/crypto11).

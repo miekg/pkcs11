@@ -1,3 +1,9 @@
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
+
 // Package p11 wraps `miekg/pkcs11` to make it easier to use and more idiomatic
 // to Go, as compared with the more straightforward C wrapper that
 // `miekg/pkcs11` presents. All types are safe to use concurrently.

@@ -1,6 +1,8 @@
-// Copyright 2013 Miek Gieben. All rights reserved.
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
 
 package pkcs11
 
@@ -31,6 +33,18 @@ static inline void putRSAAESKeyWrapParams(CK_RSA_AES_KEY_WRAP_PARAMS_PTR params,
 {
 	params->pOAEPParams = pOAEPParams;
 }
+
+static inline void putMLDSAContext(CK_SIGN_ADDITIONAL_CONTEXT *params, CK_BYTE_PTR pContext, CK_ULONG ulContextLen)
+{
+	params->pContext = pContext;
+	params->ulContextLen = ulContextLen;
+}
+
+static inline void putHashMLDSAContext(CK_HASH_SIGN_ADDITIONAL_CONTEXT *params, CK_BYTE_PTR pContext, CK_ULONG ulContextLen)
+{
+	params->pContext = pContext;
+	params->ulContextLen = ulContextLen;
+}
 */
 import "C"
 import "unsafe"
@@ -55,13 +69,12 @@ type GCMParams struct {
 //
 // Encrypt/Decrypt. As an example:
 //
-//    gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
-//    p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)},
-//			aesObjHandle)
-//    ct, _ := p.ctx.Encrypt(session, pt)
-//    iv := gcmParams.IV()
-//    gcmParams.Free()
-//
+//	   gcmParams := pkcs11.NewGCMParams(make([]byte, 12), nil, 128)
+//	   p.ctx.EncryptInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_AES_GCM, gcmParams)},
+//				aesObjHandle)
+//	   ct, _ := p.ctx.Encrypt(session, pt)
+//	   iv := gcmParams.IV()
+//	   gcmParams.Free()
 func NewGCMParams(iv, aad []byte, tagSize int) *GCMParams {
 	return &GCMParams{
 		iv:      iv,
@@ -71,6 +84,11 @@ func NewGCMParams(iv, aad []byte, tagSize int) *GCMParams {
 }
 
 func cGCMParams(p *GCMParams) []byte {
+	// Build the struct on the stack first so we can set all fields,
+	// then copy it into arena-allocated C memory.  This gives p.params a
+	// stable address (not a dangling stack pointer) so that p.IV() can
+	// read back the IV that the token may have written into pIv after the
+	// operation completes (e.g. when the token generates its own nonce).
 	params := C.CK_GCM_PARAMS{
 		ulTagBits: C.CK_ULONG(p.tagSize),
 	}
@@ -194,6 +212,15 @@ func cECDH1DeriveParams(p *ECDH1DeriveParams, arena arena) ([]byte, arena) {
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
 
+// NewRSAAESKeyWrapParams creates a CK_RSA_AES_KEY_WRAP_PARAMS structure suitable for use with the CKM_RSA_AES_KEY_WRAP mechanism.
+func NewRSAAESKeyWrapParams(aesKeyBits uint, oaepParams OAEPParams) *RSAAESKeyWrapParams {
+	return &RSAAESKeyWrapParams{
+		AESKeyBits: aesKeyBits,
+		OAEPParams: oaepParams,
+	}
+}
+
+// RSAAESKeyWrapParams holds parameters for the CKM_RSA_AES_KEY_WRAP mechanism.
 type RSAAESKeyWrapParams struct {
 	AESKeyBits uint
 	OAEPParams OAEPParams
@@ -201,7 +228,7 @@ type RSAAESKeyWrapParams struct {
 
 func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
 	var param []byte
-	params := C.CK_RSA_AES_KEY_WRAP_PARAMS {
+	params := C.CK_RSA_AES_KEY_WRAP_PARAMS{
 		ulAESKeyBits: C.CK_MECHANISM_TYPE(p.AESKeyBits),
 	}
 
@@ -213,3 +240,48 @@ func cRSAAESKeyWrapParams(p *RSAAESKeyWrapParams, arena arena) ([]byte, arena) {
 	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
 }
 
+// MLDSAParams holds parameters for the CKM_ML_DSA mechanism (CK_SIGN_ADDITIONAL_CONTEXT).
+type MLDSAParams struct {
+	HedgeVariant uint
+	Context      []byte
+}
+
+// NewMLDSAParams creates a CK_SIGN_ADDITIONAL_CONTEXT suitable for use with CKM_ML_DSA.
+func NewMLDSAParams(hedgeVariant uint, context []byte) *MLDSAParams {
+	return &MLDSAParams{HedgeVariant: hedgeVariant, Context: context}
+}
+
+func cMLDSAParams(p *MLDSAParams, arena arena) ([]byte, arena) {
+	params := C.CK_SIGN_ADDITIONAL_CONTEXT{
+		hedgeVariant: C.CK_HEDGE_TYPE(p.HedgeVariant),
+	}
+	if len(p.Context) != 0 {
+		buf, bufLen := arena.Allocate(p.Context)
+		C.putMLDSAContext(&params, C.CK_BYTE_PTR(buf), bufLen)
+	}
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}
+
+// HashMLDSAParams holds parameters for the CKM_HASH_ML_DSA mechanism (CK_HASH_SIGN_ADDITIONAL_CONTEXT).
+type HashMLDSAParams struct {
+	HedgeVariant uint
+	Context      []byte
+	Hash         uint
+}
+
+// NewHashMLDSAParams creates a CK_HASH_SIGN_ADDITIONAL_CONTEXT suitable for use with CKM_HASH_ML_DSA.
+func NewHashMLDSAParams(hedgeVariant uint, context []byte, hash uint) *HashMLDSAParams {
+	return &HashMLDSAParams{HedgeVariant: hedgeVariant, Context: context, Hash: hash}
+}
+
+func cHashMLDSAParams(p *HashMLDSAParams, arena arena) ([]byte, arena) {
+	params := C.CK_HASH_SIGN_ADDITIONAL_CONTEXT{
+		hedgeVariant: C.CK_HEDGE_TYPE(p.HedgeVariant),
+		hash:         C.CK_MECHANISM_TYPE(p.Hash),
+	}
+	if len(p.Context) != 0 {
+		buf, bufLen := arena.Allocate(p.Context)
+		C.putHashMLDSAContext(&params, C.CK_BYTE_PTR(buf), bufLen)
+	}
+	return memBytes(unsafe.Pointer(&params), unsafe.Sizeof(params)), arena
+}

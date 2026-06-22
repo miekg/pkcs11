@@ -1,6 +1,8 @@
-// Copyright 2013 Miek Gieben. All rights reserved.
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
 
 package pkcs11
 
@@ -261,14 +263,14 @@ func NewMechanism(mech uint, x interface{}) *Mechanism {
 	}
 
 	switch p := x.(type) {
-	case *GCMParams, *OAEPParams, *ECDH1DeriveParams, *RSAAESKeyWrapParams:
+	case *GCMParams, *OAEPParams, *ECDH1DeriveParams, *RSAAESKeyWrapParams, *MLDSAParams, *HashMLDSAParams:
 		// contains pointers; defer serialization until cMechanism
 		m.generator = p
 	case []byte:
 		m.Parameter = p
 	default:
 		panic("parameter must be one of type: []byte, *GCMParams, *OAEPParams, *ECDH1DeriveParams," +
-			  " *RSAAESKeyWrapParams")
+			  " *RSAAESKeyWrapParams, *MLDSAParams, *HashMLDSAParams")
 	}
 
 	return m
@@ -293,6 +295,10 @@ func cMechanism(mechList []*Mechanism) (arena, *C.CK_MECHANISM) {
 		param, arena = cECDH1DeriveParams(p, arena)
 	case *RSAAESKeyWrapParams:
 		param, arena = cRSAAESKeyWrapParams(p, arena)
+	case *MLDSAParams:
+		param, arena = cMLDSAParams(p, arena)
+	case *HashMLDSAParams:
+		param, arena = cHashMLDSAParams(p, arena)
 	}
 	if len(param) != 0 {
 		buf, len := arena.Allocate(param)

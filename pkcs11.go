@@ -1,12 +1,14 @@
-// Copyright 2013 Miek Gieben. All rights reserved.
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
 
 //go:generate go run const_generate.go
 
 // Package pkcs11 is a wrapper around the PKCS#11 cryptographic library.
 // Latest version of the specification:
-// http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/pkcs11-base-v2.40.html
+// https://docs.oasis-open.org/pkcs11/pkcs11-spec/v3.2/pkcs11-spec-v3.2.html
 package pkcs11
 
 // It is *assumed*, that:
@@ -33,7 +35,8 @@ package pkcs11
 
 struct ctx {
 	HMODULE handle;
-	CK_FUNCTION_LIST_PTR sym;
+	CK_FUNCTION_LIST_PTR sym;       // v2.40 function table for backward compatibility
+	CK_FUNCTION_LIST_3_2_PTR fl32;  // v3.2 function table, NULL if not supported
 };
 
 // New initializes a ctx and fills the symbol table.
@@ -52,6 +55,21 @@ struct ctx *New(const char *module)
 		return NULL;
 	}
 	list(&c->sym);
+
+	// C_GetInterface is a v3.0 function — it does not exist in CK_FUNCTION_LIST
+	// (v2.40).  Look it up directly from the library handle instead.
+	CK_RV (*getInterface)(CK_UTF8CHAR_PTR, CK_VERSION_PTR, CK_INTERFACE_PTR_PTR, CK_FLAGS) =
+		(CK_RV (*)(CK_UTF8CHAR_PTR, CK_VERSION_PTR, CK_INTERFACE_PTR_PTR, CK_FLAGS))
+		GetProcAddress(c->handle, "C_GetInterface");
+	if (getInterface != NULL) {
+		CK_VERSION v32 = {3, 2};
+		CK_INTERFACE_PTR iface = NULL;
+		if (getInterface((CK_UTF8CHAR_PTR)"PKCS 11", &v32, &iface, 0) == CKR_OK
+		    && iface != NULL) {
+			c->fl32 = (CK_FUNCTION_LIST_3_2_PTR)iface->pFunctionList;
+		}
+	}
+
 	return c;
 }
 
@@ -68,7 +86,8 @@ void Destroy(struct ctx *c)
 
 struct ctx {
 	void *handle;
-	CK_FUNCTION_LIST_PTR sym;
+	CK_FUNCTION_LIST_PTR sym;      // v2.40 function table for backward compatibility
+	CK_FUNCTION_LIST_3_2_PTR fl32; // v3.2 function table, NULL if not supported
 };
 
 // New initializes a ctx and fills the symbol table.
@@ -87,6 +106,21 @@ struct ctx *New(const char *module)
 		return NULL;
 	}
 	list(&c->sym);
+
+	// C_GetInterface is a v3.0 function — it does not exist in CK_FUNCTION_LIST
+	// (v2.40).  Look it up directly from the library handle instead.
+	CK_RV (*getInterface)(CK_UTF8CHAR_PTR, CK_VERSION_PTR, CK_INTERFACE_PTR_PTR, CK_FLAGS) =
+		(CK_RV (*)(CK_UTF8CHAR_PTR, CK_VERSION_PTR, CK_INTERFACE_PTR_PTR, CK_FLAGS))
+		dlsym(c->handle, "C_GetInterface");
+	if (getInterface != NULL) {
+		CK_VERSION v32 = {3, 2};
+		CK_INTERFACE_PTR iface = NULL;
+		if (getInterface((CK_UTF8CHAR_PTR)"PKCS 11", &v32, &iface, 0) == CKR_OK
+		    && iface != NULL) {
+			c->fl32 = (CK_FUNCTION_LIST_3_2_PTR)iface->pFunctionList;
+		}
+	}
+
 	return c;
 }
 
@@ -773,6 +807,131 @@ static inline CK_VOID_PTR getAttributePval(CK_ATTRIBUTE_PTR a)
 	return a->pValue;
 }
 
+// ── PKCS #11 v3.2 trampolines ─────────────────────────────────────────────
+// All functions call through c->fl32, which is NULL when the token does not
+// support v3.2.  The guard macro returns CKR_FUNCTION_NOT_SUPPORTED in that
+// case so callers receive a well-defined error rather than a crash.
+// Argument order matches the official OASIS pkcs11f.h exactly.
+// ──────────────────────────────────────────────────────────────────────────
+
+#define P11_V32_GUARD(c, fn) \
+	if ((c)->fl32 == NULL || (c)->fl32->fn == NULL) \
+		return CKR_FUNCTION_NOT_SUPPORTED
+
+CK_RV EncapsulateKey(struct ctx *c, CK_SESSION_HANDLE session,
+		     CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE pubKey,
+		     CK_ATTRIBUTE_PTR tmpl, CK_ULONG tmplCount,
+		     CK_BYTE_PTR pCiphertext, CK_ULONG_PTR pulCiphertextLen,
+		     CK_OBJECT_HANDLE_PTR phKey)
+{
+	P11_V32_GUARD(c, C_EncapsulateKey);
+	return c->fl32->C_EncapsulateKey(session, mechanism, pubKey,
+		tmpl, tmplCount, pCiphertext, pulCiphertextLen, phKey);
+}
+
+CK_RV DecapsulateKey(struct ctx *c, CK_SESSION_HANDLE session,
+		     CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE privKey,
+		     CK_ATTRIBUTE_PTR tmpl, CK_ULONG tmplCount,
+		     CK_BYTE_PTR pCiphertext, CK_ULONG ulCiphertextLen,
+		     CK_OBJECT_HANDLE_PTR phKey)
+{
+	P11_V32_GUARD(c, C_DecapsulateKey);
+	return c->fl32->C_DecapsulateKey(session, mechanism, privKey,
+		tmpl, tmplCount, pCiphertext, ulCiphertextLen, phKey);
+}
+
+CK_RV VerifySignatureInit(struct ctx *c, CK_SESSION_HANDLE session,
+			  CK_MECHANISM_PTR mechanism, CK_OBJECT_HANDLE key,
+			  CK_BYTE_PTR pSignature, CK_ULONG ulSignatureLen)
+{
+	P11_V32_GUARD(c, C_VerifySignatureInit);
+	return c->fl32->C_VerifySignatureInit(session, mechanism, key,
+		pSignature, ulSignatureLen);
+}
+
+CK_RV VerifySignature(struct ctx *c, CK_SESSION_HANDLE session,
+		      CK_BYTE_PTR pData, CK_ULONG ulDataLen)
+{
+	P11_V32_GUARD(c, C_VerifySignature);
+	return c->fl32->C_VerifySignature(session, pData, ulDataLen);
+}
+
+CK_RV VerifySignatureUpdate(struct ctx *c, CK_SESSION_HANDLE session,
+			    CK_BYTE_PTR pPart, CK_ULONG ulPartLen)
+{
+	P11_V32_GUARD(c, C_VerifySignatureUpdate);
+	return c->fl32->C_VerifySignatureUpdate(session, pPart, ulPartLen);
+}
+
+CK_RV VerifySignatureFinal(struct ctx *c, CK_SESSION_HANDLE session)
+{
+	P11_V32_GUARD(c, C_VerifySignatureFinal);
+	return c->fl32->C_VerifySignatureFinal(session);
+}
+
+CK_RV GetSessionValidationFlags(struct ctx *c, CK_SESSION_HANDLE session,
+				CK_SESSION_VALIDATION_FLAGS_TYPE type,
+				CK_FLAGS_PTR pFlags)
+{
+	P11_V32_GUARD(c, C_GetSessionValidationFlags);
+	return c->fl32->C_GetSessionValidationFlags(session, type, pFlags);
+}
+
+CK_RV WrapKeyAuthenticated(struct ctx *c, CK_SESSION_HANDLE session,
+			   CK_MECHANISM_PTR mechanism,
+			   CK_OBJECT_HANDLE wrappingKey, CK_OBJECT_HANDLE key,
+			   CK_BYTE_PTR pAssociatedData, CK_ULONG ulAssociatedDataLen,
+			   CK_BYTE_PTR *pWrappedKey, CK_ULONG_PTR pulWrappedKeyLen)
+{
+	P11_V32_GUARD(c, C_WrapKeyAuthenticated);
+	return c->fl32->C_WrapKeyAuthenticated(session, mechanism,
+		wrappingKey, key,
+		pAssociatedData, ulAssociatedDataLen,
+		*pWrappedKey, pulWrappedKeyLen);
+}
+
+// Official pkcs11f.h order: pTemplate/ulAttributeCount BEFORE pAssociatedData
+CK_RV UnwrapKeyAuthenticated(struct ctx *c, CK_SESSION_HANDLE session,
+			     CK_MECHANISM_PTR mechanism,
+			     CK_OBJECT_HANDLE unwrappingKey,
+			     CK_BYTE_PTR pWrappedKey, CK_ULONG ulWrappedKeyLen,
+			     CK_ATTRIBUTE_PTR tmpl, CK_ULONG tmplCount,
+			     CK_BYTE_PTR pAssociatedData, CK_ULONG ulAssociatedDataLen,
+			     CK_OBJECT_HANDLE_PTR phKey)
+{
+	P11_V32_GUARD(c, C_UnwrapKeyAuthenticated);
+	return c->fl32->C_UnwrapKeyAuthenticated(session, mechanism,
+		unwrappingKey,
+		pWrappedKey, ulWrappedKeyLen,
+		tmpl, tmplCount,
+		pAssociatedData, ulAssociatedDataLen,
+		phKey);
+}
+
+CK_RV AsyncComplete(struct ctx *c, CK_SESSION_HANDLE session,
+		    CK_UTF8CHAR_PTR pFunctionName, CK_ASYNC_DATA_PTR pResult)
+{
+	P11_V32_GUARD(c, C_AsyncComplete);
+	return c->fl32->C_AsyncComplete(session, pFunctionName, pResult);
+}
+
+CK_RV AsyncGetID(struct ctx *c, CK_SESSION_HANDLE session,
+		 CK_UTF8CHAR_PTR pFunctionName, CK_ULONG_PTR pulID)
+{
+	P11_V32_GUARD(c, C_AsyncGetID);
+	return c->fl32->C_AsyncGetID(session, pFunctionName, pulID);
+}
+
+CK_RV AsyncJoin(struct ctx *c, CK_SESSION_HANDLE session,
+		CK_UTF8CHAR_PTR pFunctionName, CK_ULONG ulID,
+		CK_BYTE_PTR pData, CK_ULONG ulData)
+{
+	P11_V32_GUARD(c, C_AsyncJoin);
+	return c->fl32->C_AsyncJoin(session, pFunctionName, ulID,
+		pData, ulData);
+}
+
+#undef P11_V32_GUARD
 */
 import "C"
 import (
@@ -1636,4 +1795,229 @@ func (c *Ctx) waitForSlotEventHelper(f uint, sl chan SlotEvent) {
 	C.WaitForSlotEvent(c.ctx, C.CK_FLAGS(f), &slotID)
 	sl <- SlotEvent{uint(slotID)}
 	close(sl) // TODO(miek): Sending and then closing ...?
+}
+
+// ── PKCS #11 v3.2 Go methods ─────────────────────────────────────────────────
+// ── ML-KEM: Encapsulation / Decapsulation ────────────────────────────────────
+
+// All methods return ErrFunctionNotSupported when called against a token that
+// does not advertise a v3.2 interface via C_GetInterface.
+
+// EncapsulateKey performs KEM encapsulation (PKCS #11 v3.2 §5.18.8).
+// Returns the ciphertext and a handle to the newly derived shared-secret key.
+//   - ciphertext: the KEM ciphertext to be sent to the recipient
+//   - key:        handle to the newly derived shared-secret key object
+//
+// The attrs template controls the type of the derived key object, for example:
+//
+//	symTmpl := []*pkcs11.Attribute{
+//	    pkcs11.NewAttribute(pkcs11.CKA_CLASS,     pkcs11.CKO_SECRET_KEY),
+//	    pkcs11.NewAttribute(pkcs11.CKA_KEY_TYPE,  pkcs11.CKK_AES),
+//	    pkcs11.NewAttribute(pkcs11.CKA_VALUE_LEN, 32),
+//	    pkcs11.NewAttribute(pkcs11.CKA_TOKEN,     false),
+//	}
+//	ct, symKey, err := ctx.EncapsulateKey(sh,
+//	    []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ML_KEM, nil)},
+//	    pubKey, symTmpl)
+func (c *Ctx) EncapsulateKey(sh SessionHandle, m []*Mechanism, pubKey ObjectHandle, attrs []*Attribute) ([]byte, ObjectHandle, error) {
+	mecharena, mech := cMechanism(m)
+	defer mecharena.Free()
+	attrarena, tmpl, tmplCount := cAttributeList(attrs)
+	defer attrarena.Free()
+
+	var phKey C.CK_OBJECT_HANDLE
+	var ctLen C.CK_ULONG
+	rv := C.EncapsulateKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(pubKey), tmpl, tmplCount,
+		nil, &ctLen, &phKey)
+	if rv != C.CKR_OK && rv != C.CKR_BUFFER_TOO_SMALL {
+		return nil, 0, toError(rv)
+	}
+	ct := make([]byte, ctLen)
+	rv = C.EncapsulateKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(pubKey), tmpl, tmplCount,
+		(*C.CK_BYTE)(unsafe.Pointer(&ct[0])), &ctLen, &phKey)
+	if rv != C.CKR_OK {
+		return nil, 0, toError(rv)
+	}
+	return ct[:ctLen], ObjectHandle(phKey), nil
+}
+
+// DecapsulateKey performs KEM decapsulation (PKCS #11 v3.2 §5.18.9).
+// Returns a handle to the recovered shared-secret key.
+func (c *Ctx) DecapsulateKey(sh SessionHandle, m []*Mechanism, privKey ObjectHandle, attrs []*Attribute, ciphertext []byte) (ObjectHandle, error) {
+	mecharena, mech := cMechanism(m)
+	defer mecharena.Free()
+	attrarena, tmpl, tmplCount := cAttributeList(attrs)
+	defer attrarena.Free()
+
+	var phKey C.CK_OBJECT_HANDLE
+	rv := C.DecapsulateKey(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(privKey), tmpl, tmplCount,
+		cMessage(ciphertext), C.CK_ULONG(len(ciphertext)), &phKey)
+	return ObjectHandle(phKey), toError(rv)
+}
+
+// VerifySignatureInit initialises a stateless verify operation (v3.2 §5.15).
+// The signature is bound at init, not at the final step.
+func (c *Ctx) VerifySignatureInit(sh SessionHandle, m []*Mechanism, key ObjectHandle, signature []byte) error {
+	mecharena, mech := cMechanism(m)
+	defer mecharena.Free()
+	rv := C.VerifySignatureInit(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(key),
+		cMessage(signature), C.CK_ULONG(len(signature)))
+	return toError(rv)
+}
+
+// VerifySignature completes a single-part stateless verify (v3.2 §5.15).
+// Must be preceded by VerifySignatureInit.
+func (c *Ctx) VerifySignature(sh SessionHandle, data []byte) error {
+	rv := C.VerifySignature(c.ctx, C.CK_SESSION_HANDLE(sh),
+		cMessage(data), C.CK_ULONG(len(data)))
+	return toError(rv)
+}
+
+// VerifySignatureUpdate feeds data to an ongoing stateless verify (v3.2 §5.15).
+func (c *Ctx) VerifySignatureUpdate(sh SessionHandle, part []byte) error {
+	rv := C.VerifySignatureUpdate(c.ctx, C.CK_SESSION_HANDLE(sh),
+		cMessage(part), C.CK_ULONG(len(part)))
+	return toError(rv)
+}
+
+// VerifySignatureFinal completes a multi-part stateless verify (v3.2 §5.15).
+func (c *Ctx) VerifySignatureFinal(sh SessionHandle) error {
+	rv := C.VerifySignatureFinal(c.ctx, C.CK_SESSION_HANDLE(sh))
+	return toError(rv)
+}
+
+// GetSessionValidationFlags queries the FIPS validation status of the last
+// operation on this session (v3.2 §5.6.11).
+// Pass CKS_LAST_VALIDATION_OK to check whether the last operation was validated.
+func (c *Ctx) GetSessionValidationFlags(sh SessionHandle, flagType uint) (uint, error) {
+	var flags C.CK_FLAGS
+	rv := C.GetSessionValidationFlags(c.ctx, C.CK_SESSION_HANDLE(sh),
+		C.CK_SESSION_VALIDATION_FLAGS_TYPE(flagType), &flags)
+	if rv != C.CKR_OK {
+		return 0, toError(rv)
+	}
+	return uint(flags), nil
+}
+
+// WrapKeyAuthenticated wraps a key with AEAD authentication (v3.2 §5.18.6).
+// Returns the wrapped key blob (ciphertext + authentication tag).
+func (c *Ctx) WrapKeyAuthenticated(sh SessionHandle, m []*Mechanism, wrappingKey, key ObjectHandle, aad []byte) ([]byte, error) {
+	mecharena, mech := cMechanism(m)
+	defer mecharena.Free()
+
+	var aadPtr C.CK_BYTE_PTR
+	if len(aad) > 0 {
+		aadPtr = cMessage(aad)
+	}
+
+	// Length query: pass nil buffer to discover the required output size.
+	var wrappedKey C.CK_BYTE_PTR
+	var wrappedLen C.CK_ULONG
+	rv := C.WrapKeyAuthenticated(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(wrappingKey), C.CK_OBJECT_HANDLE(key),
+		aadPtr, C.CK_ULONG(len(aad)),
+		&wrappedKey, &wrappedLen)
+	if rv != C.CKR_OK && rv != C.CKR_BUFFER_TOO_SMALL {
+		return nil, toError(rv)
+	}
+
+	// Allocate the output buffer with C.malloc so that &wrappedKey (a Go
+	// pointer to a C.CK_BYTE_PTR) never points into Go-managed heap memory.
+	// Passing a Go pointer to a Go pointer is forbidden by the CGo rules
+	// and causes a runtime panic in Go 1.21+.
+	buf := C.malloc(C.size_t(wrappedLen))
+	if buf == nil {
+		return nil, toError(C.CKR_HOST_MEMORY)
+	}
+	defer C.free(buf)
+	wrappedKey = (*C.CK_BYTE)(buf)
+
+	rv = C.WrapKeyAuthenticated(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(wrappingKey), C.CK_OBJECT_HANDLE(key),
+		aadPtr, C.CK_ULONG(len(aad)),
+		&wrappedKey, &wrappedLen)
+	if rv != C.CKR_OK {
+		return nil, toError(rv)
+	}
+	return C.GoBytes(buf, C.int(wrappedLen)), nil
+}
+
+// UnwrapKeyAuthenticated unwraps a key with AEAD authentication (v3.2 §5.18.7).
+// aad must match exactly what was supplied to WrapKeyAuthenticated.
+// Official pkcs11f.h order: pTemplate before pAssociatedData.
+func (c *Ctx) UnwrapKeyAuthenticated(sh SessionHandle, m []*Mechanism, unwrappingKey ObjectHandle, wrappedKey, aad []byte, attrs []*Attribute) (ObjectHandle, error) {
+	mecharena, mech := cMechanism(m)
+	defer mecharena.Free()
+	attrarena, tmpl, tmplCount := cAttributeList(attrs)
+	defer attrarena.Free()
+
+	var aadPtr C.CK_BYTE_PTR
+	if len(aad) > 0 {
+		aadPtr = cMessage(aad)
+	}
+
+	var phKey C.CK_OBJECT_HANDLE
+	rv := C.UnwrapKeyAuthenticated(c.ctx, C.CK_SESSION_HANDLE(sh), mech,
+		C.CK_OBJECT_HANDLE(unwrappingKey),
+		cMessage(wrappedKey), C.CK_ULONG(len(wrappedKey)),
+		tmpl, tmplCount,
+		aadPtr, C.CK_ULONG(len(aad)),
+		&phKey)
+	return ObjectHandle(phKey), toError(rv)
+}
+
+// AsyncComplete retrieves the result of a completed async operation (v3.2 §5.21).
+// functionName is the PKCS #11 function name that was called asynchronously,
+// e.g. "C_Sign". Returns CKR_PENDING if the operation has not finished yet.
+func (c *Ctx) AsyncComplete(sh SessionHandle, functionName string) ([]byte, error) {
+	fname := C.CString(functionName)
+	defer C.free(unsafe.Pointer(fname))
+
+	var result C.CK_ASYNC_DATA
+	rv := C.AsyncComplete(c.ctx, C.CK_SESSION_HANDLE(sh),
+		(*C.CK_UTF8CHAR)(unsafe.Pointer(fname)), &result)
+	if rv != C.CKR_OK {
+		return nil, toError(rv)
+	}
+	if result.pValue != nil && result.ulValue > 0 {
+		// C_AsyncComplete allocates pValue; copy into Go memory then free.
+		defer C.free(unsafe.Pointer(result.pValue))
+		return C.GoBytes(unsafe.Pointer(result.pValue), C.int(result.ulValue)), nil
+	}
+	return nil, nil
+}
+
+// AsyncGetID retrieves the persistent ID of an in-flight async operation
+// (v3.2 §5.21). functionName is the PKCS #11 function name, e.g. "C_Sign".
+func (c *Ctx) AsyncGetID(sh SessionHandle, functionName string) (uint, error) {
+	fname := C.CString(functionName)
+	defer C.free(unsafe.Pointer(fname))
+
+	var id C.CK_ULONG
+	rv := C.AsyncGetID(c.ctx, C.CK_SESSION_HANDLE(sh),
+		(*C.CK_UTF8CHAR)(unsafe.Pointer(fname)), &id)
+	if rv != C.CKR_OK {
+		return 0, toError(rv)
+	}
+	return uint(id), nil
+}
+
+// AsyncJoin re-attaches a session to a persistent async operation (v3.2 §5.21).
+// functionName and id identify the operation; pass nil for data if not needed.
+func (c *Ctx) AsyncJoin(sh SessionHandle, functionName string, id uint, data []byte) error {
+	fname := C.CString(functionName)
+	defer C.free(unsafe.Pointer(fname))
+
+	var dataPtr C.CK_BYTE_PTR
+	if len(data) > 0 {
+		dataPtr = cMessage(data)
+	}
+	rv := C.AsyncJoin(c.ctx, C.CK_SESSION_HANDLE(sh),
+		(*C.CK_UTF8CHAR)(unsafe.Pointer(fname)),
+		C.CK_ULONG(id), dataPtr, C.CK_ULONG(len(data)))
+	return toError(rv)
 }

@@ -1,3 +1,9 @@
+// Copyright 2026 Miek Gieben and the Golang pkcs11 Contributors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// SPDX-License-Identifier: BSD-3-Clause
+
 package pkcs11
 
 // A test of using several pkcs11 sessions in parallel for signing across
@@ -24,28 +30,25 @@ import (
 )
 
 var (
-	module          = "/usr/lib/softhsm/libsofthsm.so"
-	tokenLabel      = "softhsm token"
+	module          string
+	tokenLabel      = "test-token"
 	privateKeyLabel = "my key"
 	pin             = "1234"
 )
 
 func init() {
-	if x := os.Getenv("SOFTHSM_LIB"); x != "" {
+	if x := os.Getenv("PKCS11_MODULE"); x != "" {
 		module = x
 	}
-	if x := os.Getenv("SOFTHSM_TOKENLABEL"); x != "" {
+	if x := os.Getenv("PKCS11_TOKENLABEL"); x != "" {
 		tokenLabel = x
 	}
-	if x := os.Getenv("SOFTHSM_PRIVKEYLABEL"); x != "" {
+	if x := os.Getenv("PKCS11_PRIVKEYLABEL"); x != "" {
 		privateKeyLabel = x
 	}
-	if x := os.Getenv("SOFTHSM_PIN"); x != "" {
+	if x := os.Getenv("PKCS11_PIN"); x != "" {
 		pin = x
 	}
-	wd, _ := os.Getwd()
-	os.Setenv("SOFTHSM_CONF", wd+"/softhsm.conf")
-	os.Setenv("SOFTHSM2_CONF", wd+"/softhsm2.conf")
 }
 
 func initPKCS11Context(modulePath string) (*Ctx, error) {
