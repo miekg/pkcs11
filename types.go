@@ -67,8 +67,7 @@ func cBBool(x bool) C.CK_BBOOL {
 
 // memBytes returns a byte slice that references an arbitrary memory area
 func memBytes(p unsafe.Pointer, len uintptr) []byte {
-	const maxIndex int32 = (1 << 31) - 1
-	return (*([maxIndex]byte))(p)[:len:len]
+	return unsafe.Slice((*byte)(p), len)
 }
 
 func uintToBytes(x uint64) []byte {
