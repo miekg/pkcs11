@@ -156,3 +156,79 @@ func TestGCMParams(t *testing.T) {
 	}
 	params.Free()
 }
+
+func TestKeyDerivationStringDataParams(t *testing.T) {
+	p := setenv(t)
+	sh := getSession(p, t)
+	defer finishSession(p, sh)
+	needMech(t, p, sh, CKM_AES_ECB_ENCRYPT_DATA)
+
+	if info, err := p.GetInfo(); err != nil {
+		t.Errorf("GetInfo: %v", err)
+		return
+	} else if info.ManufacturerID == "SoftHSM" && info.LibraryVersion.Major < 2 {
+		t.Skipf("AES not implemented on SoftHSM")
+	}
+	tokenLabel := "TestGenerateKey"
+	keyTemplate := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKK_AES),
+		NewAttribute(CKA_CLASS, CKO_SECRET_KEY),
+		NewAttribute(CKA_TOKEN, true),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_LABEL, tokenLabel),
+		NewAttribute(CKA_SENSITIVE, true),
+		NewAttribute(CKA_EXTRACTABLE, false),
+		NewAttribute(CKA_DERIVE, true),
+		NewAttribute(CKA_VALUE_LEN, 32),
+	}
+	key, err := p.GenerateKey(sh,
+		[]*Mechanism{NewMechanism(CKM_AES_KEY_GEN, nil)},
+		keyTemplate)
+	if err != nil {
+		t.Fatalf("failed to generate key: %s\n", err)
+	}
+
+	data := []byte("1234567890abcdef1234567890abcdef")
+	mech := []*Mechanism{
+		NewMechanism(CKM_AES_ECB_ENCRYPT_DATA, NewKeyDerivationStringDataParams(data)),
+	}
+
+	derivTokenLabel := "TestDerivedKey"
+	derivKeyTemplate := []*Attribute{
+		NewAttribute(CKA_KEY_TYPE, CKK_AES),
+		NewAttribute(CKA_CLASS, CKO_SECRET_KEY),
+		NewAttribute(CKA_TOKEN, true),
+		NewAttribute(CKA_ENCRYPT, true),
+		NewAttribute(CKA_DECRYPT, true),
+		NewAttribute(CKA_LABEL, derivTokenLabel),
+		NewAttribute(CKA_SENSITIVE, true),
+		NewAttribute(CKA_EXTRACTABLE, false),
+		NewAttribute(CKA_DERIVE, true),
+		NewAttribute(CKA_VALUE_LEN, 32),
+	}
+	derivKey, err := p.DeriveKey(sh, mech, key, derivKeyTemplate)
+	if err != nil {
+		t.Fatalf("failed to derive key: %s\n", err)
+	}
+
+	var mv uint = CKM_AES_ECB
+	plaintext := make([]byte, 32)
+	if err = p.EncryptInit(sh, []*Mechanism{NewMechanism(mv, nil)}, derivKey); err != nil {
+		t.Fatalf("EncryptInit: %s\n", err)
+	}
+	var ciphertext []byte
+	if ciphertext, err = p.Encrypt(sh, plaintext); err != nil {
+		t.Fatalf("Encrypt: %s\n", err)
+	}
+	if err = p.DecryptInit(sh, []*Mechanism{NewMechanism(mv, nil)}, derivKey); err != nil {
+		t.Fatalf("DecryptInit: %s\n", err)
+	}
+	var decrypted []byte
+	if decrypted, err = p.Decrypt(sh, ciphertext); err != nil {
+		t.Fatalf("Decrypt: %s\n", err)
+	}
+	if !bytes.Equal(plaintext, decrypted) {
+		t.Fatalf("Plaintext mismatch")
+	}
+}
