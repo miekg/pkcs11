@@ -84,12 +84,12 @@ func OpenModule(path string) (Module, error) {
 		return module, nil
 	}
 
-	newCtx := pkcs11.New(path)
-	if newCtx == nil {
-		return Module{}, fmt.Errorf("failed to load module %q", path)
+	newCtx, err := pkcs11.NewWithError(path)
+	if err != nil {
+		return Module{}, fmt.Errorf("failed to load module: %s", err)
 	}
 
-	err := newCtx.Initialize()
+	err = newCtx.Initialize()
 	if err != nil {
 		return Module{}, fmt.Errorf("failed to initialize module: %s", err)
 	}

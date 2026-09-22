@@ -28,6 +28,32 @@ package pkcs11
 
 #include "pkcs11go.h"
 
+// setError hands a copy of msg to the caller of New, which owns it from then
+// on. A NULL err says the caller does not want the message, and the platform
+// error functions may have none to give, so both are tolerated.
+static void setError(char **err, const char *msg)
+{
+	if (err == NULL || msg == NULL) {
+		return;
+	}
+	*err = strdup(msg);
+}
+
+// setFunctionListError reports a C_GetFunctionList that did not hand out a
+// usable function list. Modules report this as a CK_RV, which says more than
+// "the module is unusable" does.
+static void setFunctionListError(char **err, CK_RV rv)
+{
+	char msg[64];
+
+	if (rv == CKR_OK) {
+		setError(err, "C_GetFunctionList returned no function list");
+		return;
+	}
+	snprintf(msg, sizeof(msg), "C_GetFunctionList failed: 0x%lx", (unsigned long) rv);
+	setError(err, msg);
+}
+
 #ifdef _WIN32
 #include <windows.h>
 
@@ -36,22 +62,49 @@ struct ctx {
 	CK_FUNCTION_LIST_PTR sym;
 };
 
-// New initializes a ctx and fills the symbol table.
-struct ctx *New(const char *module)
+// setLastError reports the error of the loader call that just failed. Go turns
+// the code into a message. It must run before any other call that touches the
+// thread's last error.
+static void setLastError(unsigned long *code)
+{
+	if (code == NULL) {
+		return;
+	}
+	*code = GetLastError();
+}
+
+// New initializes a ctx and fills the symbol table. On failure it returns NULL
+// and reports why: a message in *err, which the caller owns, or the error code
+// of the loader call in *code. Either out-parameter may be NULL, and only one
+// of the two is filled.
+struct ctx *New(const char *module, char **err, unsigned long *code)
 {
 	CK_C_GetFunctionList list;
+	CK_RV rv;
 	struct ctx *c = calloc(1, sizeof(struct ctx));
 	c->handle = LoadLibrary(module);
 	if (c->handle == NULL) {
+		setLastError(code);
 		free(c);
 		return NULL;
 	}
 	list = (CK_C_GetFunctionList) GetProcAddress(c->handle, "C_GetFunctionList");
 	if (list == NULL) {
+		setLastError(code);
+		FreeLibrary(c->handle);
 		free(c);
 		return NULL;
 	}
-	list(&c->sym);
+	// A module whose C_GetFunctionList fails leaves sym NULL, so every later
+	// call into the module would dereference a NULL pointer and take the
+	// process down. Report the failure here instead.
+	rv = list(&c->sym);
+	if (rv != CKR_OK || c->sym == NULL) {
+		setFunctionListError(err, rv);
+		FreeLibrary(c->handle);
+		free(c);
+		return NULL;
+	}
 	return c;
 }
 
@@ -71,22 +124,42 @@ struct ctx {
 	CK_FUNCTION_LIST_PTR sym;
 };
 
-// New initializes a ctx and fills the symbol table.
-struct ctx *New(const char *module)
+// New initializes a ctx and fills the symbol table. On failure it returns NULL
+// and, unless err is NULL, stores the reason in *err for the caller to free.
+// The code out-parameter is there for the Windows loader, which reports an
+// error code where dlerror reports a message; it is left untouched here.
+struct ctx *New(const char *module, char **err, unsigned long *code)
 {
 	CK_C_GetFunctionList list;
+	CK_RV rv;
 	struct ctx *c = calloc(1, sizeof(struct ctx));
+	(void) code;
 	c->handle = dlopen(module, RTLD_LAZY);
 	if (c->handle == NULL) {
+		setError(err, dlerror());
 		free(c);
 		return NULL;
 	}
+	// dlsym returning NULL is only an error if dlerror says so, but a NULL
+	// C_GetFunctionList is unusable either way.
+	dlerror();
 	list = (CK_C_GetFunctionList) dlsym(c->handle, "C_GetFunctionList");
 	if (list == NULL) {
+		setError(err, dlerror());
+		dlclose(c->handle);
 		free(c);
 		return NULL;
 	}
-	list(&c->sym);
+	// A module whose C_GetFunctionList fails leaves sym NULL, so every later
+	// call into the module would dereference a NULL pointer and take the
+	// process down. Report the failure here instead.
+	rv = list(&c->sym);
+	if (rv != CKR_OK || c->sym == NULL) {
+		setFunctionListError(err, rv);
+		dlclose(c->handle);
+		free(c);
+		return NULL;
+	}
 	return c;
 }
 
@@ -776,7 +849,9 @@ static inline CK_VOID_PTR getAttributePval(CK_ATTRIBUTE_PTR a)
 */
 import "C"
 import (
+	"fmt"
 	"strings"
+	"syscall"
 	"unsafe"
 )
 
@@ -786,15 +861,52 @@ type Ctx struct {
 }
 
 // New creates a new context and initializes the module/library for use.
+// It returns nil if the module cannot be loaded, does not export
+// C_GetFunctionList, or if that function fails to return a function list.
+// Use NewWithError to learn which of these happened.
 func New(module string) *Ctx {
+	c, _ := NewWithError(module)
+	return c
+}
+
+// NewWithError is New, but it reports why the module could not be used
+// instead of only returning nil. The error is the one reported by the
+// platform's module loader, or the CK_RV of a C_GetFunctionList that did not
+// hand out a function list.
+func NewWithError(module string) (*Ctx, error) {
 	c := new(Ctx)
 	mod := C.CString(module)
 	defer C.free(unsafe.Pointer(mod))
-	c.ctx = C.New(mod)
+
+	var (
+		cErr  *C.char
+		cCode C.ulong
+	)
+	c.ctx = C.New(mod, &cErr, &cCode)
 	if c.ctx == nil {
-		return nil
+		return nil, moduleError(module, cErr, cCode)
 	}
-	return c
+	return c, nil
+}
+
+// moduleError explains why C.New rejected the module, from whichever of a
+// message and an error code it reported. It frees the message.
+func moduleError(module string, cErr *C.char, code C.ulong) error {
+	msg := "module could not be loaded"
+	switch {
+	case cErr != nil:
+		msg = C.GoString(cErr)
+		C.free(unsafe.Pointer(cErr))
+	case code != 0:
+		// The Windows loader reports an error code, which syscall knows
+		// how to say in words.
+		msg = syscall.Errno(code).Error()
+	}
+	// dlerror names the module itself, so saying it twice helps nobody.
+	if strings.Contains(msg, module) {
+		return fmt.Errorf("pkcs11: %s", msg)
+	}
+	return fmt.Errorf("pkcs11: %s: %s", module, msg)
 }
 
 // Destroy unloads the module/library and frees any remaining memory.
