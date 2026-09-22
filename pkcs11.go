@@ -48,10 +48,18 @@ struct ctx *New(const char *module)
 	}
 	list = (CK_C_GetFunctionList) GetProcAddress(c->handle, "C_GetFunctionList");
 	if (list == NULL) {
+		FreeLibrary(c->handle);
 		free(c);
 		return NULL;
 	}
-	list(&c->sym);
+	// A module whose C_GetFunctionList fails leaves sym NULL, so every later
+	// call into the module would dereference a NULL pointer and take the
+	// process down. Report the failure here instead.
+	if (list(&c->sym) != CKR_OK || c->sym == NULL) {
+		FreeLibrary(c->handle);
+		free(c);
+		return NULL;
+	}
 	return c;
 }
 
@@ -83,10 +91,18 @@ struct ctx *New(const char *module)
 	}
 	list = (CK_C_GetFunctionList) dlsym(c->handle, "C_GetFunctionList");
 	if (list == NULL) {
+		dlclose(c->handle);
 		free(c);
 		return NULL;
 	}
-	list(&c->sym);
+	// A module whose C_GetFunctionList fails leaves sym NULL, so every later
+	// call into the module would dereference a NULL pointer and take the
+	// process down. Report the failure here instead.
+	if (list(&c->sym) != CKR_OK || c->sym == NULL) {
+		dlclose(c->handle);
+		free(c);
+		return NULL;
+	}
 	return c;
 }
 
@@ -786,6 +802,8 @@ type Ctx struct {
 }
 
 // New creates a new context and initializes the module/library for use.
+// It returns nil if the module cannot be loaded, does not export
+// C_GetFunctionList, or if that function fails to return a function list.
 func New(module string) *Ctx {
 	c := new(Ctx)
 	mod := C.CString(module)
