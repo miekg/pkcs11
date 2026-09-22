@@ -24,8 +24,12 @@ it makes sense. It has been tested with SoftHSM.
 A skeleton program would look somewhat like this (yes, pkcs#11 is verbose):
 
 ~~~ go
-p := pkcs11.New("/usr/lib/softhsm/libsofthsm2.so")
-err := p.Initialize()
+p, err := pkcs11.NewWithError("/usr/lib/softhsm/libsofthsm2.so")
+if err != nil {
+    panic(err)
+}
+
+err = p.Initialize()
 if err != nil {
     panic(err)
 }

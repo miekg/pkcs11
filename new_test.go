@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -43,6 +44,33 @@ func buildModule(t *testing.T, source string) string {
 	return module
 }
 
+// checkNewFails asserts that neither New nor NewWithError accepts the module,
+// and that the error names the module and contains want.
+func checkNewFails(t *testing.T, module, want string) {
+	t.Helper()
+
+	if p := New(module); p != nil {
+		p.Destroy()
+		t.Error("New succeeded for a module it cannot use")
+	}
+
+	p, err := NewWithError(module)
+	if err == nil {
+		p.Destroy()
+		t.Fatal("NewWithError succeeded for a module it cannot use")
+	}
+	if p != nil {
+		p.Destroy()
+		t.Error("NewWithError returned a context along with an error")
+	}
+	if !strings.Contains(err.Error(), module) {
+		t.Errorf("error is %q, want it to name the module %q", err, module)
+	}
+	if !strings.Contains(err.Error(), want) {
+		t.Errorf("error is %q, want it to contain %q", err, want)
+	}
+}
+
 // TestNewGetFunctionListFails checks a module whose C_GetFunctionList fails
 // without writing to ppFunctionList. Such a module used to yield a context
 // with a NULL function list, which crashed the process on the first call into
@@ -55,10 +83,7 @@ func TestNewGetFunctionListFails(t *testing.T) {
 		}
 	`)
 
-	if p := New(module); p != nil {
-		p.Destroy()
-		t.Error("New succeeded for a module whose C_GetFunctionList fails")
-	}
+	checkNewFails(t, module, "C_GetFunctionList failed: 0x5")
 }
 
 // TestNewGetFunctionListReturnsNil checks a module that reports success but
@@ -72,10 +97,7 @@ func TestNewGetFunctionListReturnsNil(t *testing.T) {
 		}
 	`)
 
-	if p := New(module); p != nil {
-		p.Destroy()
-		t.Error("New succeeded for a module that returned no function list")
-	}
+	checkNewFails(t, module, "C_GetFunctionList returned no function list")
 }
 
 func TestNewWithoutGetFunctionList(t *testing.T) {
@@ -86,17 +108,15 @@ func TestNewWithoutGetFunctionList(t *testing.T) {
 		}
 	`)
 
-	if p := New(module); p != nil {
-		p.Destroy()
-		t.Error("New succeeded for a module without C_GetFunctionList")
-	}
+	checkNewFails(t, module, "C_GetFunctionList")
 }
 
+// TestNewModuleNotFound leaves the wording of the loader's message to the
+// platform, and only asks that the error names the module it could not find.
 func TestNewModuleNotFound(t *testing.T) {
-	if p := New(filepath.Join(t.TempDir(), "does-not-exist.so")); p != nil {
-		p.Destroy()
-		t.Error("New succeeded for a module that does not exist")
-	}
+	module := filepath.Join(t.TempDir(), "does-not-exist.so")
+
+	checkNewFails(t, module, "does-not-exist.so")
 }
 
 // TestNewGetFunctionListSucceeds guards against the checks above rejecting a
@@ -115,6 +135,12 @@ func TestNewGetFunctionListSucceeds(t *testing.T) {
 	p := New(module)
 	if p == nil {
 		t.Fatal("New failed for a module that returned a function list")
+	}
+	p.Destroy()
+
+	p, err := NewWithError(module)
+	if err != nil {
+		t.Fatalf("NewWithError failed for a module that returned a function list: %s", err)
 	}
 	p.Destroy()
 }
