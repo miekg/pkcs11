@@ -307,7 +307,8 @@ CK_RV GetAttributeValue(struct ctx * c, CK_SESSION_HANDLE session,
 	// Call for the first time, check the returned ulValue in the attributes, then
 	// allocate enough space and try again.
 	CK_RV e = c->sym->C_GetAttributeValue(session, object, temp, templen);
-	if (e != CKR_OK) {
+	if (e != CKR_OK && e != CKR_ATTRIBUTE_SENSITIVE &&
+	    e != CKR_ATTRIBUTE_TYPE_INVALID && e != CKR_BUFFER_TOO_SMALL) {
 		return e;
 	}
 	CK_ULONG i;
@@ -1103,6 +1104,9 @@ func (c *Ctx) GetObjectSize(sh SessionHandle, oh ObjectHandle) (uint, error) {
 }
 
 // GetAttributeValue obtains the value of one or more object attributes.
+// If an attribute is sensitive or invalid, the available attributes are returned
+// alongside the error. CKR_BUFFER_TOO_SMALL also preserves attributes that fit.
+// Unavailable attributes have a nil Value.
 func (c *Ctx) GetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute) ([]*Attribute, error) {
 	// copy the attribute list and make all the values nil, so that
 	// the C function can (allocate) fill them in
@@ -1110,22 +1114,29 @@ func (c *Ctx) GetAttributeValue(sh SessionHandle, o ObjectHandle, a []*Attribute
 	for i := 0; i < len(a); i++ {
 		pa[i]._type = C.CK_ATTRIBUTE_TYPE(a[i].Type)
 	}
+	defer func() {
+		for _, attr := range pa {
+			C.free(unsafe.Pointer(C.getAttributePval(&attr)))
+		}
+	}()
 	e := C.GetAttributeValue(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_OBJECT_HANDLE(o), &pa[0], C.CK_ULONG(len(a)))
-	if err := toError(e); err != nil {
+	err := toError(e)
+	switch e {
+	case C.CKR_OK, C.CKR_ATTRIBUTE_SENSITIVE, C.CKR_ATTRIBUTE_TYPE_INVALID, C.CKR_BUFFER_TOO_SMALL:
+	default:
 		return nil, err
 	}
 	a1 := make([]*Attribute, len(a))
 	for i, c := range pa {
 		x := new(Attribute)
 		x.Type = uint(c._type)
-		if int(c.ulValueLen) != -1 {
+		if c.ulValueLen != C.CK_UNAVAILABLE_INFORMATION {
 			buf := unsafe.Pointer(C.getAttributePval(&c))
 			x.Value = C.GoBytes(buf, C.int(c.ulValueLen))
-			C.free(buf)
 		}
 		a1[i] = x
 	}
-	return a1, nil
+	return a1, err
 }
 
 // SetAttributeValue modifies the value of one or more object attributes
