@@ -163,6 +163,48 @@ func TestGetAttributeValue(t *testing.T) {
 	}
 }
 
+func TestGetAttributeValuePartial(t *testing.T) {
+	p := setenv(t)
+	session := getSession(p, t)
+	defer finishSession(p, session)
+
+	const label = "GetAttributeValuePartial"
+	public, private := generateRSAKeyPair(t, p, session, label, false)
+	for _, tt := range []struct {
+		name        string
+		object      ObjectHandle
+		unavailable uint
+		wantError   Error
+	}{
+		{"invalid attribute", public, CKA_VALUE, Error(CKR_ATTRIBUTE_TYPE_INVALID)},
+		{"sensitive attribute", private, CKA_PRIVATE_EXPONENT, Error(CKR_ATTRIBUTE_SENSITIVE)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			attrs, err := p.GetAttributeValue(session, tt.object, []*Attribute{
+				NewAttribute(CKA_LABEL, nil),
+				NewAttribute(tt.unavailable, nil),
+			})
+			if err != tt.wantError {
+				t.Fatalf("error = %v, want %v", err, tt.wantError)
+			}
+			if len(attrs) != 2 {
+				t.Fatalf("got %d attributes, want 2", len(attrs))
+			}
+			if attrs[0].Type != CKA_LABEL || string(attrs[0].Value) != label {
+				t.Fatalf("available attribute = %+v", attrs[0])
+			}
+			if attrs[1].Type != tt.unavailable || attrs[1].Value != nil {
+				t.Fatalf("unavailable attribute = %+v", attrs[1])
+			}
+		})
+	}
+
+	attrs, err := p.GetAttributeValue(session, 0, []*Attribute{NewAttribute(CKA_LABEL, nil)})
+	if err != Error(CKR_OBJECT_HANDLE_INVALID) || attrs != nil {
+		t.Fatalf("invalid object: attributes = %v, error = %v", attrs, err)
+	}
+}
+
 func TestDigest(t *testing.T) {
 	p := setenv(t)
 	session := getSession(p, t)
