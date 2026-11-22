@@ -28,6 +28,22 @@ package pkcs11
 
 #include "pkcs11go.h"
 
+// zero_secret overwrites n bytes at p. The volatile pointer keeps the
+// compiler from removing the writes before free.
+void zero_secret(char *p, size_t n)
+{
+	volatile char *v = p;
+	while (n--) {
+		*v++ = 0;
+	}
+}
+
+void zero_free(char *p, size_t n)
+{
+	zero_secret(p, n);
+	free(p);
+}
+
 #ifdef _WIN32
 #include <windows.h>
 
@@ -951,12 +967,27 @@ func (c *Ctx) GetMechanismInfo(slotID uint, m []*Mechanism) (MechanismInfo, erro
 	return mi, toError(e)
 }
 
+// secret is a C copy of a PIN. free zeroes it before releasing it.
+type secret struct {
+	p *C.char
+	n C.size_t // the allocation, the terminating NUL included
+}
+
+func newSecret(s string) secret {
+	return secret{p: C.CString(s), n: C.size_t(len(s) + 1)}
+}
+
+// wipe zeroes the copy without freeing it.
+func (s secret) wipe() { C.zero_secret(s.p, s.n) }
+
+func (s secret) free() { C.zero_free(s.p, s.n) }
+
 // InitToken initializes a token. The label must be 32 characters
 // long, it is blank padded if it is not. If it is longer it is capped
 // to 32 characters.
 func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
-	p := C.CString(pin)
-	defer C.free(unsafe.Pointer(p))
+	p := newSecret(pin)
+	defer p.free()
 	ll := len(label)
 	for ll < 32 {
 		label += " "
@@ -964,25 +995,25 @@ func (c *Ctx) InitToken(slotID uint, pin string, label string) error {
 	}
 	l := C.CString(label[:32])
 	defer C.free(unsafe.Pointer(l))
-	e := C.InitToken(c.ctx, C.CK_ULONG(slotID), p, C.CK_ULONG(len(pin)), l)
+	e := C.InitToken(c.ctx, C.CK_ULONG(slotID), p.p, C.CK_ULONG(len(pin)), l)
 	return toError(e)
 }
 
 // InitPIN initializes the normal user's PIN.
 func (c *Ctx) InitPIN(sh SessionHandle, pin string) error {
-	p := C.CString(pin)
-	defer C.free(unsafe.Pointer(p))
-	e := C.InitPIN(c.ctx, C.CK_SESSION_HANDLE(sh), p, C.CK_ULONG(len(pin)))
+	p := newSecret(pin)
+	defer p.free()
+	e := C.InitPIN(c.ctx, C.CK_SESSION_HANDLE(sh), p.p, C.CK_ULONG(len(pin)))
 	return toError(e)
 }
 
 // SetPIN modifies the PIN of the user who is logged in.
 func (c *Ctx) SetPIN(sh SessionHandle, oldpin string, newpin string) error {
-	old := C.CString(oldpin)
-	defer C.free(unsafe.Pointer(old))
-	new := C.CString(newpin)
-	defer C.free(unsafe.Pointer(new))
-	e := C.SetPIN(c.ctx, C.CK_SESSION_HANDLE(sh), old, C.CK_ULONG(len(oldpin)), new, C.CK_ULONG(len(newpin)))
+	old := newSecret(oldpin)
+	defer old.free()
+	new := newSecret(newpin)
+	defer new.free()
+	e := C.SetPIN(c.ctx, C.CK_SESSION_HANDLE(sh), old.p, C.CK_ULONG(len(oldpin)), new.p, C.CK_ULONG(len(newpin)))
 	return toError(e)
 }
 
@@ -1047,9 +1078,9 @@ func (c *Ctx) SetOperationState(sh SessionHandle, state []byte, encryptKey, auth
 
 // Login logs a user into a token.
 func (c *Ctx) Login(sh SessionHandle, userType uint, pin string) error {
-	p := C.CString(pin)
-	defer C.free(unsafe.Pointer(p))
-	e := C.Login(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_USER_TYPE(userType), p, C.CK_ULONG(len(pin)))
+	p := newSecret(pin)
+	defer p.free()
+	e := C.Login(c.ctx, C.CK_SESSION_HANDLE(sh), C.CK_USER_TYPE(userType), p.p, C.CK_ULONG(len(pin)))
 	return toError(e)
 }
 
